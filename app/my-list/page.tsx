@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Anime, WatchedAnime, WatchStatus, watchStatusLabels, SortOrder } from "@/types/anime";
+import { Anime, WatchedAnime, WatchStatus, watchStatusLabels, SortOrder, SortType } from "@/types/anime";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWatchList } from "@/contexts/WatchListContext";
 import { getAnimeBatch } from "@/services/animeService";
@@ -11,7 +11,7 @@ import { Button } from "@/components/Button/Button";
 import styles from "./page.module.scss";
 
 const statusOrder: WatchStatus[] = ["watching", "plan_to_watch", "completed", "on_hold", "dropped"];
-const sortByOptions: string[] = Object.values(SortOrder);
+const sortByOptions: SortType[] = Object.values(SortOrder);
 const PAGE_SIZE = 48;
 
 interface ImportResult {
@@ -35,7 +35,7 @@ export default function MyListPage() {
     const [activeTab, setActiveTab] = useState<WatchStatus | "all">("all");
     const [page, setPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState("");
-    const [sortBy, setSortBy] = useState("added");
+    const [sortBy, setSortBy] = useState<SortType>("added");
     const [showImportModal, setShowImportModal] = useState(false);
     const [importing, setImporting] = useState(false);
     const [importResult, setImportResult] = useState<ImportResult | null>(null);
@@ -147,7 +147,7 @@ export default function MyListPage() {
     }, []);
 
     const handleSortByChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-        setSortBy(e.target.value);
+        setSortBy(e.target.value as SortType);
         setPage(1);
     }, []);
 

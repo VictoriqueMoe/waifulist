@@ -1,5 +1,7 @@
 export type WatchStatus = "watching" | "completed" | "plan_to_watch" | "on_hold" | "dropped";
 
+export type SortType = "added" | "name" | "rating" | "rating (personal)";
+
 export enum SortOrder {
     ADDED = "added",
     NAME = "name",
