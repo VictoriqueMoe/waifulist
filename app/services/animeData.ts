@@ -142,6 +142,38 @@ async function fetchRemoteCSV(): Promise<string | null> {
     }
 }
 
+export function clearCache(): void {
+    animeCache = null;
+    animeByIdCache = null;
+    animeTitleIndex = null;
+    fuseIndex = null;
+}
+
+function reloadCaches(csvContent: string): Anime[] {
+    clearCache();
+    animeCache = parseCSVContent(csvContent);
+    animeByIdCache = new Map(animeCache.map(a => [a.id, a]));
+    animeTitleIndex = buildTitleIndex(animeCache);
+    fuseIndex = new Fuse(animeCache, FUSE_OPTIONS);
+    lastFetchTime = new Date();
+    console.log(`Loaded ${animeCache.length} anime entries`);
+    return animeCache;
+}
+
+function buildTitleIndex(anime: Anime[]): Map<string, Anime> {
+    const index = new Map<string, Anime>();
+    for (const a of anime) {
+        index.set(normalizeTitle(a.title), a);
+        if (a.alternative_titles?.en) {
+            index.set(normalizeTitle(a.alternative_titles.en), a);
+        }
+        if (a.alternative_titles?.ja) {
+            index.set(normalizeTitle(a.alternative_titles.ja), a);
+        }
+    }
+    return index;
+}
+
 export async function loadAnimeData(): Promise<Anime[]> {
     if (animeCache) {
         return animeCache;
@@ -149,29 +181,27 @@ export async function loadAnimeData(): Promise<Anime[]> {
 
     const remoteCSV = await fetchRemoteCSV();
     if (remoteCSV) {
-        console.log("Loaded anime data from remote CSV");
-        animeCache = parseCSVContent(remoteCSV);
-        lastFetchTime = new Date();
-        return animeCache;
+        return reloadCaches(remoteCSV);
     }
 
     console.error("No anime data available");
     return [];
 }
 
-export function clearCache(): void {
-    animeCache = null;
-    animeByIdCache = null;
-    animeTitleIndex = null;
-    fuseIndex = null;
-    console.log("Anime data cache cleared");
-}
-
 export async function refreshAnimeData(): Promise<{ success: boolean; count: number; fetchTime: Date | null }> {
-    clearCache();
-    const data = await loadAnimeData();
+    const remoteCSV = await fetchRemoteCSV();
+    if (!remoteCSV) {
+        console.error("Failed to refresh anime data, keeping existing cache");
+        return {
+            success: false,
+            count: animeCache?.length ?? 0,
+            fetchTime: lastFetchTime,
+        };
+    }
+
+    const data = reloadCaches(remoteCSV);
     return {
-        success: data.length > 0,
+        success: true,
         count: data.length,
         fetchTime: lastFetchTime,
     };
@@ -195,12 +225,9 @@ async function fetchAnimeFromCDN(id: number): Promise<Anime | null> {
 }
 
 export async function getAnimeById(id: number, includeDetails: boolean = false): Promise<Anime | null> {
-    if (!animeByIdCache) {
-        const allAnime = await loadAnimeData();
-        animeByIdCache = new Map(allAnime.map(a => [a.id, a]));
-    }
+    await loadAnimeData();
 
-    const cached = animeByIdCache.get(id);
+    const cached = animeByIdCache!.get(id);
 
     if (cached) {
         if (includeDetails && !cached.synopsis) {
@@ -218,40 +245,19 @@ export async function getAnimeById(id: number, includeDetails: boolean = false):
     console.log(`Anime ${id} not in local data, fetching from CDN...`);
     const remote = await fetchAnimeFromCDN(id);
     if (remote) {
-        animeByIdCache.set(id, remote);
+        animeByIdCache!.set(id, remote);
     }
     return remote;
 }
 
 export async function getFuseIndex(): Promise<Fuse<Anime>> {
-    const allAnime = await loadAnimeData();
-
-    if (!fuseIndex) {
-        fuseIndex = new Fuse(allAnime, FUSE_OPTIONS);
-    }
-
-    return fuseIndex;
+    await loadAnimeData();
+    return fuseIndex!;
 }
 
 export async function getTitleIndex(): Promise<Map<string, Anime>> {
-    const allAnime = await loadAnimeData();
-
-    if (!animeTitleIndex) {
-        animeTitleIndex = new Map();
-
-        for (const anime of allAnime) {
-            animeTitleIndex.set(normalizeTitle(anime.title), anime);
-
-            if (anime.alternative_titles?.en) {
-                animeTitleIndex.set(normalizeTitle(anime.alternative_titles.en), anime);
-            }
-            if (anime.alternative_titles?.ja) {
-                animeTitleIndex.set(normalizeTitle(anime.alternative_titles.ja), anime);
-            }
-        }
-    }
-
-    return animeTitleIndex;
+    await loadAnimeData();
+    return animeTitleIndex!;
 }
 
 export async function findAnimeByTitle(title: string): Promise<Anime | null> {
