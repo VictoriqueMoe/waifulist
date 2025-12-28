@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 import bcrypt from "bcrypt";
 
 const SALT_ROUNDS = 12;
@@ -44,6 +45,24 @@ try {
     db.exec("ALTER TABLE watched_anime ADD COLUMN rating INTEGER DEFAULT NULL");
 } catch {}
 
+try {
+    db.exec("ALTER TABLE users ADD COLUMN public_id TEXT");
+} catch {}
+
+const usersWithoutPublicId = db.prepare("SELECT id FROM users WHERE public_id IS NULL").all() as { id: number }[];
+if (usersWithoutPublicId.length > 0) {
+    const updateStmt = db.prepare("UPDATE users SET public_id = ? WHERE id = ?");
+    for (const user of usersWithoutPublicId) {
+        updateStmt.run(crypto.randomUUID(), user.id);
+    }
+}
+
+try {
+    db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_public_id ON users(public_id)");
+} catch (e) {
+    console.error("Failed to create unique index on users(public_id):", e);
+}
+
 export async function hashPassword(password: string): Promise<string> {
     return bcrypt.hash(password, SALT_ROUNDS);
 }
@@ -56,14 +75,16 @@ export interface User {
     id: number;
     username: string;
     password_hash: string;
+    public_id: string;
     created_at: string;
 }
 
 export async function createUser(username: string, password: string): Promise<User | null> {
     const passwordHash = await hashPassword(password);
+    const publicId = crypto.randomUUID();
     try {
-        const stmt = db.prepare("INSERT INTO users (username, password_hash) VALUES (?, ?)");
-        const result = stmt.run(username, passwordHash);
+        const stmt = db.prepare("INSERT INTO users (username, password_hash, public_id) VALUES (?, ?, ?)");
+        const result = stmt.run(username, passwordHash, publicId);
         return getUserById(result.lastInsertRowid as number);
     } catch {
         return null;
@@ -78,6 +99,11 @@ export function getUserById(id: number): User | null {
 export function getUserByUsername(username: string): User | null {
     const stmt = db.prepare("SELECT * FROM users WHERE username = ?");
     return stmt.get(username) as User | null;
+}
+
+export function getUserByPublicId(publicId: string): User | null {
+    const stmt = db.prepare("SELECT * FROM users WHERE public_id = ?");
+    return stmt.get(publicId) as User | null;
 }
 
 export interface WatchedAnimeRow {

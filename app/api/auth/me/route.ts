@@ -12,6 +12,7 @@ export async function GET() {
         user: {
             id: user.id,
             username: user.username,
+            publicId: user.public_id,
         },
     });
 }

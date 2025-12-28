@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
             user: {
                 id: user.id,
                 username: user.username,
+                publicId: user.public_id,
             },
         });
     } catch (error) {

@@ -2,17 +2,13 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Anime, SortType, WatchStatus, watchStatusLabels } from "@/types/anime";
+import { Anime } from "@/types/anime";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWatchList } from "@/contexts/WatchListContext";
 import { getAnimeBatch } from "@/services/animeService";
-import { AnimeCard } from "@/components/AnimeCard/AnimeCard";
+import { AnimeListView, WatchedItem } from "@/components/AnimeListView/AnimeListView";
 import { Button } from "@/components/Button/Button";
 import styles from "./page.module.scss";
-
-const statusOrder: WatchStatus[] = ["watching", "plan_to_watch", "completed", "on_hold", "dropped"];
-const sortByOptions: SortType[] = ["added", "name", "rating", "rating (personal)"];
-const PAGE_SIZE = 48;
 
 interface ImportResult {
     matched: { title: string; anime: Anime }[];
@@ -23,19 +19,16 @@ interface ImportResult {
 export default function MyListPage() {
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
-    const { getAllWatched, getListByStatus, bulkAddToWatchList, loading: contextLoading } = useWatchList();
+    const { getAllWatched, bulkAddToWatchList, loading: contextLoading } = useWatchList();
 
     useEffect(() => {
         if (!authLoading && !user) {
             router.push("/login");
         }
     }, [user, authLoading, router]);
+
     const [animeData, setAnimeData] = useState<Map<number, Anime>>(new Map());
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<WatchStatus | "all">("all");
-    const [page, setPage] = useState(1);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [sortBy, setSortBy] = useState<SortType>("added");
     const [showImportModal, setShowImportModal] = useState(false);
     const [importing, setImporting] = useState(false);
     const [importResult, setImportResult] = useState<ImportResult | null>(null);
@@ -46,52 +39,23 @@ export default function MyListPage() {
         total: number;
         matchedCount: number;
     } | null>(null);
+    const [copied, setCopied] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const getTabItems = useCallback(() => {
-        return activeTab === "all" ? getAllWatched() : getListByStatus(activeTab);
-    }, [activeTab, getAllWatched, getListByStatus]);
-
-    const filteredItems = useMemo(() => {
-        const query = searchQuery.trim().toLowerCase();
-
-        const items = getTabItems().filter(item => {
-            const anime = animeData.get(item.animeId);
-            if (!anime) {
-                return false;
-            }
-            return !query || anime.title.toLowerCase().includes(query);
-        });
-
-        return items.sort((a, b) => {
-            const animeA = animeData.get(a.animeId);
-            const animeB = animeData.get(b.animeId);
-
-            if (!animeA || !animeB) {
-                return !animeA && !animeB ? 0 : !animeA ? 1 : -1;
-            }
-
-            if (sortBy === "rating") {
-                return (animeB.mean ?? 0) - (animeA.mean ?? 0);
-            }
-
-            if (sortBy === "rating (personal)") {
-                return (b.rating ?? 0) - (a.rating ?? 0);
-            }
-
-            if (sortBy === "added") {
-                return 0;
-            }
-
-            return animeA.title.localeCompare(animeB.title);
-        });
-    }, [getTabItems, searchQuery, sortBy, animeData]);
 
     const watchedItems = getAllWatched();
     const watchedIdsKey = watchedItems
         .map(item => item.animeId)
         .sort((a, b) => a - b)
         .join(",");
+
+    const convertedItems: WatchedItem[] = useMemo(() => {
+        return watchedItems.map(item => ({
+            animeId: item.animeId,
+            status: item.status,
+            rating: item.rating ?? null,
+            dateAdded: item.dateAdded,
+        }));
+    }, [watchedItems]);
 
     useEffect(() => {
         if (contextLoading || !watchedIdsKey) {
@@ -117,39 +81,6 @@ export default function MyListPage() {
             cancelled = true;
         };
     }, [contextLoading, watchedIdsKey]);
-
-    const getPagedAnime = useCallback((): Anime[] => {
-        const startIndex = (page - 1) * PAGE_SIZE;
-        const pageItems = filteredItems.slice(startIndex, startIndex + PAGE_SIZE);
-        return pageItems.map(item => animeData.get(item.animeId)!);
-    }, [filteredItems, page, animeData]);
-
-    const getCounts = useCallback(() => {
-        const counts: Record<string, number> = { all: getAllWatched().length };
-        statusOrder.forEach(status => {
-            counts[status] = getListByStatus(status).length;
-        });
-        return counts;
-    }, [getAllWatched, getListByStatus]);
-
-    const counts = getCounts();
-    const totalPages = Math.ceil(filteredItems.length / PAGE_SIZE);
-    const pagedAnime = getPagedAnime();
-
-    const handleTabChange = useCallback((tab: WatchStatus | "all") => {
-        setActiveTab(tab);
-        setPage(1);
-    }, []);
-
-    const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchQuery(e.target.value);
-        setPage(1);
-    }, []);
-
-    const handleSortByChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-        setSortBy(e.target.value as SortType);
-        setPage(1);
-    }, []);
 
     const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -248,6 +179,16 @@ export default function MyListPage() {
         }
     }, []);
 
+    const handleShareList = useCallback(async () => {
+        if (!user?.publicId) {
+            return;
+        }
+        const shareUrl = `${window.location.origin}/list/${user.publicId}`;
+        await navigator.clipboard.writeText(shareUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    }, [user?.publicId]);
+
     if (authLoading || !user) {
         return (
             <div className={styles.page}>
@@ -259,135 +200,28 @@ export default function MyListPage() {
         );
     }
 
+    const headerActions = (
+        <>
+            <Button variant="secondary" onClick={handleShareList}>
+                <i className={copied ? "bi bi-check" : "bi bi-share"} /> {copied ? "Link Copied!" : "Share List"}
+            </Button>
+            <Button variant="secondary" onClick={() => setShowImportModal(true)}>
+                <i className="bi bi-upload" /> Import List
+            </Button>
+        </>
+    );
+
     return (
-        <div className={styles.page}>
-            <div className={styles.container}>
-                <div className={styles.header}>
-                    <h1>My Anime List</h1>
-                    <p className={styles.subtitle}>{counts.all} anime in your list</p>
-                    <div className={styles.headerActions}>
-                        <Button variant="secondary" onClick={() => setShowImportModal(true)}>
-                            <i className="bi bi-upload" /> Import List
-                        </Button>
-                    </div>
-                </div>
-
-                <div className={styles.searchContainer}>
-                    <div className={styles.searchInput}>
-                        <i className="bi bi-search" />
-                        <input
-                            type="text"
-                            placeholder="Search your list..."
-                            value={searchQuery}
-                            onChange={handleSearchChange}
-                        />
-                        {searchQuery && (
-                            <button
-                                className={styles.clearSearch}
-                                onClick={() => {
-                                    setSearchQuery("");
-                                    setPage(1);
-                                }}
-                            >
-                                <i className="bi bi-x" />
-                            </button>
-                        )}
-                    </div>
-                    {searchQuery && (
-                        <span className={styles.searchResults}>
-                            {filteredItems.length} result{filteredItems.length !== 1 ? "s" : ""}
-                        </span>
-                    )}
-                </div>
-
-                <div className={styles.tabs}>
-                    <Button
-                        variant={activeTab === "all" ? "primary" : "ghost"}
-                        size="sm"
-                        onClick={() => handleTabChange("all")}
-                    >
-                        All ({counts.all})
-                    </Button>
-                    {statusOrder.map(status => (
-                        <Button
-                            key={status}
-                            variant={activeTab === status ? "primary" : "ghost"}
-                            size="sm"
-                            onClick={() => handleTabChange(status)}
-                        >
-                            {watchStatusLabels[status]} ({counts[status]})
-                        </Button>
-                    ))}
-                    <label style={{ marginLeft: 24, translate: "0px 8px" }}>Sort By:</label>
-                    <select value={sortBy} onChange={e => handleSortByChange(e)} style={{ marginLeft: 8 }}>
-                        {sortByOptions.map(opt => (
-                            <option key={opt} value={opt}>
-                                {opt}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                {loading || contextLoading ? (
-                    <div className={styles.loading}>
-                        <div className={styles.spinner} />
-                        <p>Loading your list...</p>
-                    </div>
-                ) : filteredItems.length > 0 ? (
-                    <>
-                        <div className={styles.grid}>
-                            {pagedAnime.map(anime => (
-                                <AnimeCard key={anime.id} anime={anime} />
-                            ))}
-                        </div>
-
-                        {totalPages > 1 && (
-                            <div className={styles.pagination}>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                                    disabled={page === 1}
-                                >
-                                    <i className="bi bi-chevron-left" /> Previous
-                                </Button>
-                                <span className={styles.pageInfo}>
-                                    Page {page} of {totalPages}
-                                </span>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={page === totalPages}
-                                >
-                                    Next <i className="bi bi-chevron-right" />
-                                </Button>
-                            </div>
-                        )}
-                    </>
-                ) : (
-                    <div className={styles.empty}>
-                        <i className={searchQuery ? "bi bi-search" : "bi bi-bookmark"} />
-                        <h3>
-                            {searchQuery
-                                ? "No results found"
-                                : activeTab === "all"
-                                  ? "Your list is empty"
-                                  : `No anime ${watchStatusLabels[activeTab].toLowerCase()}`}
-                        </h3>
-                        <p>
-                            {searchQuery
-                                ? `No anime matching "${searchQuery}"`
-                                : activeTab === "all"
-                                  ? "Start browsing and add anime to your list!"
-                                  : "Add some anime to this category"}
-                        </p>
-                        {!searchQuery && (
-                            <Button onClick={() => (window.location.href = "/browse")}>Browse Anime</Button>
-                        )}
-                    </div>
-                )}
-            </div>
+        <>
+            <AnimeListView
+                title="My Anime List"
+                subtitle={`${watchedItems.length} anime in your list`}
+                watchedItems={convertedItems}
+                animeData={animeData}
+                loading={loading || contextLoading}
+                headerActions={headerActions}
+                showStatusBadge={true}
+            />
 
             {showImportModal && (
                 <div className={styles.modal} onClick={closeModal}>
@@ -519,6 +353,6 @@ export default function MyListPage() {
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 }

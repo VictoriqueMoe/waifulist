@@ -5,6 +5,7 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 interface User {
     id: number;
     username: string;
+    publicId: string;
 }
 
 interface AuthContextType {
