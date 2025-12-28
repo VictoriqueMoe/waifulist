@@ -1,0 +1,164 @@
+@use "../../styles/variables" as *;
+
+.header {
+    position: sticky;
+    top: 0;
+    z-index: $z-dropdown + 1;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-primary);
+    backdrop-filter: blur(10px);
+}
+
+.container {
+    @include flex-between;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: $spacing-md $spacing-lg;
+    gap: $spacing-lg;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-decoration: none;
+
+    &:hover {
+        color: var(--text-primary);
+    }
+}
+
+.logoIcon {
+    @include flex-center;
+    width: 40px;
+    height: 40px;
+    background: var(--accent-gradient);
+    border-radius: $radius-md;
+    color: white;
+
+    i {
+        font-size: 1.25rem;
+    }
+}
+
+.logoText {
+    @media (max-width: $breakpoint-sm) {
+        display: none;
+    }
+}
+
+.nav {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+
+    @include md {
+        gap: $spacing-sm;
+    }
+}
+
+.navLink {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    color: var(--text-secondary);
+    border-radius: $radius-md;
+    transition: all $transition-fast;
+    text-decoration: none;
+
+    &:hover {
+        color: var(--text-primary);
+        background: var(--bg-tertiary);
+    }
+
+    &.active {
+        color: var(--accent-primary);
+        background: var(--bg-tertiary);
+    }
+
+    i {
+        font-size: 1.125rem;
+    }
+
+    span {
+        @media (max-width: $breakpoint-md) {
+            display: none;
+        }
+    }
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+}
+
+.userMenu {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+}
+
+.username {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+
+    i {
+        font-size: 1.125rem;
+    }
+
+    @media (max-width: $breakpoint-sm) {
+        span:not(i) {
+            display: none;
+        }
+    }
+}
+
+.logoutButton {
+    @include flex-center;
+    padding: $spacing-sm;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    border-radius: $radius-md;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+        color: var(--error);
+        background: var(--bg-tertiary);
+    }
+
+    i {
+        font-size: 1.125rem;
+    }
+}
+
+.loginLink {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-sm $spacing-md;
+    background: var(--accent-primary);
+    color: white;
+    border-radius: $radius-md;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all $transition-fast;
+
+    &:hover {
+        opacity: 0.9;
+    }
+
+    i {
+        font-size: 1rem;
+    }
+}

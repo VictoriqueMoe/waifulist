@@ -1,0 +1,50 @@
+{
+    "name": "app",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "next dev -p 8281",
+        "build": "next build",
+        "start": "next start -H localhost -p 8281",
+        "lint": "eslint --max-warnings=0 .",
+        "lint:fix": "eslint . --fix",
+        "prettier": "prettier ./app --check",
+        "prettier:fix": "prettier ./app --write",
+        "prepare": "husky"
+    },
+    "dependencies": {
+        "bcrypt": "^6.0.0",
+        "better-sqlite3": "^12.5.0",
+        "bootstrap-icons": "^1.13.1",
+        "fuse.js": "^7.1.0",
+        "jsonwebtoken": "^9.0.3",
+        "next": "16.1.1",
+        "react": "19.2.3",
+        "react-dom": "19.2.3",
+        "sass": "^1.97.1"
+    },
+    "devDependencies": {
+        "@types/bcrypt": "^6.0.0",
+        "@types/better-sqlite3": "^7.6.13",
+        "@types/jsonwebtoken": "^9.0.10",
+        "@types/node": "^20",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "eslint": "^9",
+        "eslint-config-next": "16.1.1",
+        "husky": "^9.1.7",
+        "lint-staged": "^16.2.7",
+        "prettier": "^3.7.4",
+        "typescript": "^5"
+    },
+    "lint-staged": {
+        "app/**/*.{ts,tsx,js,jsx}": [
+            "eslint --cache --fix",
+            "prettier --write"
+        ],
+        "app/**/*.{css,scss,less,json,md,yaml,yml}": [
+            "prettier --write"
+        ]
+    }
+}

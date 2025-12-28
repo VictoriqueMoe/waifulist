@@ -1,0 +1,57 @@
+@use "../../styles/variables" as *;
+
+.searchBar {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    width: 100%;
+    max-width: 600px;
+    padding: $spacing-sm $spacing-md;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: $radius-lg;
+    transition:
+        border-color $transition-fast,
+        box-shadow $transition-fast;
+
+    &:focus-within {
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+    }
+}
+
+.icon {
+    color: var(--text-muted);
+    font-size: 1.125rem;
+}
+
+.input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: $spacing-xs 0;
+    font-size: 1rem;
+
+    &:focus {
+        outline: none;
+        box-shadow: none;
+    }
+}
+
+.clear {
+    @include flex-center;
+    width: 24px;
+    height: 24px;
+    color: var(--text-muted);
+    border-radius: $radius-full;
+    transition: all $transition-fast;
+
+    &:hover {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+    }
+
+    i {
+        font-size: 1.25rem;
+    }
+}

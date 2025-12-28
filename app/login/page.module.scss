@@ -1,0 +1,102 @@
+@use "../styles/variables" as *;
+
+.page {
+    min-height: calc(100vh - 80px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: $spacing-lg;
+}
+
+.container {
+    width: 100%;
+    max-width: 400px;
+}
+
+.card {
+    background: var(--bg-secondary);
+    border-radius: $radius-lg;
+    padding: $spacing-xl;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+
+    h1 {
+        text-align: center;
+        margin-bottom: $spacing-xs;
+    }
+}
+
+.subtitle {
+    text-align: center;
+    color: var(--text-secondary);
+    margin-bottom: $spacing-xl;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+
+    label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+
+    input {
+        padding: $spacing-sm $spacing-md;
+        border: 1px solid var(--border-primary);
+        border-radius: $radius-md;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        font-size: 1rem;
+
+        &:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        &::placeholder {
+            color: var(--text-muted);
+        }
+    }
+}
+
+.error {
+    background: rgba(255, 100, 100, 0.1);
+    border: 1px solid var(--error);
+    color: var(--error);
+    padding: $spacing-sm $spacing-md;
+    border-radius: $radius-md;
+    font-size: 0.875rem;
+    text-align: center;
+}
+
+.submitButton {
+    margin-top: $spacing-sm;
+    width: 100%;
+}
+
+.switch {
+    text-align: center;
+    margin-top: $spacing-lg;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+
+    button {
+        background: none;
+        border: none;
+        color: var(--accent-primary);
+        cursor: pointer;
+        font-size: inherit;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}

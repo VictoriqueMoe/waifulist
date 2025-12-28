@@ -1,0 +1,165 @@
+// Theme: Anime (Default)
+:root,
+[data-theme="anime"] {
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #1a1a2e;
+    --bg-tertiary: #25253d;
+    --bg-card: #16162a;
+
+    --text-primary: #eef1ff;
+    --text-secondary: #a0a8c8;
+    --text-muted: #6b7194;
+
+    --accent-primary: #7c3aed;
+    --accent-secondary: #a855f7;
+    --accent-gradient: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
+
+    --border-primary: #2d2d4a;
+    --border-secondary: #3d3d5c;
+
+    --shadow-primary: 0 8px 32px rgba(124, 58, 237, 0.25);
+    --shadow-secondary: 0 4px 16px rgba(124, 58, 237, 0.15);
+
+    --status-watching: #3b82f6;
+    --status-completed: #22c55e;
+    --status-plan: #f59e0b;
+    --status-hold: #8b5cf6;
+    --status-dropped: #ef4444;
+
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    --info: #3b82f6;
+}
+
+// Theme: Sakura
+[data-theme="sakura"] {
+    --bg-primary: #fdf2f8;
+    --bg-secondary: #fce7f3;
+    --bg-tertiary: #fbcfe8;
+    --bg-card: #ffffff;
+
+    --text-primary: #831843;
+    --text-secondary: #be185d;
+    --text-muted: #db2777;
+
+    --accent-primary: #ec4899;
+    --accent-secondary: #f472b6;
+    --accent-gradient: linear-gradient(135deg, #ec4899 0%, #f9a8d4 100%);
+
+    --border-primary: #f9a8d4;
+    --border-secondary: #fbcfe8;
+
+    --shadow-primary: 0 8px 32px rgba(236, 72, 153, 0.2);
+    --shadow-secondary: 0 4px 16px rgba(236, 72, 153, 0.1);
+
+    --status-watching: #2563eb;
+    --status-completed: #16a34a;
+    --status-plan: #d97706;
+    --status-hold: #7c3aed;
+    --status-dropped: #dc2626;
+
+    --success: #16a34a;
+    --warning: #d97706;
+    --error: #dc2626;
+    --info: #2563eb;
+}
+
+// Theme: Ocean
+[data-theme="ocean"] {
+    --bg-primary: #0c1929;
+    --bg-secondary: #112240;
+    --bg-tertiary: #1a365d;
+    --bg-card: #0f2847;
+
+    --text-primary: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+
+    --accent-primary: #0ea5e9;
+    --accent-secondary: #38bdf8;
+    --accent-gradient: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+
+    --border-primary: #1e3a5f;
+    --border-secondary: #2d4a6f;
+
+    --shadow-primary: 0 8px 32px rgba(14, 165, 233, 0.25);
+    --shadow-secondary: 0 4px 16px rgba(14, 165, 233, 0.15);
+
+    --status-watching: #0ea5e9;
+    --status-completed: #10b981;
+    --status-plan: #f59e0b;
+    --status-hold: #8b5cf6;
+    --status-dropped: #f43f5e;
+
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #f43f5e;
+    --info: #0ea5e9;
+}
+
+// Theme: Midnight
+[data-theme="midnight"] {
+    --bg-primary: #0f0a19;
+    --bg-secondary: #1a1225;
+    --bg-tertiary: #261a33;
+    --bg-card: #150e21;
+
+    --text-primary: #f3e8ff;
+    --text-secondary: #c4b5fd;
+    --text-muted: #8b7aad;
+
+    --accent-primary: #a855f7;
+    --accent-secondary: #c084fc;
+    --accent-gradient: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+
+    --border-primary: #312547;
+    --border-secondary: #423059;
+
+    --shadow-primary: 0 8px 32px rgba(168, 85, 247, 0.25);
+    --shadow-secondary: 0 4px 16px rgba(168, 85, 247, 0.15);
+
+    --status-watching: #818cf8;
+    --status-completed: #34d399;
+    --status-plan: #fbbf24;
+    --status-hold: #c084fc;
+    --status-dropped: #fb7185;
+
+    --success: #34d399;
+    --warning: #fbbf24;
+    --error: #fb7185;
+    --info: #818cf8;
+}
+
+// Theme: Forest
+[data-theme="forest"] {
+    --bg-primary: #0a1410;
+    --bg-secondary: #132218;
+    --bg-tertiary: #1a3020;
+    --bg-card: #0f1c14;
+
+    --text-primary: #ecfdf5;
+    --text-secondary: #a7f3d0;
+    --text-muted: #6ee7b7;
+
+    --accent-primary: #10b981;
+    --accent-secondary: #34d399;
+    --accent-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+
+    --border-primary: #1f4630;
+    --border-secondary: #2d5a40;
+
+    --shadow-primary: 0 8px 32px rgba(16, 185, 129, 0.25);
+    --shadow-secondary: 0 4px 16px rgba(16, 185, 129, 0.15);
+
+    --status-watching: #22d3ee;
+    --status-completed: #4ade80;
+    --status-plan: #facc15;
+    --status-hold: #a78bfa;
+    --status-dropped: #f87171;
+
+    --success: #4ade80;
+    --warning: #facc15;
+    --error: #f87171;
+    --info: #22d3ee;
+}

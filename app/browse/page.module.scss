@@ -1,0 +1,95 @@
+@use "../styles/variables" as *;
+
+.page {
+    min-height: calc(100vh - 80px);
+    padding: $spacing-xl $spacing-lg;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: $spacing-xl;
+
+    h1 {
+        font-size: 2rem;
+        margin-bottom: $spacing-sm;
+    }
+}
+
+.subtitle {
+    color: var(--text-secondary);
+}
+
+.searchWrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: $spacing-xl;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $spacing-md;
+
+    @include sm {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    @include md {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    @include lg {
+        grid-template-columns: repeat(5, 1fr);
+    }
+
+    @include xl {
+        grid-template-columns: repeat(6, 1fr);
+        gap: $spacing-lg;
+    }
+}
+
+.loading {
+    @include flex-center;
+    flex-direction: column;
+    gap: $spacing-md;
+    padding: $spacing-2xl;
+    color: var(--text-secondary);
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-primary);
+    border-top-color: var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.empty {
+    @include flex-center;
+    flex-direction: column;
+    gap: $spacing-md;
+    padding: $spacing-2xl;
+    text-align: center;
+    color: var(--text-secondary);
+
+    i {
+        font-size: 3rem;
+        color: var(--text-muted);
+    }
+
+    h3 {
+        color: var(--text-primary);
+    }
+}

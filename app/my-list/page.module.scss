@@ -1,0 +1,388 @@
+@use "../styles/variables" as *;
+
+.page {
+    min-height: calc(100vh - 80px);
+    padding: $spacing-xl $spacing-lg;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: $spacing-lg;
+
+    h1 {
+        font-size: 2rem;
+        margin-bottom: $spacing-sm;
+    }
+}
+
+.subtitle {
+    color: var(--text-secondary);
+}
+
+.searchContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-md;
+    margin-bottom: $spacing-md;
+}
+
+.searchInput {
+    position: relative;
+    display: flex;
+    align-items: center;
+    max-width: 400px;
+    width: 100%;
+
+    > i {
+        position: absolute;
+        left: $spacing-md;
+        color: var(--text-muted);
+        pointer-events: none;
+    }
+
+    input {
+        width: 100%;
+        padding: $spacing-sm $spacing-xl;
+        padding-left: 2.5rem;
+        border: 1px solid var(--border-primary);
+        border-radius: $radius-md;
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        font-size: 1rem;
+
+        &:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        &::placeholder {
+            color: var(--text-muted);
+        }
+    }
+}
+
+.clearSearch {
+    position: absolute;
+    right: $spacing-xs;
+    @include flex-center;
+    width: 28px;
+    height: 28px;
+    background: none;
+    border: none;
+    border-radius: $radius-sm;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+        color: var(--text-primary);
+        background: var(--bg-tertiary);
+    }
+
+    i {
+        font-size: 1.25rem;
+    }
+}
+
+.searchResults {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    white-space: nowrap;
+}
+
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-xl;
+    padding: $spacing-md;
+    background: var(--bg-secondary);
+    border-radius: $radius-lg;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $spacing-md;
+
+    @include sm {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    @include md {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    @include lg {
+        grid-template-columns: repeat(5, 1fr);
+    }
+
+    @include xl {
+        grid-template-columns: repeat(6, 1fr);
+        gap: $spacing-lg;
+    }
+}
+
+.loading {
+    @include flex-center;
+    flex-direction: column;
+    gap: $spacing-md;
+    padding: $spacing-2xl;
+    color: var(--text-secondary);
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-primary);
+    border-top-color: var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.empty {
+    @include flex-center;
+    flex-direction: column;
+    gap: $spacing-md;
+    padding: $spacing-2xl;
+    text-align: center;
+    color: var(--text-secondary);
+
+    i {
+        font-size: 3rem;
+        color: var(--text-muted);
+    }
+
+    h3 {
+        color: var(--text-primary);
+    }
+
+    button {
+        margin-top: $spacing-md;
+    }
+}
+
+.headerActions {
+    display: flex;
+    justify-content: center;
+    gap: $spacing-md;
+    margin-top: $spacing-md;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: $spacing-md;
+    margin-top: $spacing-xl;
+    padding: $spacing-md;
+}
+
+.pageInfo {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: $spacing-md;
+}
+
+.modalContent {
+    background: var(--bg-primary);
+    border-radius: $radius-lg;
+    max-width: 600px;
+    width: 100%;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: $spacing-lg;
+    border-bottom: 1px solid var(--border-primary);
+
+    h2 {
+        margin: 0;
+        font-size: 1.25rem;
+    }
+}
+
+.closeButton {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: $spacing-xs;
+    line-height: 1;
+
+    &:hover {
+        color: var(--text-primary);
+    }
+}
+
+.modalBody {
+    padding: $spacing-lg;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.modalFooter {
+    padding: $spacing-lg;
+    border-top: 1px solid var(--border-primary);
+    display: flex;
+    justify-content: flex-end;
+    gap: $spacing-sm;
+}
+
+.importStats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: $spacing-md;
+    margin-bottom: $spacing-lg;
+}
+
+.stat {
+    text-align: center;
+    padding: $spacing-md;
+    background: var(--bg-secondary);
+    border-radius: $radius-md;
+
+    .statValue {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--accent-primary);
+    }
+
+    .statLabel {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+    }
+
+    &.success .statValue {
+        color: var(--success);
+    }
+
+    &.warning .statValue {
+        color: var(--warning);
+    }
+}
+
+.unmatchedList {
+    max-height: 300px;
+    overflow-y: auto;
+    background: var(--bg-secondary);
+    border-radius: $radius-md;
+    padding: $spacing-md;
+
+    h4 {
+        margin: 0 0 $spacing-sm 0;
+        color: var(--warning);
+        font-size: 0.875rem;
+    }
+
+    ul {
+        margin: 0;
+        padding-left: $spacing-lg;
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+
+        li {
+            padding: $spacing-xs 0;
+        }
+    }
+}
+
+.importProgressContainer {
+    text-align: center;
+    padding: $spacing-xl;
+}
+
+.progressText {
+    margin-top: $spacing-md;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.progressBar {
+    width: 100%;
+    height: 8px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    margin-top: $spacing-md;
+    overflow: hidden;
+}
+
+.progressFill {
+    height: 100%;
+    background: var(--accent-primary);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.progressStats {
+    margin-top: $spacing-sm;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.fileInput {
+    margin-top: $spacing-md;
+
+    input[type="file"] {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        border: 0;
+    }
+}
+
+.fileLabel {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-md $spacing-lg;
+    background: var(--bg-secondary);
+    border: 2px dashed var(--border-primary);
+    border-radius: $radius-md;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    i {
+        font-size: 1.25rem;
+        color: var(--accent-primary);
+    }
+
+    &:hover {
+        border-color: var(--accent-primary);
+        background: var(--bg-tertiary);
+    }
+}

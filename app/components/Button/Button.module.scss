@@ -1,0 +1,79 @@
+@use "../../styles/variables" as *;
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-sm;
+    font-weight: 500;
+    border-radius: $radius-md;
+    transition: all $transition-fast;
+    white-space: nowrap;
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+}
+
+// Sizes
+.sm {
+    padding: $spacing-xs $spacing-sm;
+    font-size: 0.875rem;
+}
+
+.md {
+    padding: $spacing-sm $spacing-md;
+    font-size: 1rem;
+}
+
+.lg {
+    padding: $spacing-md $spacing-lg;
+    font-size: 1.125rem;
+}
+
+// Variants
+.primary {
+    background: var(--accent-gradient);
+    color: white;
+
+    &:hover:not(:disabled) {
+        box-shadow: var(--shadow-secondary);
+        transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+        transform: translateY(0);
+    }
+}
+
+.secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-primary);
+
+    &:hover:not(:disabled) {
+        background: var(--bg-secondary);
+        border-color: var(--accent-primary);
+    }
+}
+
+.ghost {
+    background: transparent;
+    color: var(--text-secondary);
+
+    &:hover:not(:disabled) {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+    }
+}
+
+.danger {
+    background: var(--error);
+    color: white;
+
+    &:hover:not(:disabled) {
+        opacity: 0.9;
+        transform: translateY(-1px);
+    }
+}

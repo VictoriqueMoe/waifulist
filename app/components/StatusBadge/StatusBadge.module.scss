@@ -1,0 +1,50 @@
+@use "../../styles/variables" as *;
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-xs $spacing-sm;
+    border-radius: $radius-full;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+
+    i {
+        font-size: 0.875rem;
+    }
+}
+
+.compact {
+    padding: $spacing-xs;
+    border-radius: $radius-sm;
+
+    i {
+        font-size: 1rem;
+    }
+}
+
+.watching {
+    background: rgba(59, 130, 246, 0.2);
+    color: var(--status-watching);
+}
+
+.completed {
+    background: rgba(34, 197, 94, 0.2);
+    color: var(--status-completed);
+}
+
+.plan_to_watch {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--status-plan);
+}
+
+.on_hold {
+    background: rgba(139, 92, 246, 0.2);
+    color: var(--status-hold);
+}
+
+.dropped {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--status-dropped);
+}

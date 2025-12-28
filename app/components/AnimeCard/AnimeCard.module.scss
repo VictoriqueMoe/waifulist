@@ -1,0 +1,85 @@
+@use "../../styles/variables" as *;
+
+.card {
+    @include card-base;
+    @include hover-lift;
+    display: block;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+}
+
+.imageContainer {
+    position: relative;
+    aspect-ratio: 2 / 3;
+    overflow: hidden;
+    background: var(--bg-tertiary);
+}
+
+.image {
+    object-fit: cover;
+    transition: transform $transition-slow;
+
+    .card:hover & {
+        transform: scale(1.05);
+    }
+}
+
+.score {
+    position: absolute;
+    top: $spacing-sm;
+    left: $spacing-sm;
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-xs $spacing-sm;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    border-radius: $radius-sm;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: white;
+
+    i {
+        color: #fbbf24;
+    }
+}
+
+.statusBadge {
+    position: absolute;
+    top: $spacing-sm;
+    right: $spacing-sm;
+}
+
+.info {
+    padding: $spacing-md;
+}
+
+.title {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--text-primary);
+    @include truncate(2);
+    margin-bottom: $spacing-xs;
+}
+
+.meta {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.type {
+    padding: 2px $spacing-xs;
+    background: var(--bg-tertiary);
+    border-radius: $radius-sm;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.episodes {
+    color: var(--text-secondary);
+}
