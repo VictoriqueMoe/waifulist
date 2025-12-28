@@ -1,0 +1,15 @@
+services:
+  waifulist:
+    build: .
+    container_name: waifulist
+    image: waifulist
+    ports:
+      - "127.0.0.1:8281:3000"
+    volumes:
+      - waifulist-data:/app/data
+    env_file:
+      - .env
+    restart: always
+
+volumes:
+  waifulist-data:
