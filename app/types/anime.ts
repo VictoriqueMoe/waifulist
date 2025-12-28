@@ -2,13 +2,6 @@ export type WatchStatus = "watching" | "completed" | "plan_to_watch" | "on_hold"
 
 export type SortType = "added" | "name" | "rating" | "rating (personal)";
 
-export enum SortOrder {
-    ADDED = "added",
-    NAME = "name",
-    RATING = "rating",
-    RATING_PERSONAL = "rating (personal)",
-}
-
 export interface Anime {
     id: number;
     title: string;

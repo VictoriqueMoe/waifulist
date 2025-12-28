@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Anime, WatchedAnime, WatchStatus, watchStatusLabels, SortOrder, SortType } from "@/types/anime";
+import { Anime, WatchedAnime, WatchStatus, watchStatusLabels, SortType } from "@/types/anime";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWatchList } from "@/contexts/WatchListContext";
 import { getAnimeBatch } from "@/services/animeService";
@@ -11,7 +11,7 @@ import { Button } from "@/components/Button/Button";
 import styles from "./page.module.scss";
 
 const statusOrder: WatchStatus[] = ["watching", "plan_to_watch", "completed", "on_hold", "dropped"];
-const sortByOptions: SortType[] = Object.values(SortOrder);
+const sortByOptions: SortType[] = ["added", "name", "rating", "rating (personal)"];
 const PAGE_SIZE = 48;
 
 interface ImportResult {
@@ -71,15 +71,15 @@ export default function MyListPage() {
                 return !animeA && !animeB ? 0 : !animeA ? 1 : -1;
             }
 
-            if (sortBy === SortOrder.RATING) {
+            if (sortBy === "rating") {
                 return (animeB.mean ?? 0) - (animeA.mean ?? 0);
             }
 
-            if (sortBy === SortOrder.RATING_PERSONAL) {
+            if (sortBy === "rating (personal)") {
                 return (b.rating ?? 0) - (a.rating ?? 0);
             }
 
-            if (sortBy === SortOrder.ADDED) {
+            if (sortBy === "added") {
                 return 0;
             }
 
