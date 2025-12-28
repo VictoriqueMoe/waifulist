@@ -1,10 +1,16 @@
 import Database from "better-sqlite3";
 import path from "path";
+import fs from "fs";
 import bcrypt from "bcrypt";
 
 const SALT_ROUNDS = 12;
 
-const dbPath = path.join(process.cwd(), "data", "waifulist.db");
+const dataDir = path.join(process.cwd(), "data");
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+}
+
+const dbPath = path.join(dataDir, "waifulist.db");
 const db = new Database(dbPath);
 
 db.pragma("foreign_keys = ON");
