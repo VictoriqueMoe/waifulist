@@ -181,6 +181,44 @@ export function addToWatchList(userId: number, animeId: number, status: string):
     }
 }
 
+export function restoreWatchList(userId: number, rows: WatchedAnimeRow[]): number {
+    const stmt = db.prepare(`
+        INSERT INTO watched_anime (user_id, anime_id, status, episodes_watched, rating, date_added, date_updated)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(user_id, anime_id) DO UPDATE SET
+        status = excluded.status,
+        episodes_watched = excluded.episodes_watched,
+        rating = excluded.rating,
+        date_added = excluded.date_added,
+        date_updated = excluded.date_updated
+    `);
+
+    const restoreMany = db.transaction((watched: WatchedAnimeRow[]) => {
+        let count = 0;
+        for (const w of watched) {
+            const result = stmt.run(
+                userId,
+                w.anime_id,
+                w.status,
+                w.episodes_watched,
+                w.rating,
+                w.date_added,
+                w.date_updated,
+            );
+            if (result.changes > 0) {
+                count++;
+            }
+        }
+        return count;
+    });
+
+    try {
+        return restoreMany(rows);
+    } catch (error) {
+        throw new DatabaseError(`Failed to restore ${rows.length} anime to watch list`, "restoreWatchList", error);
+    }
+}
+
 export function bulkAddToWatchList(userId: number, animeIds: number[], status: string): number {
     const stmt = db.prepare(`
         INSERT INTO watched_anime (user_id, anime_id, status)
