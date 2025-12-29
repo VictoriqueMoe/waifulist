@@ -86,7 +86,7 @@ export default async function OGImage({ params }: { params: Promise<{ uuid: stri
                             overflow: "hidden",
                         }}
                     >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        {/* eslint-disable-next-line */}
                         <img
                             src={cover}
                             style={{
