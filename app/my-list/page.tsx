@@ -91,6 +91,7 @@ export default function MyListPage() {
 
     const handleExport = useCallback(async () => {
         try {
+            setLoading(true);
             const response = await fetch("/api/export", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -116,6 +117,8 @@ export default function MyListPage() {
             URL.revokeObjectURL(url);
         } catch (error) {
             console.error(error);
+        } finally {
+            setLoading(false);
         }
     }, []);
 
