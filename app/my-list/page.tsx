@@ -6,7 +6,7 @@ import { Anime } from "@/types/anime";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWatchList } from "@/contexts/WatchListContext";
 import { useLoading } from "@/contexts/LoadingContext";
-import { useAnime, useExport } from "@/hooks";
+import { useAnime, useBackup } from "@/hooks";
 import { AnimeListView, WatchedItem } from "@/components/AnimeListView/AnimeListView";
 import { Button } from "@/components/Button/Button";
 import styles from "./page.module.scss";
@@ -23,7 +23,7 @@ export default function MyListPage() {
     const { getAllWatched, bulkAddToWatchList, refreshList, loading: contextLoading } = useWatchList();
     const { isLoading } = useLoading();
     const { getAnimeBatchSilent } = useAnime();
-    const { exportList } = useExport();
+    const { backupList } = useBackup();
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -94,13 +94,13 @@ export default function MyListPage() {
         }
     }, []);
 
-    const handleExport = useCallback(async () => {
+    const handleBackup = useCallback(async () => {
         try {
-            await exportList();
+            await backupList();
         } catch (error) {
             console.error(error);
         }
-    }, [exportList]);
+    }, [backupList]);
 
     const handleRestore = useCallback(async () => {
         const checkBackupFile = (text: string): boolean => {
@@ -272,8 +272,8 @@ export default function MyListPage() {
             <Button variant="secondary" onClick={() => setShowImportModal(true)}>
                 <i className="bi bi-upload" /> Import List
             </Button>
-            <Button variant="secondary" onClick={handleExport}>
-                <i className="bi bi-download" /> Export List
+            <Button variant="secondary" onClick={handleBackup}>
+                <i className="bi bi-download" /> Backup List
             </Button>
             <Button variant="secondary" onClick={() => setShowRestoreModal(true)}>
                 <i className="bi bi-upload" /> Restore List

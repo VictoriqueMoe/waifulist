@@ -3,19 +3,19 @@
 import { useCallback } from "react";
 import { useLoading } from "@/contexts/LoadingContext";
 
-export function useExport() {
+export function useBackup() {
     const { withLoading } = useLoading();
 
-    const exportList = useCallback(async (): Promise<void> => {
+    const backupList = useCallback(async (): Promise<void> => {
         await withLoading(async () => {
-            const response = await fetch("/api/export", {
+            const response = await fetch("/api/backup", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
             });
 
             if (!response.ok) {
                 const error = await response.json();
-                throw new Error(error.error || "Export failed");
+                throw new Error(error.error || "Backup failed");
             }
 
             const text = await response.text();
@@ -34,5 +34,5 @@ export function useExport() {
         });
     }, [withLoading]);
 
-    return { exportList };
+    return { backupList };
 }
