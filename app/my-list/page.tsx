@@ -306,7 +306,7 @@ export default function MyListPage() {
                         <div className={styles.modalBody}>
                             {!importing && !importResult && !importError && (
                                 <>
-                                    <p>Select a text file with one anime title per line:</p>
+                                    <p>Select a JSON backup file to restore your watchlist:</p>
                                     <div className={styles.fileInput}>
                                         <input
                                             ref={fileInputRef}
@@ -429,7 +429,7 @@ export default function MyListPage() {
                     <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
                         <div className={styles.modalHeader}>
                             <h2>Restore Anime List</h2>
-                            <button className={styles.closeButton} onClick={closeModal}>
+                            <button className={styles.closeButton} onClick={closeRestoreModal}>
                                 <i className="bi bi-x" />
                             </button>
                         </div>
