@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Anime } from "@/types/anime";
 import { useAnime } from "@/hooks";
+import { useWatchList } from "@/contexts/WatchListContext";
 import { SearchBar } from "@/components/SearchBar/SearchBar";
 import { AnimeCard } from "@/components/AnimeCard/AnimeCard";
 import styles from "./page.module.scss";
@@ -11,8 +12,13 @@ import styles from "./page.module.scss";
 export default function Home() {
     const router = useRouter();
     const { getHomePageAnime } = useAnime();
+    const { ensureLoaded } = useWatchList();
     const [featuredAnime, setFeaturedAnime] = useState<Anime[]>([]);
     const [popularAnime, setPopularAnime] = useState<Anime[]>([]);
+
+    useEffect(() => {
+        ensureLoaded();
+    }, [ensureLoaded]);
 
     const handleLiveSearch = useCallback(
         (query: string) => {

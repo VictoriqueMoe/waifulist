@@ -3,14 +3,21 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Anime } from "@/types/anime";
+import { Anime, WatchStatus } from "@/types/anime";
 import { useWatchList } from "@/contexts/WatchListContext";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
 import styles from "./AnimeCard.module.scss";
 
+export interface AnimeCardWatchData {
+    status: WatchStatus;
+    rating: number | null;
+    dateAdded: string;
+}
+
 interface AnimeCardProps {
     anime: Anime;
     showStatus?: boolean;
+    watchData?: AnimeCardWatchData | null;
 }
 
 function formatDateAdded(dateString: string): string {
@@ -37,9 +44,10 @@ function formatDateAdded(dateString: string): string {
     return date.toLocaleDateString();
 }
 
-export function AnimeCard({ anime, showStatus = true }: AnimeCardProps) {
+export function AnimeCard({ anime, showStatus = true, watchData: watchDataProp }: AnimeCardProps) {
     const { getWatchData } = useWatchList();
-    const watchData = getWatchData(anime.id);
+    const contextWatchData = getWatchData(anime.id);
+    const watchData = watchDataProp !== undefined ? watchDataProp : contextWatchData;
 
     const imageUrl = anime.main_picture?.large || anime.main_picture?.medium || "/placeholder.png";
 

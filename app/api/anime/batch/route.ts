@@ -14,7 +14,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<Anime[]>>
 
         const limitedIds = ids.slice(0, ANIME_BATCH_SIZE);
 
-        const results = await Promise.all(limitedIds.map(async id => await getAnimeById(id)));
+        const results = await Promise.all(limitedIds.map(async id => await getAnimeById(id, false, true)));
 
         return NextResponse.json(results.filter((a): a is Anime => a !== null));
     } catch (error) {

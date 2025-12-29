@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWatchList } from "@/contexts/WatchListContext";
 import { useLoading } from "@/contexts/LoadingContext";
 import { useSettings } from "@/contexts/SettingsContext";
-import { useAnime, useBackup } from "@/hooks";
+import { useBackup } from "@/hooks";
 import { AnimeListView, WatchedItem } from "@/components/AnimeListView/AnimeListView";
 import { Button } from "@/components/Button/Button";
 import styles from "./page.module.scss";
@@ -21,11 +21,20 @@ interface ImportResult {
 export default function MyListPage() {
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
-    const { getAllWatched, bulkAddToWatchList, refreshList, loading: contextLoading } = useWatchList();
+    const {
+        getAllWatched,
+        bulkAddToWatchList,
+        refreshList,
+        ensureLoaded,
+        loaded,
+        loading: contextLoading,
+    } = useWatchList();
     const { isLoading } = useLoading();
     const { settings, loading: settingsLoading, updateMyListSettings } = useSettings();
-    const { getAnimeBatchSilent } = useAnime();
     const { backupList } = useBackup();
+
+    const [animeData, setAnimeData] = useState<Map<number, Anime>>(new Map());
+    const [animeLoading, setAnimeLoading] = useState(true);
 
     const handleSortChange = useCallback(
         (sort: SortType) => {
@@ -40,8 +49,29 @@ export default function MyListPage() {
         }
     }, [user, authLoading, router]);
 
-    const [animeData, setAnimeData] = useState<Map<number, Anime>>(new Map());
-    const [loading, setLoading] = useState(true);
+    useEffect(() => {
+        ensureLoaded();
+    }, [ensureLoaded]);
+
+    // Fetch anime data once watchlist is loaded
+    useEffect(() => {
+        if (!loaded || contextLoading) {
+            return;
+        }
+
+        setAnimeLoading(true);
+        fetch("/api/watchlist/anime")
+            .then(res => (res.ok ? res.json() : {}))
+            .then(data => {
+                const map = new Map<number, Anime>(
+                    Object.entries(data).map(([id, anime]) => [Number(id), anime as Anime]),
+                );
+                setAnimeData(map);
+            })
+            .catch(console.error)
+            .finally(() => setAnimeLoading(false));
+    }, [loaded, contextLoading]);
+
     const [showImportModal, setShowImportModal] = useState(false);
     const [showRestoreModal, setShowRestoreModal] = useState(false);
     const [importing, setImporting] = useState(false);
@@ -54,13 +84,10 @@ export default function MyListPage() {
         matchedCount: number;
     } | null>(null);
     const [copied, setCopied] = useState(false);
+    const [restoreLoading, setRestoreLoading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const watchedItems = getAllWatched();
-    const watchedIdsKey = watchedItems
-        .map(item => item.animeId)
-        .sort((a, b) => a - b)
-        .join(",");
 
     const convertedItems: WatchedItem[] = useMemo(() => {
         return watchedItems.map(item => ({
@@ -70,31 +97,6 @@ export default function MyListPage() {
             dateAdded: item.dateAdded,
         }));
     }, [watchedItems]);
-
-    useEffect(() => {
-        if (contextLoading || !watchedIdsKey) {
-            if (!contextLoading && !watchedIdsKey) {
-                setLoading(false);
-            }
-            return;
-        }
-
-        const ids = watchedIdsKey.split(",").map(Number);
-
-        let cancelled = false;
-        setLoading(true);
-
-        getAnimeBatchSilent(ids).then(newData => {
-            if (!cancelled) {
-                setAnimeData(newData);
-                setLoading(false);
-            }
-        });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [contextLoading, watchedIdsKey, getAnimeBatchSilent]);
 
     const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -136,7 +138,7 @@ export default function MyListPage() {
         }
 
         try {
-            setLoading(true);
+            setRestoreLoading(true);
             const content = await selectedFile.text();
             if (!checkBackupFile(content)) {
                 throw new Error("File does not contain correct fields");
@@ -154,7 +156,7 @@ export default function MyListPage() {
         } catch (error) {
             console.error(error);
         } finally {
-            setLoading(false);
+            setRestoreLoading(false);
             setShowRestoreModal(false);
             setSelectedFile(null);
             await refreshList();
@@ -222,13 +224,7 @@ export default function MyListPage() {
                             setImportResult(result);
 
                             const animeIds = result.matched.map(m => m.anime.id);
-                            bulkAddToWatchList(animeIds, "completed");
-
-                            const newAnimeData = new Map(animeData);
-                            result.matched.forEach(m => {
-                                newAnimeData.set(m.anime.id, m.anime);
-                            });
-                            setAnimeData(newAnimeData);
+                            await bulkAddToWatchList(animeIds, "completed");
                         }
                     }
                 }
@@ -239,7 +235,7 @@ export default function MyListPage() {
             setImporting(false);
             setImportProgress(null);
         }
-    }, [selectedFile, bulkAddToWatchList, animeData]);
+    }, [selectedFile, bulkAddToWatchList]);
 
     const closeModal = useCallback(() => {
         setShowImportModal(false);
@@ -297,7 +293,7 @@ export default function MyListPage() {
                 subtitle={`${watchedItems.length} anime in your list`}
                 watchedItems={convertedItems}
                 animeData={animeData}
-                loading={(loading || contextLoading) && !isLoading}
+                loading={(restoreLoading || contextLoading || animeLoading) && !isLoading}
                 headerActions={headerActions}
                 showStatusBadge={true}
                 initialSort={settingsLoading ? "added" : (settings.myList.sort as SortType) || "added"}

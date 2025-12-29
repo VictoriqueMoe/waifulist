@@ -7,6 +7,7 @@ import { useAuth } from "./AuthContext";
 interface WatchListContextType {
     watchedList: Map<number, WatchedAnime>;
     loading: boolean;
+    loaded: boolean;
     addToWatchList: (animeId: number, status: WatchStatus) => Promise<void>;
     bulkAddToWatchList: (animeIds: number[], status: WatchStatus) => Promise<number>;
     updateWatchStatus: (animeId: number, updates: Partial<WatchedAnime>) => Promise<void>;
@@ -16,6 +17,7 @@ interface WatchListContextType {
     getListByStatus: (status: WatchStatus) => WatchedAnime[];
     getAllWatched: () => WatchedAnime[];
     refreshList: () => Promise<void>;
+    ensureLoaded: () => void;
 }
 
 const WatchListContext = createContext<WatchListContextType | undefined>(undefined);
@@ -24,14 +26,22 @@ export function WatchListProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
     const [watchedList, setWatchedList] = useState<Map<number, WatchedAnime>>(new Map());
     const [loading, setLoading] = useState(false);
+    const [loaded, setLoaded] = useState(false);
+    const loadingRef = React.useRef(false);
 
     const refreshList = useCallback(async () => {
         if (!user) {
             setWatchedList(new Map());
+            setLoaded(false);
             return;
         }
 
+        if (loadingRef.current) {
+            return;
+        }
+        loadingRef.current = true;
         setLoading(true);
+
         try {
             const response = await fetch("/api/watchlist");
             if (response.ok) {
@@ -57,17 +67,23 @@ export function WatchListProvider({ children }: { children: React.ReactNode }) {
                     },
                 );
                 setWatchedList(map);
+                setLoaded(true);
             }
         } catch (error) {
             console.error("Failed to fetch watch list:", error);
         } finally {
             setLoading(false);
+            loadingRef.current = false;
         }
     }, [user]);
 
+    // Clear list when user logs out
     useEffect(() => {
-        refreshList();
-    }, [refreshList]);
+        if (!user) {
+            setWatchedList(new Map());
+            setLoaded(false);
+        }
+    }, [user]);
 
     const addToWatchList = useCallback(
         async (animeId: number, status: WatchStatus) => {
@@ -221,11 +237,18 @@ export function WatchListProvider({ children }: { children: React.ReactNode }) {
         return Array.from(watchedList.values());
     }, [watchedList]);
 
+    const ensureLoaded = useCallback(() => {
+        if (!loaded && !loadingRef.current && user) {
+            refreshList();
+        }
+    }, [loaded, user, refreshList]);
+
     return (
         <WatchListContext.Provider
             value={{
                 watchedList,
                 loading,
+                loaded,
                 addToWatchList,
                 bulkAddToWatchList,
                 updateWatchStatus,
@@ -235,6 +258,7 @@ export function WatchListProvider({ children }: { children: React.ReactNode }) {
                 getListByStatus,
                 getAllWatched,
                 refreshList,
+                ensureLoaded,
             }}
         >
             {children}

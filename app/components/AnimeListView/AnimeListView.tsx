@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Anime, SortType, WatchStatus, watchStatusLabels } from "@/types/anime";
-import { AnimeCard } from "@/components/AnimeCard/AnimeCard";
+import { AnimeCard, AnimeCardWatchData } from "@/components/AnimeCard/AnimeCard";
 import { Button } from "@/components/Button/Button";
 import { Pagination } from "@/components/Pagination/Pagination";
 import styles from "./AnimeListView.module.scss";
@@ -107,10 +107,25 @@ export function AnimeListView({
         });
     }, [getTabItems, searchQuery, sortBy, animeData]);
 
-    const getPagedAnime = useCallback((): Anime[] => {
+    const getPagedItems = useCallback((): { anime: Anime; watchData: AnimeCardWatchData }[] => {
         const startIndex = (page - 1) * PAGE_SIZE;
         const pageItems = filteredItems.slice(startIndex, startIndex + PAGE_SIZE);
-        return pageItems.map(item => animeData.get(item.animeId)).filter((a): a is Anime => !!a);
+        return pageItems
+            .map(item => {
+                const anime = animeData.get(item.animeId);
+                if (!anime) {
+                    return null;
+                }
+                return {
+                    anime,
+                    watchData: {
+                        status: item.status,
+                        rating: item.rating,
+                        dateAdded: item.dateAdded,
+                    },
+                };
+            })
+            .filter((item): item is { anime: Anime; watchData: AnimeCardWatchData } => item !== null);
     }, [filteredItems, page, animeData]);
 
     const getCounts = useCallback(() => {
@@ -123,7 +138,7 @@ export function AnimeListView({
 
     const counts = getCounts();
     const totalPages = Math.ceil(filteredItems.length / PAGE_SIZE);
-    const pagedAnime = getPagedAnime();
+    const pagedItems = getPagedItems();
 
     const handleTabChange = useCallback(
         (tab: WatchStatus | "all") => {
@@ -242,8 +257,13 @@ export function AnimeListView({
                 {filteredItems.length > 0 ? (
                     <>
                         <div className={styles.grid}>
-                            {pagedAnime.map(anime => (
-                                <AnimeCard key={anime.id} anime={anime} showStatus={showStatusBadge} />
+                            {pagedItems.map(({ anime, watchData }) => (
+                                <AnimeCard
+                                    key={anime.id}
+                                    anime={anime}
+                                    showStatus={showStatusBadge}
+                                    watchData={watchData}
+                                />
                             ))}
                         </div>
 

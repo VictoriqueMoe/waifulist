@@ -3,7 +3,6 @@
 import { useCallback } from "react";
 import { Anime, WatchStatus } from "@/types/anime";
 import { useLoading } from "@/contexts/LoadingContext";
-import * as animeService from "@/services/animeService";
 
 interface ApiWatchedItem {
     anime_id: number;
@@ -49,11 +48,9 @@ export function usePublicList() {
                     dateAdded: item.date_added,
                 }));
 
-                let animeData = new Map<number, Anime>();
-                if (items.length > 0) {
-                    const ids = items.map(item => item.animeId);
-                    animeData = await animeService.getAnimeBatch(ids);
-                }
+                const animeData = new Map<number, Anime>(
+                    Object.entries(data.animeData || {}).map(([id, anime]) => [Number(id), anime as Anime]),
+                );
 
                 return {
                     username: data.username,

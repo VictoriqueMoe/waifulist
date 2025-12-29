@@ -6,6 +6,7 @@ import { Anime } from "@/types/anime";
 import { BrowseSortType, useAnime } from "@/hooks";
 import { useLoading } from "@/contexts/LoadingContext";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useWatchList } from "@/contexts/WatchListContext";
 import { SearchBar } from "@/components/SearchBar/SearchBar";
 import { AnimeCard } from "@/components/AnimeCard/AnimeCard";
 import { Pagination } from "@/components/Pagination/Pagination";
@@ -21,6 +22,11 @@ function BrowseContent() {
     const { searchAnimeSilent, browseAnimeSilent } = useAnime();
     const { isLoading } = useLoading();
     const { settings, loading: settingsLoading, updateBrowseSettings } = useSettings();
+    const { ensureLoaded } = useWatchList();
+
+    useEffect(() => {
+        ensureLoaded();
+    }, [ensureLoaded]);
 
     const [anime, setAnime] = useState<Anime[]>([]);
     const [loading, setLoading] = useState(true);

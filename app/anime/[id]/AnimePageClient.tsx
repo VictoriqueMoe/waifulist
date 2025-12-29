@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Anime, WatchStatus } from "@/types/anime";
@@ -20,7 +20,12 @@ export function AnimePageClient({ anime }: AnimePageClientProps) {
     const [showStatusMenu, setShowStatusMenu] = useState(false);
 
     const { user } = useAuth();
-    const { getWatchData, addToWatchList, updateWatchStatus, removeFromWatchList, isInWatchList } = useWatchList();
+    const { getWatchData, addToWatchList, updateWatchStatus, removeFromWatchList, isInWatchList, ensureLoaded } =
+        useWatchList();
+
+    useEffect(() => {
+        ensureLoaded();
+    }, [ensureLoaded]);
 
     const watchData = user ? getWatchData(anime.id) : undefined;
 

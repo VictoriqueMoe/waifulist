@@ -132,13 +132,23 @@ function parseCSVContent(csvContent: string): Anime[] {
 async function fetchRemoteCSV(): Promise<string | null> {
     try {
         console.log("Fetching anime data from remote CSV...");
-        const response = await fetch(CSV_URL, { cache: "no-store" });
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000);
+        const response = await fetch(CSV_URL, {
+            cache: "no-store",
+            signal: controller.signal,
+        });
+        clearTimeout(timeout);
         if (!response.ok) {
             throw new Error(`Failed to fetch: ${response.status}`);
         }
         return await response.text();
     } catch (error) {
-        console.error("Failed to fetch remote CSV:", error);
+        if (error instanceof Error && error.name === "AbortError") {
+            console.error("Fetch remote CSV timed out after 30s");
+        } else {
+            console.error("Failed to fetch remote CSV:", error);
+        }
         return null;
     }
 }
@@ -217,18 +227,31 @@ export function getLastFetchTime(): Date | null {
 
 async function fetchAnimeFromCDN(id: number): Promise<Anime | null> {
     try {
-        const response = await fetch(`${CDN_BASE_URL}/anime/${id}.json`);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        const response = await fetch(`${CDN_BASE_URL}/anime/${id}.json`, {
+            signal: controller.signal,
+        });
+        clearTimeout(timeout);
         if (!response.ok) {
             return null;
         }
         return await response.json();
     } catch (error) {
-        console.error(`Failed to fetch anime ${id} from CDN:`, error);
+        if (error instanceof Error && error.name === "AbortError") {
+            console.error(`Fetch anime ${id} from CDN timed out`);
+        } else {
+            console.error(`Failed to fetch anime ${id} from CDN:`, error);
+        }
         return null;
     }
 }
 
-export async function getAnimeById(id: number, includeDetails: boolean = false): Promise<Anime | null> {
+export async function getAnimeById(
+    id: number,
+    includeDetails: boolean = false,
+    skipCdnFallback: boolean = false,
+): Promise<Anime | null> {
     await loadAnimeData();
 
     const cached = animeByIdCache!.get(id);
@@ -244,6 +267,10 @@ export async function getAnimeById(id: number, includeDetails: boolean = false):
             }
         }
         return cached;
+    }
+
+    if (skipCdnFallback) {
+        return null;
     }
 
     console.log(`Anime ${id} not in local data, fetching from CDN...`);
