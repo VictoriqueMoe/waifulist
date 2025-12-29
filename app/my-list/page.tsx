@@ -102,6 +102,25 @@ export default function MyListPage() {
     }, [exportList]);
 
     const handleImport = useCallback(async () => {
+        const checkBackupFile = (text: string): boolean => {
+            const fields: string[] = [
+                "id",
+                "user_id",
+                "anime_id",
+                "status",
+                "episodes_watched",
+                "rating",
+                "date_added",
+                "date_updated",
+            ];
+            for (const field of fields) {
+                if (!text.includes(field)) {
+                    return false;
+                }
+            }
+            return true;
+        };
+
         if (!selectedFile) {
             return;
         }
@@ -114,7 +133,9 @@ export default function MyListPage() {
         try {
             const content = await selectedFile.text();
 
-            const response = await fetch("/api/import", {
+            const endpoint = checkBackupFile(content) ? "/api/restore" : "/api/import";
+
+            const response = await fetch(endpoint, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ content }),
@@ -169,6 +190,8 @@ export default function MyListPage() {
                                 newAnimeData.set(m.anime.id, m.anime);
                             });
                             setAnimeData(newAnimeData);
+                        } else if (data.type === "restored") {
+                            window.location.reload();
                         }
                     }
                 }
@@ -244,12 +267,12 @@ export default function MyListPage() {
                         <div className={styles.modalBody}>
                             {!importing && !importResult && !importError && (
                                 <>
-                                    <p>Select a text file with one anime title per line:</p>
+                                    <p>Select a text file with one anime title per line, or a backup JSON file:</p>
                                     <div className={styles.fileInput}>
                                         <input
                                             ref={fileInputRef}
                                             type="file"
-                                            accept=".txt,.text"
+                                            accept=".txt,.text,.json"
                                             onChange={handleFileSelect}
                                             id="anime-import-file"
                                         />
