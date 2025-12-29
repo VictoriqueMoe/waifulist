@@ -10,6 +10,7 @@ let animeByIdCache: Map<number, Anime> | null = null;
 let animeTitleIndex: Map<string, Anime> | null = null;
 let fuseIndex: Fuse<Anime> | null = null;
 let lastFetchTime: Date | null = null;
+let loadingPromise: Promise<Anime[]> | null = null;
 
 function normalizeTitle(title: string): string {
     return title
@@ -142,15 +143,7 @@ async function fetchRemoteCSV(): Promise<string | null> {
     }
 }
 
-export function clearCache(): void {
-    animeCache = null;
-    animeByIdCache = null;
-    animeTitleIndex = null;
-    fuseIndex = null;
-}
-
 function reloadCaches(csvContent: string): Anime[] {
-    clearCache();
     animeCache = parseCSVContent(csvContent);
     animeByIdCache = new Map(animeCache.map(a => [a.id, a]));
     animeTitleIndex = buildTitleIndex(animeCache);
@@ -179,13 +172,25 @@ export async function loadAnimeData(): Promise<Anime[]> {
         return animeCache;
     }
 
-    const remoteCSV = await fetchRemoteCSV();
-    if (remoteCSV) {
-        return reloadCaches(remoteCSV);
+    // Prevent concurrent fetches - if a load is already in progress, wait for it
+    if (loadingPromise) {
+        return loadingPromise;
     }
 
-    console.error("No anime data available");
-    return [];
+    loadingPromise = (async () => {
+        const remoteCSV = await fetchRemoteCSV();
+        if (remoteCSV) {
+            return reloadCaches(remoteCSV);
+        }
+        console.error("No anime data available");
+        return [];
+    })();
+
+    try {
+        return await loadingPromise;
+    } finally {
+        loadingPromise = null;
+    }
 }
 
 export async function refreshAnimeData(): Promise<{ success: boolean; count: number; fetchTime: Date | null }> {
