@@ -18,10 +18,12 @@
         "better-sqlite3": "^12.5.0",
         "bootstrap-icons": "^1.13.1",
         "fuse.js": "^7.1.0",
+        "ioredis": "^5.8.2",
         "jsonwebtoken": "^9.0.3",
         "next": "16.1.1",
         "react": "19.2.3",
         "react-dom": "19.2.3",
+        "redis": "^5.10.0",
         "sass": "^1.97.1",
         "toad-scheduler": "^3.1.0"
     },

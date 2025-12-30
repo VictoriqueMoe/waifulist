@@ -1,23 +1,15 @@
 import Fuse, { IFuseOptions } from "fuse.js";
 import { Anime } from "@/types/anime";
+import { getRedis, getSubscriber, REDIS_KEYS, REDIS_TTL } from "@/lib/redis";
 
 const CSV_URL =
     "https://raw.githubusercontent.com/meesvandongen/anime-dataset/refs/heads/main/data/anime-standalone.csv";
 const CDN_BASE_URL = "https://raw.githubusercontent.com/meesvandongen/anime-dataset/main/data";
 
-let animeCache: Anime[] | null = null;
-let animeByIdCache: Map<number, Anime> | null = null;
-let animeTitleIndex: Map<string, Anime> | null = null;
+// In-memory Fuse index (cannot serialize to Redis)
 let fuseIndex: Fuse<Anime> | null = null;
-let lastFetchTime: Date | null = null;
-let loadingPromise: Promise<Anime[]> | null = null;
-
-function normalizeTitle(title: string): string {
-    return title
-        .toLowerCase()
-        .trim()
-        .replace(/[^\w\s]/g, "");
-}
+let fuseLoadingPromise: Promise<void> | null = null;
+let subscriberInitialized = false;
 
 const FUSE_OPTIONS: IFuseOptions<Anime> = {
     keys: [
@@ -153,52 +145,113 @@ async function fetchRemoteCSV(): Promise<string | null> {
     }
 }
 
-function reloadCaches(csvContent: string): Anime[] {
-    animeCache = parseCSVContent(csvContent);
-    animeByIdCache = new Map(animeCache.map(a => [a.id, a]));
-    animeTitleIndex = buildTitleIndex(animeCache);
-    fuseIndex = new Fuse(animeCache, FUSE_OPTIONS);
-    lastFetchTime = new Date();
-    console.log(`Loaded ${animeCache.length} anime entries`);
-    return animeCache;
+function buildFuseIndex(animeList: Anime[]): void {
+    fuseIndex = new Fuse(animeList, FUSE_OPTIONS);
+    console.log(`[AnimeData] Built Fuse index with ${animeList.length} entries`);
 }
 
-function buildTitleIndex(anime: Anime[]): Map<string, Anime> {
-    const index = new Map<string, Anime>();
-    for (const a of anime) {
-        index.set(normalizeTitle(a.title), a);
-        if (a.alternative_titles?.en) {
-            index.set(normalizeTitle(a.alternative_titles.en), a);
+async function saveToRedis(animeList: Anime[]): Promise<void> {
+    const redis = getRedis();
+    try {
+        await redis.setex(REDIS_KEYS.ANIME_LIST, REDIS_TTL.ANIME_LIST, JSON.stringify(animeList));
+        await redis.set(REDIS_KEYS.LAST_FETCH_TIME, new Date().toISOString());
+
+        const pipeline = redis.pipeline();
+        for (const anime of animeList) {
+            pipeline.setex(REDIS_KEYS.ANIME_BY_ID(anime.id), REDIS_TTL.ANIME_LIST, JSON.stringify(anime));
         }
-        if (a.alternative_titles?.ja) {
-            index.set(normalizeTitle(a.alternative_titles.ja), a);
-        }
+        await pipeline.exec();
+
+        console.log(`[Redis] Saved ${animeList.length} anime entries (list + individual keys)`);
+    } catch (error) {
+        console.error("[Redis] Failed to save anime list:", error);
     }
-    return index;
 }
 
-export async function loadAnimeData(): Promise<Anime[]> {
-    if (animeCache) {
-        return animeCache;
+async function loadFromRedis(): Promise<Anime[] | null> {
+    const redis = getRedis();
+    try {
+        const data = await redis.get(REDIS_KEYS.ANIME_LIST);
+        if (data) {
+            const animeList = JSON.parse(data) as Anime[];
+            console.log(`[Redis] Loaded ${animeList.length} anime entries from cache`);
+            return animeList;
+        }
+    } catch (error) {
+        console.error("[Redis] Failed to load anime list:", error);
+    }
+    return null;
+}
+
+async function publishRefresh(): Promise<void> {
+    const redis = getRedis();
+    try {
+        await redis.publish(REDIS_KEYS.REFRESH_CHANNEL, "refresh");
+        console.log("[Redis] Published refresh notification");
+    } catch (error) {
+        console.error("[Redis] Failed to publish refresh:", error);
+    }
+}
+
+function initializeSubscriber(): void {
+    if (subscriberInitialized) {
+        return;
+    }
+    subscriberInitialized = true;
+
+    const subscriber = getSubscriber();
+
+    subscriber.subscribe(REDIS_KEYS.REFRESH_CHANNEL).catch(err => {
+        console.error("[Redis Subscriber] Failed to subscribe:", err);
+    });
+
+    subscriber.on("message", async (channel, message) => {
+        if (channel === REDIS_KEYS.REFRESH_CHANNEL && message === "refresh") {
+            console.log("[Redis Subscriber] Received refresh notification, rebuilding Fuse index...");
+            // Clear Fuse index to force rebuild from Redis
+            fuseIndex = null;
+            // Trigger rebuild
+            await ensureFuseIndex();
+        }
+    });
+}
+
+export async function ensureFuseIndex(): Promise<void> {
+    // Initialize subscriber for cluster sync
+    initializeSubscriber();
+
+    if (fuseIndex) {
+        return;
     }
 
-    if (loadingPromise) {
-        return loadingPromise;
+    if (fuseLoadingPromise) {
+        return fuseLoadingPromise;
     }
 
-    loadingPromise = (async () => {
+    fuseLoadingPromise = (async () => {
+        // Try loading from Redis first
+        const cachedList = await loadFromRedis();
+        if (cachedList && cachedList.length > 0) {
+            buildFuseIndex(cachedList);
+            return;
+        }
+
+        // Fetch from remote CSV
         const remoteCSV = await fetchRemoteCSV();
         if (remoteCSV) {
-            return reloadCaches(remoteCSV);
+            const animeList = parseCSVContent(remoteCSV);
+            buildFuseIndex(animeList);
+            await saveToRedis(animeList);
+            return;
         }
+
         console.error("No anime data available");
-        return [];
     })();
 
     try {
-        return await loadingPromise;
+        await fuseLoadingPromise;
     } finally {
-        loadingPromise = null;
+        fuseLoadingPromise = null;
     }
 }
 
@@ -206,26 +259,61 @@ export async function refreshAnimeData(): Promise<{ success: boolean; count: num
     const remoteCSV = await fetchRemoteCSV();
     if (!remoteCSV) {
         console.error("Failed to refresh anime data, keeping existing cache");
+        const redis = getRedis();
+        const data = await redis.get(REDIS_KEYS.ANIME_LIST);
+        const count = data ? (JSON.parse(data) as Anime[]).length : 0;
         return {
             success: false,
-            count: animeCache?.length ?? 0,
-            fetchTime: lastFetchTime,
+            count,
+            fetchTime: await getLastFetchTime(),
         };
     }
 
-    const data = reloadCaches(remoteCSV);
+    const animeList = parseCSVContent(remoteCSV);
+    buildFuseIndex(animeList);
+    await saveToRedis(animeList);
+
+    await publishRefresh();
+
     return {
         success: true,
-        count: data.length,
-        fetchTime: lastFetchTime,
+        count: animeList.length,
+        fetchTime: new Date(),
     };
 }
 
-export function getLastFetchTime(): Date | null {
-    return lastFetchTime;
+export async function getLastFetchTime(): Promise<Date | null> {
+    const redis = getRedis();
+    try {
+        const timestamp = await redis.get(REDIS_KEYS.LAST_FETCH_TIME);
+        return timestamp ? new Date(timestamp) : null;
+    } catch {
+        return null;
+    }
 }
 
-async function fetchAnimeFromCDN(id: number): Promise<Anime | null> {
+/**
+ * Layered anime lookup: Redis -> CDN -> cache to Redis
+ * This is the single source of truth for individual anime lookups.
+ */
+async function getAnimeFromStore(id: number, skipCdnFallback: boolean = false): Promise<Anime | null> {
+    const redis = getRedis();
+
+    // Check Redis
+    try {
+        const data = await redis.get(REDIS_KEYS.ANIME_BY_ID(id));
+        if (data) {
+            return JSON.parse(data) as Anime;
+        }
+    } catch (error) {
+        console.error(`[Redis] Failed to get anime ${id}:`, error);
+    }
+
+    if (skipCdnFallback) {
+        return null;
+    }
+
+    // Fetch from CDN
     try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 5000);
@@ -233,15 +321,26 @@ async function fetchAnimeFromCDN(id: number): Promise<Anime | null> {
             signal: controller.signal,
         });
         clearTimeout(timeout);
+
         if (!response.ok) {
             return null;
         }
-        return await response.json();
+
+        const anime: Anime = await response.json();
+
+        // Cache to Redis
+        try {
+            await redis.setex(REDIS_KEYS.ANIME_BY_ID(id), REDIS_TTL.ANIME_BY_ID, JSON.stringify(anime));
+        } catch (cacheError) {
+            console.error(`[Redis] Failed to cache anime ${id}:`, cacheError);
+        }
+
+        return anime;
     } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
-            console.error(`Fetch anime ${id} from CDN timed out`);
+            console.error(`[AnimeStore] Fetch anime ${id} from CDN timed out`);
         } else {
-            console.error(`Failed to fetch anime ${id} from CDN:`, error);
+            console.error(`[AnimeStore] Failed to fetch anime ${id} from CDN:`, error);
         }
         return null;
     }
@@ -252,54 +351,37 @@ export async function getAnimeById(
     includeDetails: boolean = false,
     skipCdnFallback: boolean = false,
 ): Promise<Anime | null> {
-    await loadAnimeData();
+    // Always get from Redis (single source of truth)
+    const anime = await getAnimeFromStore(id, skipCdnFallback);
 
-    const cached = animeByIdCache!.get(id);
-
-    if (cached) {
-        if (includeDetails && !cached.synopsis) {
-            const cdnData = await fetchAnimeFromCDN(id);
-            if (cdnData?.synopsis) {
-                cached.synopsis = cdnData.synopsis;
-                if (!cached.source && cdnData.source) {
-                    cached.source = cdnData.source;
-                }
-            }
-        }
-        return cached;
-    }
-
-    if (skipCdnFallback) {
+    if (!anime) {
         return null;
     }
 
-    console.log(`Anime ${id} not in local data, fetching from CDN...`);
-    const remote = await fetchAnimeFromCDN(id);
-    if (remote) {
-        animeByIdCache!.set(id, remote);
+    // Fetch additional details from CDN if needed
+    if (includeDetails && !anime.synopsis) {
+        const detailedAnime = await getAnimeFromStore(id, false);
+        if (detailedAnime?.synopsis) {
+            anime.synopsis = detailedAnime.synopsis;
+            if (!anime.source && detailedAnime.source) {
+                anime.source = detailedAnime.source;
+            }
+            const redis = getRedis();
+            try {
+                await redis.setex(REDIS_KEYS.ANIME_BY_ID(id), REDIS_TTL.ANIME_BY_ID, JSON.stringify(anime));
+            } catch {}
+        }
     }
-    return remote;
+
+    return anime;
 }
 
 export async function getFuseIndex(): Promise<Fuse<Anime>> {
-    await loadAnimeData();
+    await ensureFuseIndex();
     return fuseIndex!;
 }
 
-export async function getTitleIndex(): Promise<Map<string, Anime>> {
-    await loadAnimeData();
-    return animeTitleIndex!;
-}
-
 export async function findAnimeByTitle(title: string): Promise<Anime | null> {
-    const titleIndex = await getTitleIndex();
-    const normalized = normalizeTitle(title);
-
-    const exactMatch = titleIndex.get(normalized);
-    if (exactMatch) {
-        return exactMatch;
-    }
-
     const fuse = await getFuseIndex();
     const results = fuse.search(title, { limit: 1 });
 
@@ -326,20 +408,8 @@ export async function searchAnime(query: string, limit: number = 20, hideSpecial
 const FEATURED_ANIME_IDS = [8425, 41457, 4789, 27775, 22297, 1195, 355];
 
 export async function getFeaturedAnime(): Promise<Anime[]> {
-    const allAnime = await loadAnimeData();
-
-    if (!animeByIdCache) {
-        animeByIdCache = new Map(allAnime.map(a => [a.id, a]));
-    }
-
-    const featured: Anime[] = [];
-    for (const id of FEATURED_ANIME_IDS) {
-        const anime = animeByIdCache.get(id);
-        if (anime) {
-            featured.push(anime);
-        }
-    }
-    return featured;
+    const results = await Promise.all(FEATURED_ANIME_IDS.map(id => getAnimeFromStore(id, true)));
+    return results.filter((anime): anime is Anime => anime !== null);
 }
 
 export type BrowseSortType = "rating" | "newest";
@@ -350,7 +420,10 @@ export async function browseAnime(
     sort: BrowseSortType = "rating",
     hideSpecials: boolean = false,
 ): Promise<{ anime: Anime[]; total: number }> {
-    const allAnime = await loadAnimeData();
+    const allAnime = await loadFromRedis();
+    if (!allAnime) {
+        return { anime: [], total: 0 };
+    }
 
     const featuredSet = new Set(FEATURED_ANIME_IDS);
 

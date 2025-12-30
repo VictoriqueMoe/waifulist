@@ -1,9 +1,19 @@
 import { ImageResponse } from "next/og";
 import { getRecentAnime, getTopRatedAnime, getUserByPublicId, getWatchedCount } from "@/lib/db";
 import { getAnimeById } from "@/services/animeData";
+import { getRedis, REDIS_KEYS, REDIS_TTL } from "@/lib/redis";
 
 export const size = { width: 1200, height: 630 };
-export const revalidate = 3600; // Cache for 1 hour
+
+function createHash(data: string): string {
+    let hash = 0;
+    for (let i = 0; i < data.length; i++) {
+        const char = data.charCodeAt(i);
+        hash = (hash << 5) - hash + char;
+        hash = hash & hash;
+    }
+    return Math.abs(hash).toString(36);
+}
 
 export default async function OGImage({ params }: { params: Promise<{ uuid: string }> }) {
     const { uuid } = await params;
@@ -35,6 +45,20 @@ export default async function OGImage({ params }: { params: Promise<{ uuid: stri
         topAnimeIds.push(...recent.map(item => item.anime_id));
     }
 
+    const cacheHash = createHash(`${user.username}:${itemCount}:${topAnimeIds.join(",")}`);
+    const cacheKey = REDIS_KEYS.OG_IMAGE(uuid, cacheHash);
+
+    // Check Redis cache
+    const redis = getRedis();
+    try {
+        const cached = await redis.getBuffer(cacheKey);
+        if (cached) {
+            return new Response(new Uint8Array(cached), {
+                headers: { "Content-Type": "image/png" },
+            });
+        }
+    } catch {}
+
     const animeCovers: string[] = [];
     for (const id of topAnimeIds) {
         const anime = await getAnimeById(id, false);
@@ -57,7 +81,7 @@ export default async function OGImage({ params }: { params: Promise<{ uuid: stri
         { top: 400, left: 50, rotate: -35, size: 16, opacity: 0.25 },
     ];
 
-    return new ImageResponse(
+    const imageResponse = new ImageResponse(
         <div
             style={{
                 display: "flex",
@@ -177,4 +201,16 @@ export default async function OGImage({ params }: { params: Promise<{ uuid: stri
         </div>,
         { ...size },
     );
+
+    try {
+        const arrayBuffer = await imageResponse.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        await redis.set(cacheKey, buffer, "EX", REDIS_TTL.OG_IMAGE);
+
+        return new Response(new Uint8Array(arrayBuffer), {
+            headers: { "Content-Type": "image/png" },
+        });
+    } catch {
+        return imageResponse;
+    }
 }

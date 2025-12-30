@@ -9,7 +9,21 @@ services:
       - waifulist-data:/app/data
     env_file:
       - .env
+    depends_on:
+      - redis
     restart: always
+
+  redis:
+    image: redis:latest
+    container_name: redis_waifulist
+    restart: always
+    command: [ "redis-server", "--maxmemory", "1gb", "--maxmemory-policy", "allkeys-lru" ]
+    networks:
+      default:
+        aliases:
+          - redis_waifulist
+    ports:
+      - "127.0.0.1:6339:6379"
 
 volumes:
   waifulist-data:

@@ -1,9 +1,15 @@
 export async function register() {
     if (process.env.NEXT_RUNTIME === "nodejs") {
         const { startScheduler } = await import("./app/services/scheduler");
-        const { loadAnimeData } = await import("./app/services/animeData");
+        const { ensureFuseIndex } = await import("./app/services/animeData");
+        const { closeRedis } = await import("./app/lib/redis");
 
         startScheduler();
-        loadAnimeData();
+        ensureFuseIndex();
+
+        process.on("SIGTERM", async () => {
+            await closeRedis();
+            process.exit(0);
+        });
     }
 }

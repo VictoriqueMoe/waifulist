@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { getFuseIndex, getTitleIndex } from "@/services/animeData";
+import { getFuseIndex } from "@/services/animeData";
 import { Anime } from "@/types/anime";
 
 export async function POST(request: NextRequest): Promise<Response> {
@@ -28,13 +28,7 @@ export async function POST(request: NextRequest): Promise<Response> {
             .map(line => line.trim())
             .filter(line => line.length > 0);
 
-        const [titleIndex, fuse] = await Promise.all([getTitleIndex(), getFuseIndex()]);
-
-        const normalizeTitle = (title: string) =>
-            title
-                .toLowerCase()
-                .trim()
-                .replace(/[^\w\s]/g, "");
+        const fuse = await getFuseIndex();
 
         const encoder = new TextEncoder();
         let cancelled = false;
@@ -44,7 +38,6 @@ export async function POST(request: NextRequest): Promise<Response> {
                 const matched: { title: string; anime: Anime }[] = [];
                 const unmatched: string[] = [];
                 const total = lines.length;
-                let fuzzySearchCount = 0;
 
                 try {
                     for (let i = 0; i < lines.length; i++) {
@@ -54,20 +47,10 @@ export async function POST(request: NextRequest): Promise<Response> {
                         }
 
                         const title = lines[i];
-                        const normalized = normalizeTitle(title);
+                        const results = fuse.search(title, { limit: 1 });
 
-                        let anime = titleIndex.get(normalized);
-
-                        if (!anime) {
-                            fuzzySearchCount++;
-                            const results = fuse.search(title, { limit: 1 });
-                            if (results.length > 0 && results[0].score !== undefined && results[0].score < 0.35) {
-                                anime = results[0].item;
-                            }
-                        }
-
-                        if (anime) {
-                            matched.push({ title, anime });
+                        if (results.length > 0 && results[0].score !== undefined && results[0].score < 0.35) {
+                            matched.push({ title, anime: results[0].item });
                         } else {
                             unmatched.push(title);
                         }
@@ -88,9 +71,7 @@ export async function POST(request: NextRequest): Promise<Response> {
                         }
                     }
 
-                    console.log(
-                        `Import complete: ${matched.length} exact matches, ${fuzzySearchCount} fuzzy searches needed`,
-                    );
+                    console.log(`Import complete: ${matched.length} matched, ${unmatched.length} unmatched`);
 
                     if (cancelled) {
                         return;
