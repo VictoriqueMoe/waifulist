@@ -36,9 +36,9 @@ async function fetchBatch(ids: number[]): Promise<Map<number, Anime>> {
 
             if (response.ok) {
                 const animeList: Anime[] = await response.json();
-                animeList.forEach(anime => {
+                for (const anime of animeList) {
                     result.set(anime.id, anime);
-                });
+                }
             }
         } catch (error) {
             console.error("Batch fetch failed:", error);

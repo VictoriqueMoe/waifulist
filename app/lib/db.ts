@@ -334,9 +334,11 @@ export function getWatchedCountByStatus(userId: number): Record<string, number> 
     const stmt = db.prepare("SELECT status, COUNT(*) as count FROM watched_anime WHERE user_id = ? GROUP BY status");
     const rows = stmt.all(userId) as { status: string; count: number }[];
     const counts: Record<string, number> = {};
-    rows.forEach(row => {
+
+    for (const row of rows) {
         counts[row.status] = row.count;
-    });
+    }
+
     return counts;
 }
 

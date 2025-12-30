@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllWatched, getUserByPublicId, getWatchedByStatus } from "@/lib/db";
-import { getAnimeById } from "@/services/animeData";
-import { Anime } from "@/types/anime";
+import { getAnimeFromRedisByIds } from "@/services/animeData";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ uuid: string }> }) {
     const { uuid } = await params;
@@ -17,14 +16,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const items = status ? getWatchedByStatus(user.id, status) : getAllWatched(user.id);
 
     const animeIds = items.map(item => item.anime_id);
-    const animeResults = await Promise.all(animeIds.map(id => getAnimeById(id, false, true)));
+    const animeMap = await getAnimeFromRedisByIds(animeIds);
 
-    const animeData: Record<number, Anime> = {};
-    animeResults.forEach((anime, index) => {
-        if (anime) {
-            animeData[animeIds[index]] = anime;
-        }
-    });
+    const animeData: Record<number, unknown> = {};
+    for (const [id, anime] of animeMap) {
+        animeData[id] = anime;
+    }
 
     return NextResponse.json({
         username: user.username,

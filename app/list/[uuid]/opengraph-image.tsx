@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { getRecentAnime, getTopRatedAnime, getUserByPublicId, getWatchedCount } from "@/lib/db";
-import { getAnimeById } from "@/services/animeData";
+import { getAnimeFromRedisByIds } from "@/services/animeData";
 import { getRedis, REDIS_KEYS, REDIS_TTL } from "@/lib/redis";
 
 export const size = { width: 1200, height: 630 };
@@ -59,9 +59,10 @@ export default async function OGImage({ params }: { params: Promise<{ uuid: stri
         }
     } catch {}
 
+    const animeMap = await getAnimeFromRedisByIds(topAnimeIds);
     const animeCovers: string[] = [];
     for (const id of topAnimeIds) {
-        const anime = await getAnimeById(id, false);
+        const anime = animeMap.get(id);
         if (anime?.main_picture?.large) {
             const jpgUrl = anime.main_picture.large.replace(".webp", ".jpg");
             animeCovers.push(jpgUrl);

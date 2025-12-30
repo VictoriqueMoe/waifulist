@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getAllWatched } from "@/lib/db";
-import { getAnimeByIds } from "@/services/animeData";
+import { getAnimeFromRedisByIds } from "@/services/animeData";
 
 export async function GET() {
     const start = Date.now();
@@ -20,13 +20,14 @@ export async function GET() {
     const animeIds = items.map(item => item.anime_id);
 
     const redisStart = Date.now();
-    const animeMap = await getAnimeByIds(animeIds);
+    const animeMap = await getAnimeFromRedisByIds(animeIds);
     const redisTime = Date.now() - redisStart;
 
     const animeData: Record<number, unknown> = {};
-    animeMap.forEach((anime, id) => {
+
+    for (const [id, anime] of animeMap) {
         animeData[id] = anime;
-    });
+    }
 
     const totalTime = Date.now() - start;
     console.log(

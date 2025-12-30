@@ -47,25 +47,16 @@ export function WatchListProvider({ children }: { children: React.ReactNode }) {
             if (response.ok) {
                 const data = await response.json();
                 const map = new Map<number, WatchedAnime>();
-                data.items.forEach(
-                    (item: {
-                        anime_id: number;
-                        status: string;
-                        episodes_watched: number;
-                        rating: number | null;
-                        date_added: string;
-                        date_updated: string;
-                    }) => {
-                        map.set(item.anime_id, {
-                            animeId: item.anime_id,
-                            status: item.status as WatchStatus,
-                            episodesWatched: item.episodes_watched,
-                            rating: item.rating ?? undefined,
-                            dateAdded: item.date_added,
-                            dateUpdated: item.date_updated,
-                        });
-                    },
-                );
+                for (const item of data.items) {
+                    map.set(item.anime_id, {
+                        animeId: item.anime_id,
+                        status: item.status as WatchStatus,
+                        episodesWatched: item.episodes_watched,
+                        rating: item.rating ?? undefined,
+                        dateAdded: item.date_added,
+                        dateUpdated: item.date_updated,
+                    });
+                }
                 setWatchedList(map);
                 setLoaded(true);
             }

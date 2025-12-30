@@ -413,7 +413,7 @@ export async function getAnimeById(
 /**
  * Batch fetch anime by IDs using Redis MGET (single round-trip)
  */
-export async function getAnimeByIds(ids: number[]): Promise<Map<number, Anime>> {
+export async function getAnimeFromRedisByIds(ids: number[]): Promise<Map<number, Anime>> {
     const result = new Map<number, Anime>();
     if (ids.length === 0) {
         return result;
@@ -424,11 +424,12 @@ export async function getAnimeByIds(ids: number[]): Promise<Map<number, Anime>> 
 
     try {
         const values = await redis.mget(...keys);
-        values.forEach((value, index) => {
+        for (let i = 0; i < values.length; i++) {
+            const value = values[i];
             if (value) {
-                result.set(ids[index], JSON.parse(value) as Anime);
+                result.set(ids[i], JSON.parse(value) as Anime);
             }
-        });
+        }
     } catch (error) {
         console.error("[Redis] MGET failed:", error);
     }

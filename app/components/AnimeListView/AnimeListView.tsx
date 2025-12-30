@@ -130,9 +130,11 @@ export function AnimeListView({
 
     const getCounts = useCallback(() => {
         const counts: Record<string, number> = { all: watchedItems.length };
-        statusOrder.forEach(status => {
+
+        for (const status of statusOrder) {
             counts[status] = watchedItems.filter(item => item.status === status).length;
-        });
+        }
+
         return counts;
     }, [watchedItems]);
 
