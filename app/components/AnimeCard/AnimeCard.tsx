@@ -87,6 +87,31 @@ export function AnimeCard({ anime, showStatus = true, watchData: watchDataProp }
                         {formatDateAdded(watchData.dateAdded)}
                     </div>
                 )}
+                {watchData?.rating != null && watchData.rating !== 0 && (
+                    <div
+                        className={`${styles.userRating} ${watchData.rating === 6 ? styles.masterpiece : ""} ${watchData.rating === -1 ? styles.dogshit : ""}`}
+                        title={
+                            watchData.rating === 6
+                                ? "Masterpiece"
+                                : watchData.rating === -1
+                                  ? "Dogshit"
+                                  : `${watchData.rating}/5`
+                        }
+                    >
+                        {watchData.rating === 6 ? (
+                            <>
+                                <i className="bi bi-star-fill" />
+                                <span>Masterpiece</span>
+                            </>
+                        ) : watchData.rating === -1 ? (
+                            <span>💩</span>
+                        ) : (
+                            [...Array(5)].map((_, i) => (
+                                <i key={i} className={`bi bi-star${i < watchData.rating! ? "-fill" : ""}`} />
+                            ))
+                        )}
+                    </div>
+                )}
             </div>
         </Link>
     );

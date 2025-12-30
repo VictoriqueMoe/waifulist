@@ -278,6 +278,18 @@
         }
     }
 
+    &.dogshit {
+        margin-right: $spacing-xs;
+        font-size: 1.25rem;
+        filter: grayscale(100%);
+        transition: filter $transition-fast;
+
+        &:hover,
+        &.active {
+            filter: grayscale(0%);
+        }
+    }
+
     i {
         font-size: 1.25rem;
     }

@@ -178,15 +178,22 @@ export function AnimePageClient({ anime }: AnimePageClientProps) {
                                 <div className={styles.trackingItem}>
                                     <label>Your rating</label>
                                     <div className={styles.ratingInput}>
+                                        <button
+                                            className={`${styles.star} ${styles.dogshit} ${watchData.rating === -1 ? styles.active : ""}`}
+                                            onClick={() => handleRatingChange(watchData.rating === -1 ? 0 : -1)}
+                                            title="Dogshit"
+                                        >
+                                            💩
+                                        </button>
                                         {[1, 2, 3, 4, 5].map(star => (
                                             <button
                                                 key={star}
-                                                className={`${styles.star} ${(watchData.rating || 0) >= star ? styles.active : ""}`}
+                                                className={`${styles.star} ${(watchData.rating || 0) >= star && watchData.rating !== -1 ? styles.active : ""}`}
                                                 onClick={() => handleRatingChange(watchData.rating === star ? 0 : star)}
                                                 title={`${star} star${star > 1 ? "s" : ""}`}
                                             >
                                                 <i
-                                                    className={`bi bi-star${(watchData.rating || 0) >= star ? "-fill" : ""}`}
+                                                    className={`bi bi-star${(watchData.rating || 0) >= star && watchData.rating !== -1 ? "-fill" : ""}`}
                                                 />
                                             </button>
                                         ))}
@@ -197,9 +204,13 @@ export function AnimePageClient({ anime }: AnimePageClientProps) {
                                         >
                                             <i className={`bi bi-star${watchData.rating === 6 ? "-fill" : ""}`} />
                                         </button>
-                                        {watchData.rating && (
+                                        {watchData.rating != null && watchData.rating !== 0 && (
                                             <span className={styles.ratingValue}>
-                                                {watchData.rating === 6 ? "Masterpiece" : `${watchData.rating}/5`}
+                                                {watchData.rating === 6
+                                                    ? "Masterpiece"
+                                                    : watchData.rating === -1
+                                                      ? "Dogshit"
+                                                      : `${watchData.rating}/5`}
                                             </span>
                                         )}
                                     </div>
