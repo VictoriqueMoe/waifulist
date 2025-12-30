@@ -1,10 +1,10 @@
 import Fuse, { IFuseOptions } from "fuse.js";
 import { Anime } from "@/types/anime";
 import { getRedis, getSubscriber, REDIS_KEYS, REDIS_TTL } from "@/lib/redis";
+import { fetchAnimeFromCdn } from "@/lib/cdn";
 
 const CSV_URL =
     "https://raw.githubusercontent.com/meesvandongen/anime-dataset/refs/heads/main/data/anime-standalone.csv";
-const CDN_BASE_URL = "https://raw.githubusercontent.com/meesvandongen/anime-dataset/main/data";
 
 // In-memory Fuse index (cannot serialize to Redis)
 let fuseIndex: Fuse<Anime> | null = null;
@@ -314,36 +314,19 @@ async function getAnimeFromStore(id: number, skipCdnFallback: boolean = false): 
     }
 
     // Fetch from CDN
-    try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5000);
-        const response = await fetch(`${CDN_BASE_URL}/anime/${id}.json`, {
-            signal: controller.signal,
-        });
-        clearTimeout(timeout);
-
-        if (!response.ok) {
-            return null;
-        }
-
-        const anime: Anime = await response.json();
-
-        // Cache to Redis
-        try {
-            await redis.setex(REDIS_KEYS.ANIME_BY_ID(id), REDIS_TTL.ANIME_BY_ID, JSON.stringify(anime));
-        } catch (cacheError) {
-            console.error(`[Redis] Failed to cache anime ${id}:`, cacheError);
-        }
-
-        return anime;
-    } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") {
-            console.error(`[AnimeStore] Fetch anime ${id} from CDN timed out`);
-        } else {
-            console.error(`[AnimeStore] Failed to fetch anime ${id} from CDN:`, error);
-        }
+    const anime = await fetchAnimeFromCdn(id);
+    if (!anime) {
         return null;
     }
+
+    // Cache to Redis
+    try {
+        await redis.setex(REDIS_KEYS.ANIME_BY_ID(id), REDIS_TTL.ANIME_BY_ID, JSON.stringify(anime));
+    } catch (cacheError) {
+        console.error(`[Redis] Failed to cache anime ${id}:`, cacheError);
+    }
+
+    return anime;
 }
 
 export async function getAnimeById(
@@ -358,9 +341,9 @@ export async function getAnimeById(
         return null;
     }
 
-    // Fetch additional details from CDN if needed
+    // Fetch additional details from CDN if needed (bypass Redis cache)
     if (includeDetails && !anime.synopsis) {
-        const detailedAnime = await getAnimeFromStore(id, false);
+        const detailedAnime = await fetchAnimeFromCdn(id);
         if (detailedAnime?.synopsis) {
             anime.synopsis = detailedAnime.synopsis;
             if (!anime.source && detailedAnime.source) {
