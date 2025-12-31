@@ -20,8 +20,12 @@ interface AnimeCardProps {
     watchData?: AnimeCardWatchData | null;
 }
 
+function parseUtcDate(dateString: string): Date {
+    return new Date(dateString.includes("Z") ? dateString : dateString.replace(" ", "T") + "Z");
+}
+
 function formatDateAdded(dateString: string): string {
-    const date = new Date(dateString);
+    const date = parseUtcDate(dateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -82,7 +86,7 @@ export function AnimeCard({ anime, showStatus = true, watchData: watchDataProp }
                     <span className={styles.episodes}>{anime.num_episodes ? `${anime.num_episodes} eps` : "N/A"}</span>
                 </div>
                 {watchData && (
-                    <div className={styles.dateAdded} title={new Date(watchData.dateAdded).toLocaleString()}>
+                    <div className={styles.dateAdded} title={parseUtcDate(watchData.dateAdded).toLocaleString()}>
                         <i className="bi bi-calendar-plus" />
                         {formatDateAdded(watchData.dateAdded)}
                     </div>
