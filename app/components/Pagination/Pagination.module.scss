@@ -4,12 +4,127 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: $spacing-md;
+    gap: $spacing-xs;
     margin-top: $spacing-xl;
     padding: $spacing-md;
+    flex-wrap: wrap;
 }
 
-.pageInfo {
+.navButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border-primary);
+    border-radius: $radius-md;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        border-color: var(--accent-primary);
+    }
+
+    &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+}
+
+.pageNumbers {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+}
+
+.pageButton {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 $spacing-sm;
+    border: 1px solid var(--border-primary);
+    border-radius: $radius-md;
+    background: var(--bg-secondary);
     color: var(--text-secondary);
     font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(.active) {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+    }
+
+    &.active {
+        background: var(--accent-primary);
+        border-color: var(--accent-primary);
+        color: white;
+        font-weight: 600;
+    }
+}
+
+.ellipsis {
+    color: var(--text-tertiary);
+    padding: 0 $spacing-xs;
+    user-select: none;
+}
+
+.jumpToPage {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    margin-left: $spacing-sm;
+}
+
+.pageInput {
+    width: 60px;
+    height: 36px;
+    padding: 0 $spacing-sm;
+    border: 1px solid var(--border-primary);
+    border-radius: $radius-md;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    text-align: center;
+
+    &::placeholder {
+        color: var(--text-tertiary);
+    }
+
+    &:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+    }
+
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    -moz-appearance: textfield;
+}
+
+.goButton {
+    height: 36px;
+    padding: 0 $spacing-md;
+    border: 1px solid var(--accent-primary);
+    border-radius: $radius-md;
+    background: var(--accent-primary);
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+        background: var(--accent-hover);
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
 }
