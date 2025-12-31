@@ -14,6 +14,7 @@ interface AuthContextType {
     login: (username: string, password: string, turnstileToken: string) => Promise<{ error?: string }>;
     register: (username: string, password: string, turnstileToken: string) => Promise<{ error?: string }>;
     logout: () => Promise<void>;
+    updateUsername: (newUsername: string, password: string) => Promise<{ error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -91,7 +92,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
     }, []);
 
-    return <AuthContext.Provider value={{ user, loading, login, register, logout }}>{children}</AuthContext.Provider>;
+    const updateUsername = useCallback(async (newUsername: string, password: string): Promise<{ error?: string }> => {
+        try {
+            const response = await fetch("/api/auth/username", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: newUsername, password }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                return { error: data.error || "Failed to update username" };
+            }
+
+            setUser(data.user);
+            return {};
+        } catch {
+            return { error: "Failed to update username" };
+        }
+    }, []);
+
+    return (
+        <AuthContext.Provider value={{ user, loading, login, register, logout, updateUsername }}>
+            {children}
+        </AuthContext.Provider>
+    );
 }
 
 export function useAuth() {

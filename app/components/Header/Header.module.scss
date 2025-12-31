@@ -138,6 +138,24 @@
     }
 }
 
+.settingsLink {
+    @include flex-center;
+    padding: $spacing-sm;
+    color: var(--text-secondary);
+    border-radius: $radius-md;
+    transition: all $transition-fast;
+    text-decoration: none;
+
+    &:hover {
+        color: var(--accent-primary);
+        background: var(--bg-tertiary);
+    }
+
+    i {
+        font-size: 1.125rem;
+    }
+}
+
 .logoutButton {
     @include flex-center;
     padding: $spacing-sm;

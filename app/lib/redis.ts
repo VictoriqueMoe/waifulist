@@ -69,3 +69,22 @@ export const REDIS_TTL = {
     ANIME_BY_ID: 60 * 60 * 24, // 24 hours (CDN-fetched)
     OG_IMAGE: 60 * 60, // 1 hour
 } as const;
+
+export async function invalidateOgImageCache(uuid: string): Promise<number> {
+    const redis = getRedis();
+    const pattern = `og:${uuid}:*`;
+    let deletedCount = 0;
+    let cursor = "0";
+
+    do {
+        const [nextCursor, keys] = await redis.scan(cursor, "MATCH", pattern, "COUNT", 100);
+        cursor = nextCursor;
+
+        if (keys.length > 0) {
+            const deleted = await redis.del(...keys);
+            deletedCount += deleted;
+        }
+    } while (cursor !== "0");
+
+    return deletedCount;
+}

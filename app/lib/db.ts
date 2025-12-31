@@ -143,6 +143,35 @@ export function getUserByPublicId(publicId: string): User | null {
     return stmt.get(publicId) as User | null;
 }
 
+export function updateUsername(userId: number, newUsername: string): User {
+    const updateTransaction = db.transaction(() => {
+        const stmt = db.prepare("UPDATE users SET username = ? WHERE id = ?");
+        const result = stmt.run(newUsername, userId);
+
+        if (result.changes === 0) {
+            throw new DatabaseError(`User with id ${userId} not found`, "updateUsername");
+        }
+
+        const user = getUserById(userId);
+        if (!user) {
+            throw new DatabaseError("User updated but could not be retrieved", "updateUsername");
+        }
+        return user;
+    });
+
+    try {
+        return updateTransaction();
+    } catch (error) {
+        if (error instanceof DatabaseError) {
+            throw error;
+        }
+        if (error instanceof Error && error.message.includes("UNIQUE constraint failed")) {
+            throw new DatabaseError(`Username '${newUsername}' is already taken`, "updateUsername", error);
+        }
+        throw new DatabaseError("Failed to update username", "updateUsername", error);
+    }
+}
+
 export interface WatchedAnimeRow {
     id: number;
     user_id: number;

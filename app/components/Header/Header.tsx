@@ -66,6 +66,9 @@ export function Header() {
                                     <span className={styles.username}>
                                         <i className="bi bi-person-circle" /> {user.username}
                                     </span>
+                                    <Link href="/settings" className={styles.settingsLink} title="Settings">
+                                        <i className="bi bi-gear" />
+                                    </Link>
                                     <button onClick={logout} className={styles.logoutButton}>
                                         <i className="bi bi-box-arrow-right" />
                                     </button>
