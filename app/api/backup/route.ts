@@ -4,7 +4,7 @@ import { getAllWatched } from "@/lib/db";
 export async function POST(): Promise<Response> {
     const user = await getCurrentUser();
     if (!user) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        return new Response(JSON.stringify({ error: "Unauthorised" }), {
             status: 401,
             headers: { "Content-Type": "application/json" },
         });

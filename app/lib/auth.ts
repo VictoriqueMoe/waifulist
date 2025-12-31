@@ -73,7 +73,7 @@ export async function getCurrentUser(): Promise<User | null> {
 export async function requireAuth(): Promise<User> {
     const user = await getCurrentUser();
     if (!user) {
-        throw new Error("Unauthorized");
+        throw new Error("Unauthorised");
     }
     return user;
 }

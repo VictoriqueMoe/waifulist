@@ -6,7 +6,7 @@ import { Anime } from "@/types/anime";
 export async function POST(request: NextRequest): Promise<Response> {
     const user = await getCurrentUser();
     if (!user) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        return new Response(JSON.stringify({ error: "Unauthorised" }), {
             status: 401,
             headers: { "Content-Type": "application/json" },
         });
