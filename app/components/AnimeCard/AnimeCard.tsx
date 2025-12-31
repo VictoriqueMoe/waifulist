@@ -22,8 +22,9 @@ interface AnimeCardProps {
 
 function formatDateAdded(dateString: string): string {
     const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
+    const serverDate = date.getTime() - 1000 * 60 * 60; // (CET -> UTC)
+    const now = new Date(new Date().toUTCString().substring(0, 25)).getTime();
+    const diffMs = now - serverDate;
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
     if (diffDays === 0) {
