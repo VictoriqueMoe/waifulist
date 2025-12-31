@@ -6,10 +6,10 @@ import { fetchAnimeFromCdn } from "@/lib/cdn";
 const CSV_URL =
     "https://raw.githubusercontent.com/meesvandongen/anime-dataset/refs/heads/main/data/anime-standalone.csv";
 
-// In-memory Fuse index (cannot serialize to Redis)
+// In-memory Fuse index (cannot serialise to Redis)
 let fuseIndex: Fuse<Anime> | null = null;
 let fuseLoadingPromise: Promise<void> | null = null;
-let subscriberInitialized = false;
+let subscriberInitialised = false;
 
 const FUSE_OPTIONS: IFuseOptions<Anime> = {
     keys: [
@@ -25,7 +25,7 @@ const FUSE_OPTIONS: IFuseOptions<Anime> = {
 
 const FEATURED_ANIME_IDS = [8425, 41457, 4789, 27775, 22297, 1195, 355];
 
-function normalizeTitle(title: string): string {
+function normaliseTitle(title: string): string {
     return title
         .toLowerCase()
         .trim()
@@ -218,24 +218,19 @@ async function saveTitleIndex(animeList: Anime[]): Promise<void> {
     const redis = getRedis();
     const pipeline = redis.pipeline();
 
-    // Clear existing title index
     pipeline.del(REDIS_KEYS.ANIME_TITLE_INDEX);
 
-    // Build title -> anime ID mapping (romanji main title + English alternative)
     for (const anime of animeList) {
-        // Main title is typically romanji (e.g., "Kore wa Zombie Desu ka?")
-        const mainTitle = normalizeTitle(anime.title);
+        const mainTitle = normaliseTitle(anime.title);
         if (mainTitle) {
             pipeline.hset(REDIS_KEYS.ANIME_TITLE_INDEX, mainTitle, anime.id.toString());
         }
-        // English title (e.g., "Is This a Zombie?")
         if (anime.alternative_titles?.en) {
-            const enTitle = normalizeTitle(anime.alternative_titles.en);
+            const enTitle = normaliseTitle(anime.alternative_titles.en);
             if (enTitle) {
                 pipeline.hset(REDIS_KEYS.ANIME_TITLE_INDEX, enTitle, anime.id.toString());
             }
         }
-        // Skip ja - it's Japanese script which normalizeTitle strips to empty string
     }
 
     pipeline.expire(REDIS_KEYS.ANIME_TITLE_INDEX, REDIS_TTL.ANIME_LIST);
@@ -294,11 +289,11 @@ async function publishRefresh(): Promise<void> {
     }
 }
 
-function initializeSubscriber(): void {
-    if (subscriberInitialized) {
+function initialiseSubscriber(): void {
+    if (subscriberInitialised) {
         return;
     }
-    subscriberInitialized = true;
+    subscriberInitialised = true;
 
     const subscriber = getSubscriber();
 
@@ -318,8 +313,7 @@ function initializeSubscriber(): void {
 }
 
 export async function ensureFuseIndex(): Promise<void> {
-    // Initialize subscriber for cluster sync
-    initializeSubscriber();
+    initialiseSubscriber();
 
     if (fuseIndex) {
         return;
@@ -497,10 +491,10 @@ export async function getFuseIndex(): Promise<Fuse<Anime>> {
 
 export async function lookupByTitle(title: string): Promise<Anime | null> {
     const redis = getRedis();
-    const normalized = normalizeTitle(title);
+    const normalised = normaliseTitle(title);
 
     try {
-        const animeId = await redis.hget(REDIS_KEYS.ANIME_TITLE_INDEX, normalized);
+        const animeId = await redis.hget(REDIS_KEYS.ANIME_TITLE_INDEX, normalised);
         if (animeId) {
             return await getAnimeById(parseInt(animeId, 10), false, true);
         }

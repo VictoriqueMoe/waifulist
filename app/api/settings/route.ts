@@ -6,7 +6,7 @@ import type { UserSettings } from "@/types/settings";
 export async function GET() {
     const user = await getCurrentUser();
     if (!user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
     }
 
     const settings = getUserSettings(user.id);
@@ -16,7 +16,7 @@ export async function GET() {
 export async function PATCH(request: NextRequest) {
     const user = await getCurrentUser();
     if (!user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
     }
 
     try {

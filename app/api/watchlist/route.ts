@@ -12,7 +12,7 @@ import {
 export async function GET(request: NextRequest) {
     const user = await getCurrentUser();
     if (!user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     const user = await getCurrentUser();
     if (!user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
     }
 
     try {

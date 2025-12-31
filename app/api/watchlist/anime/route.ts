@@ -10,7 +10,7 @@ export async function GET() {
     const authTime = Date.now() - start;
 
     if (!user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
     }
 
     const dbStart = Date.now();
