@@ -57,7 +57,7 @@ export async function POST(request: NextRequest): Promise<Response> {
                         if (!anime) {
                             fuzzySearchCount++;
                             const results = fuse.search(title, { limit: 1 });
-                            if (results.length > 0 && results[0].score !== undefined && results[0].score < 0.35) {
+                            if (results.length > 0 && results[0].score !== undefined) {
                                 anime = results[0].item;
                             }
                         }
