@@ -8,6 +8,7 @@ interface ApiWatchedItem {
     anime_id: number;
     status: WatchStatus;
     rating: number | null;
+    notes: string | null;
     date_added: string;
 }
 
@@ -15,6 +16,7 @@ export interface PublicListItem {
     animeId: number;
     status: WatchStatus;
     rating: number | null;
+    notes: string | null;
     dateAdded: string;
 }
 
@@ -45,6 +47,7 @@ export function usePublicList() {
                     animeId: item.anime_id,
                     status: item.status,
                     rating: item.rating,
+                    notes: item.notes,
                     dateAdded: item.date_added,
                 }));
 

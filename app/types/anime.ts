@@ -36,7 +36,7 @@ export interface WatchedAnime {
     status: WatchStatus;
     episodesWatched: number;
     rating?: number;
-    notes?: string;
+    notes?: string | null;
     dateAdded: string;
     dateUpdated: string;
 }

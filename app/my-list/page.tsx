@@ -94,6 +94,7 @@ export default function MyListPage() {
             animeId: item.animeId,
             status: item.status,
             rating: item.rating ?? null,
+            notes: item.notes,
             dateAdded: item.dateAdded,
         }));
     }, [watchedItems]);

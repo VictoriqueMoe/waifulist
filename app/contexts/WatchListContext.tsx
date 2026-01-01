@@ -22,7 +22,7 @@ interface WatchListContextType {
 
 const WatchListContext = createContext<WatchListContextType | undefined>(undefined);
 
-export function WatchListProvider({ children }: { children: React.ReactNode }) {
+export function WatchListProvider({ children }: React.PropsWithChildren) {
     const { user } = useAuth();
     const [watchedList, setWatchedList] = useState<Map<number, WatchedAnime>>(new Map());
     const [loading, setLoading] = useState(false);
@@ -53,6 +53,7 @@ export function WatchListProvider({ children }: { children: React.ReactNode }) {
                         status: item.status as WatchStatus,
                         episodesWatched: item.episodes_watched,
                         rating: item.rating ?? undefined,
+                        notes: item.notes ?? undefined,
                         dateAdded: item.date_added,
                         dateUpdated: item.date_updated,
                     });
@@ -98,6 +99,7 @@ export function WatchListProvider({ children }: { children: React.ReactNode }) {
                             status: data.item.status as WatchStatus,
                             episodesWatched: data.item.episodes_watched,
                             rating: data.item.rating ?? undefined,
+                            notes: data.item.notes ?? undefined,
                             dateAdded: data.item.date_added,
                             dateUpdated: data.item.date_updated,
                         });
@@ -151,6 +153,7 @@ export function WatchListProvider({ children }: { children: React.ReactNode }) {
                         status: updates.status,
                         episodesWatched: updates.episodesWatched,
                         rating: updates.rating,
+                        notes: updates.notes,
                     }),
                 });
 
@@ -164,6 +167,7 @@ export function WatchListProvider({ children }: { children: React.ReactNode }) {
                                 status: data.item.status as WatchStatus,
                                 episodesWatched: data.item.episodes_watched,
                                 rating: data.item.rating ?? undefined,
+                                notes: data.item.notes ?? undefined,
                                 dateAdded: data.item.date_added,
                                 dateUpdated: data.item.date_updated,
                             });

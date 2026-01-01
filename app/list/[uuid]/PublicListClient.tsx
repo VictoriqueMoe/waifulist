@@ -57,6 +57,7 @@ export function PublicListClient({ uuid, initialUsername }: PublicListClientProp
                         animeId: item.animeId,
                         status: item.status,
                         rating: item.rating,
+                        notes: item.notes,
                         dateAdded: item.dateAdded,
                     })),
                 );

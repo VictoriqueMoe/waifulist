@@ -44,6 +44,7 @@ db.exec(`
         status TEXT NOT NULL,
         episodes_watched INTEGER DEFAULT 0,
         rating INTEGER DEFAULT NULL,
+        notes TEXT DEFAULT NULL,
         date_added TEXT NOT NULL DEFAULT (datetime('now')),
         date_updated TEXT NOT NULL DEFAULT (datetime('now')),
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -70,6 +71,7 @@ function addColumnIfNotExists(table: string, column: string, definition: string)
 }
 
 addColumnIfNotExists("watched_anime", "rating", "INTEGER DEFAULT NULL");
+addColumnIfNotExists("watched_anime", "notes", "TEXT DEFAULT NULL");
 addColumnIfNotExists("users", "public_id", "TEXT");
 
 const backfillPublicIds = db.transaction(() => {
@@ -179,6 +181,7 @@ export interface WatchedAnimeRow {
     status: string;
     episodes_watched: number;
     rating: number | null;
+    notes: string | null;
     date_added: string;
     date_updated: string;
 }
@@ -212,12 +215,13 @@ export function addToWatchList(userId: number, animeId: number, status: string):
 
 export function restoreWatchList(userId: number, rows: WatchedAnimeRow[]): number {
     const stmt = db.prepare(`
-        INSERT INTO watched_anime (user_id, anime_id, status, episodes_watched, rating, date_added, date_updated)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO watched_anime (user_id, anime_id, status, episodes_watched, rating, notes, date_added, date_updated)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(user_id, anime_id) DO UPDATE SET
         status = excluded.status,
         episodes_watched = excluded.episodes_watched,
         rating = excluded.rating,
+        notes = excluded.notes,
         date_added = excluded.date_added,
         date_updated = excluded.date_updated
     `);
@@ -231,6 +235,7 @@ export function restoreWatchList(userId: number, rows: WatchedAnimeRow[]): numbe
                 w.status,
                 w.episodes_watched,
                 w.rating,
+                w.notes ?? null,
                 w.date_added,
                 w.date_updated,
             );
@@ -280,7 +285,7 @@ export function bulkAddToWatchList(userId: number, animeIds: number[], status: s
 export function updateWatchStatus(
     userId: number,
     animeId: number,
-    updates: { status?: string; episodes_watched?: number; rating?: number | null },
+    updates: { status?: string; episodes_watched?: number; rating?: number | null; notes?: string | null },
 ): WatchedAnimeRow {
     const updateTransaction = db.transaction(() => {
         const fields: string[] = ["date_updated = datetime('now')"];
@@ -297,6 +302,10 @@ export function updateWatchStatus(
         if (updates.rating !== undefined) {
             fields.push("rating = ?");
             values.push(updates.rating);
+        }
+        if (updates.notes !== undefined) {
+            fields.push("notes = ?");
+            values.push(updates.notes);
         }
 
         values.push(userId, animeId);

@@ -1,0 +1,29 @@
+@use "../../styles/variables" as *;
+
+.pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: $radius-full;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.sm {
+    padding: 2px $spacing-sm;
+    font-size: 0.75rem;
+}
+
+.md {
+    padding: $spacing-xs $spacing-md;
+    font-size: 0.875rem;
+}
+
+.default {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+.accent {
+    background: var(--accent-gradient);
+    color: white;
+}

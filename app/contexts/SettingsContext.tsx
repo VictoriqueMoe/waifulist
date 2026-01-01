@@ -30,7 +30,7 @@ interface SettingsContextType {
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
-export function SettingsProvider({ children }: { children: React.ReactNode }) {
+export function SettingsProvider({ children }: React.PropsWithChildren) {
     const { user } = useAuth();
     const [settings, setSettings] = useState<ResolvedUserSettings>(DEFAULT_SETTINGS);
     const [loading, setLoading] = useState(true);

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Anime, WatchStatus } from "@/types/anime";
@@ -11,6 +11,7 @@ import styles from "./AnimeCard.module.scss";
 export interface AnimeCardWatchData {
     status: WatchStatus;
     rating: number | null;
+    notes?: string | null;
     dateAdded: string;
 }
 
@@ -53,8 +54,32 @@ export function AnimeCard({ anime, showStatus = true, watchData: watchDataProp, 
     const { getWatchData } = useWatchList();
     const contextWatchData = getWatchData(anime.id);
     const watchData = watchDataProp !== undefined ? watchDataProp : contextWatchData;
+    const [showNotePopover, setShowNotePopover] = useState(false);
+    const popoverRef = useRef<HTMLDivElement>(null);
 
     const imageUrl = anime.main_picture?.large || anime.main_picture?.medium || "/placeholder.png";
+    const hasNote = watchData?.notes && watchData.notes.trim().length > 0;
+
+    useEffect(() => {
+        if (!showNotePopover) {
+            return;
+        }
+
+        function handleClickOutside(event: MouseEvent) {
+            if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
+                setShowNotePopover(false);
+            }
+        }
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [showNotePopover]);
+
+    const handleNoteClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setShowNotePopover(!showNotePopover);
+    };
 
     return (
         <Link href={`/anime/${anime.id}`} className={styles.card}>
@@ -76,6 +101,17 @@ export function AnimeCard({ anime, showStatus = true, watchData: watchDataProp, 
                 {showStatus && watchData && (
                     <div className={styles.statusBadge}>
                         <StatusBadge status={watchData.status} compact />
+                    </div>
+                )}
+                {hasNote && (
+                    <button className={styles.noteBanner} onClick={handleNoteClick} aria-label="View note">
+                        <i className="bi bi-journal-text" />
+                        <span>Note</span>
+                    </button>
+                )}
+                {showNotePopover && hasNote && (
+                    <div ref={popoverRef} className={styles.notePopover} onClick={e => e.preventDefault()}>
+                        <div className={styles.notePopoverContent}>{watchData?.notes}</div>
                     </div>
                 )}
             </div>

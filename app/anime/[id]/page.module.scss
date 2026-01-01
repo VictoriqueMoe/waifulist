@@ -142,15 +142,6 @@
     }
 }
 
-.genre {
-    padding: $spacing-xs $spacing-md;
-    background: var(--accent-gradient);
-    border-radius: $radius-full;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: white;
-}
-
 .actions {
     display: flex;
     justify-content: center;
@@ -311,6 +302,117 @@
     margin-left: $spacing-sm;
     color: var(--text-secondary);
     font-weight: 500;
+}
+
+.notesHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.notesActions {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+}
+
+.savedIndicator {
+    font-size: 0.75rem;
+    color: var(--success, #22c55e);
+    font-weight: 500;
+    animation: fadeInOut 2s ease-out forwards;
+}
+
+.clearNoteButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid var(--border-primary);
+    border-radius: $radius-sm;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+        background: var(--error);
+        border-color: var(--error);
+        color: white;
+    }
+
+    i {
+        font-size: 0.75rem;
+    }
+}
+
+@keyframes fadeInOut {
+    0% {
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    80% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+.notesTextarea {
+    width: 100%;
+    min-height: 80px;
+    max-height: 200px;
+    padding: $spacing-md;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: $radius-md;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    resize: vertical;
+    transition:
+        border-color $transition-fast,
+        box-shadow $transition-fast;
+
+    &::placeholder {
+        color: var(--text-muted);
+    }
+
+    &:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb, 99, 102, 241), 0.15);
+    }
+}
+
+.notesFooter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: $spacing-xs;
+}
+
+.notesHint {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+
+    i {
+        font-size: 0.7rem;
+    }
+}
+
+.charCount {
+    font-size: 0.75rem;
+    color: var(--text-muted);
 }
 
 .synopsis {

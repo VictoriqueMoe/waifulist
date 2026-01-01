@@ -51,6 +51,73 @@
     right: $spacing-sm;
 }
 
+.noteBanner {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-xs;
+    padding: $spacing-xs 0;
+    background: var(--accent-primary, #6366f1);
+    border: none;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: background $transition-fast;
+    z-index: 2;
+
+    &:hover {
+        background: var(--accent-hover, #4f46e5);
+    }
+
+    i {
+        font-size: 0.7rem;
+    }
+}
+
+.notePopover {
+    position: absolute;
+    bottom: 32px;
+    left: $spacing-sm;
+    right: $spacing-sm;
+    max-height: 150px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: $radius-md;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+    animation: fadeIn 0.15s ease-out;
+    overflow: hidden;
+}
+
+.notePopoverContent {
+    padding: $spacing-sm $spacing-md;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+    max-height: 150px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .info {
     padding: $spacing-md;
 }

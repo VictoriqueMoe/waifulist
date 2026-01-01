@@ -12,6 +12,7 @@ export interface WatchedItem {
     animeId: number;
     status: WatchStatus;
     rating: number | null;
+    notes?: string | null;
     dateAdded: string;
 }
 
@@ -112,22 +113,22 @@ export function AnimeListView({
     const getPagedItems = useCallback((): { anime: Anime; watchData: AnimeCardWatchData }[] => {
         const startIndex = (page - 1) * PAGE_SIZE;
         const pageItems = filteredItems.slice(startIndex, startIndex + PAGE_SIZE);
-        return pageItems
-            .map(item => {
-                const anime = animeData.get(item.animeId);
-                if (!anime) {
-                    return null;
-                }
-                return {
+        const result: { anime: Anime; watchData: AnimeCardWatchData }[] = [];
+        for (const item of pageItems) {
+            const anime = animeData.get(item.animeId);
+            if (anime) {
+                result.push({
                     anime,
                     watchData: {
                         status: item.status,
                         rating: item.rating,
+                        notes: item.notes ?? undefined,
                         dateAdded: item.dateAdded,
                     },
-                };
-            })
-            .filter((item): item is { anime: Anime; watchData: AnimeCardWatchData } => item !== null);
+                });
+            }
+        }
+        return result;
     }, [filteredItems, page, animeData]);
 
     const getCounts = useCallback(() => {

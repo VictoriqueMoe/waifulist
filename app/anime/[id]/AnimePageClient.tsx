@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Anime, WatchStatus } from "@/types/anime";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWatchList } from "@/contexts/WatchListContext";
 import { Button } from "@/components/Button/Button";
+import { Pill } from "@/components/Pill/Pill";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
 import styles from "./page.module.scss";
 
@@ -15,9 +16,14 @@ interface AnimePageClientProps {
 }
 
 const statusOptions: WatchStatus[] = ["watching", "plan_to_watch", "completed", "on_hold", "dropped"];
+const MAX_NOTE_LENGTH = 500;
 
 export function AnimePageClient({ anime }: AnimePageClientProps) {
     const [showStatusMenu, setShowStatusMenu] = useState(false);
+    const [localNoteText, setLocalNoteText] = useState<string | null>(null);
+    const [noteSaved, setNoteSaved] = useState(false);
+    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const savedIndicatorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const { user } = useAuth();
     const { getWatchData, addToWatchList, updateWatchStatus, removeFromWatchList, isInWatchList, ensureLoaded } =
@@ -28,6 +34,69 @@ export function AnimePageClient({ anime }: AnimePageClientProps) {
     }, [ensureLoaded]);
 
     const watchData = user ? getWatchData(anime.id) : undefined;
+
+    const noteText = localNoteText !== null ? localNoteText : watchData?.notes || "";
+
+    const saveNote = useCallback(
+        (text: string) => {
+            const trimmed = text.trim();
+            const existingTrimmed = (watchData?.notes || "").trim();
+            if (trimmed === existingTrimmed) {
+                return;
+            }
+            updateWatchStatus(anime.id, { notes: trimmed || null });
+            setNoteSaved(true);
+            if (savedIndicatorTimeoutRef.current) {
+                clearTimeout(savedIndicatorTimeoutRef.current);
+            }
+            savedIndicatorTimeoutRef.current = setTimeout(() => setNoteSaved(false), 2000);
+        },
+        [anime.id, watchData?.notes, updateWatchStatus],
+    );
+
+    const handleNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const text = e.target.value.slice(0, MAX_NOTE_LENGTH);
+        setLocalNoteText(text);
+        setNoteSaved(false);
+
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+        saveTimeoutRef.current = setTimeout(() => saveNote(text), 500);
+    };
+
+    const handleNoteBlur = () => {
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+        if (noteText !== (watchData?.notes || "")) {
+            saveNote(noteText);
+        }
+    };
+
+    const handleClearNote = () => {
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+        setLocalNoteText("");
+        updateWatchStatus(anime.id, { notes: null });
+        setNoteSaved(true);
+        if (savedIndicatorTimeoutRef.current) {
+            clearTimeout(savedIndicatorTimeoutRef.current);
+        }
+        savedIndicatorTimeoutRef.current = setTimeout(() => setNoteSaved(false), 2000);
+    };
+
+    useEffect(() => {
+        return () => {
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+            if (savedIndicatorTimeoutRef.current) {
+                clearTimeout(savedIndicatorTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const handleAddToList = (status: WatchStatus) => {
         if (isInWatchList(anime.id)) {
@@ -99,9 +168,9 @@ export function AnimePageClient({ anime }: AnimePageClientProps) {
                         {anime.genres && anime.genres.length > 0 && (
                             <div className={styles.genres}>
                                 {anime.genres.map(genre => (
-                                    <span key={genre.id} className={styles.genre}>
+                                    <Pill key={genre.id} variant="accent">
                                         {genre.name}
-                                    </span>
+                                    </Pill>
                                 ))}
                             </div>
                         )}
@@ -215,6 +284,42 @@ export function AnimePageClient({ anime }: AnimePageClientProps) {
                                                       : `${watchData.rating}/5`}
                                             </span>
                                         )}
+                                    </div>
+                                </div>
+
+                                <div className={styles.trackingItem}>
+                                    <div className={styles.notesHeader}>
+                                        <label>Notes</label>
+                                        <div className={styles.notesActions}>
+                                            {noteSaved && <span className={styles.savedIndicator}>Saved</span>}
+                                            {noteText.trim().length > 0 && (
+                                                <button
+                                                    type="button"
+                                                    className={styles.clearNoteButton}
+                                                    onClick={handleClearNote}
+                                                    title="Clear note"
+                                                >
+                                                    <i className="bi bi-x-lg" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <textarea
+                                        className={styles.notesTextarea}
+                                        placeholder="Add a personal note about this anime..."
+                                        value={noteText}
+                                        onChange={handleNoteChange}
+                                        onBlur={handleNoteBlur}
+                                        maxLength={MAX_NOTE_LENGTH}
+                                        rows={3}
+                                    />
+                                    <div className={styles.notesFooter}>
+                                        <span className={styles.notesHint}>
+                                            <i className="bi bi-globe2" /> Visible on your public list
+                                        </span>
+                                        <span className={styles.charCount}>
+                                            {noteText.length}/{MAX_NOTE_LENGTH}
+                                        </span>
                                     </div>
                                 </div>
                             </div>

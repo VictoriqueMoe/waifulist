@@ -22,7 +22,7 @@ function subscribe(callback: () => void): () => void {
     return () => window.removeEventListener("storage", callback);
 }
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+export function ThemeProvider({ children }: React.PropsWithChildren) {
     const mounted = useSyncExternalStore(subscribe, () => true, getServerSnapshot);
 
     const [theme, setThemeState] = useState<ThemeType>(() => {

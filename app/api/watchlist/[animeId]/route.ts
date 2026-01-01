@@ -31,9 +31,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     try {
         const { animeId } = await params;
         const body = await request.json();
-        const { status, episodesWatched, rating } = body;
+        const { status, episodesWatched, rating, notes } = body;
 
-        const updates: { status?: string; episodes_watched?: number; rating?: number | null } = {};
+        const updates: { status?: string; episodes_watched?: number; rating?: number | null; notes?: string | null } =
+            {};
         if (status !== undefined) {
             updates.status = status;
         }
@@ -42,6 +43,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         }
         if (rating !== undefined) {
             updates.rating = rating;
+        }
+        if (notes !== undefined) {
+            updates.notes = notes;
         }
 
         const item = updateWatchStatus(user.id, parseInt(animeId, 10), updates);
