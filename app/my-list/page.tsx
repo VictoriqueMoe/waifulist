@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWatchList } from "@/contexts/WatchListContext";
 import { useLoading } from "@/contexts/LoadingContext";
 import { useSettings } from "@/contexts/SettingsContext";
-import { useBackup } from "@/hooks";
+import { useBackup, useRestore } from "@/hooks";
 import { AnimeListView, WatchedItem } from "@/components/AnimeListView/AnimeListView";
 import { Button } from "@/components/Button/Button";
 import styles from "./page.module.scss";
@@ -32,6 +32,7 @@ export default function MyListPage() {
     const { isLoading } = useLoading();
     const { settings, loading: settingsLoading, updateMyListSettings } = useSettings();
     const { backupList } = useBackup();
+    const { restoreList } = useRestore();
 
     const [animeData, setAnimeData] = useState<Map<number, Anime>>(new Map());
     const [animeLoading, setAnimeLoading] = useState(true);
@@ -115,45 +116,12 @@ export default function MyListPage() {
     }, [backupList]);
 
     const handleRestore = useCallback(async () => {
-        const checkBackupFile = (text: string): boolean => {
-            const fields: string[] = [
-                "id",
-                "user_id",
-                "anime_id",
-                "status",
-                "episodes_watched",
-                "rating",
-                "date_added",
-                "date_updated",
-            ];
-            for (const field of fields) {
-                if (!text.includes(field)) {
-                    return false;
-                }
-            }
-            return true;
-        };
-
         if (!selectedFile) {
             return;
         }
-
         try {
             setRestoreLoading(true);
-            const content = await selectedFile.text();
-            if (!checkBackupFile(content)) {
-                throw new Error("File does not contain correct fields");
-            }
-            const response = await fetch("/api/restore", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ content }),
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || "Restore failed");
-            }
+            await restoreList(selectedFile);
         } catch (error) {
             console.error(error);
         } finally {
@@ -162,7 +130,7 @@ export default function MyListPage() {
             setSelectedFile(null);
             await refreshList();
         }
-    }, [refreshList, selectedFile]);
+    }, [refreshList, restoreList, selectedFile]);
 
     const handleImport = useCallback(async () => {
         if (!selectedFile) {
