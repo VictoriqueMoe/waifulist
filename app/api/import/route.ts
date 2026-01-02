@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { getFuseIndex, lookupByTitle } from "@/services/animeData";
+import { ensureSearchIndex, findAnimeByTitle, lookupByTitle } from "@/services/animeData";
 import { Anime } from "@/types/anime";
 
 export async function POST(request: NextRequest): Promise<Response> {
@@ -28,14 +28,13 @@ export async function POST(request: NextRequest): Promise<Response> {
             .map(line => line.trim())
             .filter(line => line.length > 0);
 
-        const fuse = await getFuseIndex();
+        await ensureSearchIndex();
 
         const encoder = new TextEncoder();
         let cancelled = false;
 
         const stream = new ReadableStream({
             async start(controller) {
-                debugger;
                 const matched: { title: string; anime: Anime }[] = [];
                 const unmatched: string[] = [];
                 const total = lines.length;
@@ -50,16 +49,11 @@ export async function POST(request: NextRequest): Promise<Response> {
 
                         const title = lines[i];
 
-                        // Fast path: exact title match via Redis hash (O(1))
                         let anime = await lookupByTitle(title);
 
-                        // Slow path: fuzzy search if exact match fails
                         if (!anime) {
                             fuzzySearchCount++;
-                            const results = fuse.search(title, { limit: 1 });
-                            if (results.length > 0 && results[0].score !== undefined) {
-                                anime = results[0].item;
-                            }
+                            anime = await findAnimeByTitle(title);
                         }
 
                         if (anime) {
@@ -68,7 +62,6 @@ export async function POST(request: NextRequest): Promise<Response> {
                             unmatched.push(title);
                         }
 
-                        // Send progress updates every 100 items
                         if ((i + 1) % 100 === 0 || i === lines.length - 1) {
                             if (cancelled) {
                                 return;

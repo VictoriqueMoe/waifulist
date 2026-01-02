@@ -1,27 +1,23 @@
-import Fuse, { IFuseOptions } from "fuse.js";
 import { Anime } from "@/types/anime";
 import { getRedis, getSubscriber, REDIS_KEYS, REDIS_TTL } from "@/lib/redis";
 import { fetchAnimeFromCdn } from "@/lib/cdn";
+import {
+    BrowseSortType,
+    clearFuseIndex,
+    filterAnime,
+    fuzzySearchOne,
+    hasFuseIndex,
+    initializeFuseIndex,
+    toFilterableItems,
+} from "./animeFilter";
+
+export type { BrowseSortType };
 
 const CSV_URL =
     "https://raw.githubusercontent.com/meesvandongen/anime-dataset/refs/heads/main/data/anime-standalone.csv";
 
-// In-memory Fuse index (cannot serialise to Redis)
-let fuseIndex: Fuse<Anime> | null = null;
-let fuseLoadingPromise: Promise<void> | null = null;
+let dataLoadingPromise: Promise<void> | null = null;
 let subscriberInitialised = false;
-
-const FUSE_OPTIONS: IFuseOptions<Anime> = {
-    keys: [
-        { name: "title", weight: 0.4 },
-        { name: "alternative_titles.en", weight: 0.3 },
-        { name: "alternative_titles.ja", weight: 0.2 },
-        { name: "genres.name", weight: 0.1 },
-    ],
-    threshold: 0.3,
-    includeScore: true,
-    minMatchCharLength: 2,
-};
 
 const FEATURED_ANIME_IDS = [8425, 41457, 4789, 27775, 22297, 1195, 355];
 
@@ -32,7 +28,6 @@ function normaliseTitle(title: string): string {
         .replace(/[^\w\s]/g, "");
 }
 const FEATURED_IDS_SET = new Set(FEATURED_ANIME_IDS);
-export type BrowseSortType = "rating" | "newest";
 
 function parseCSVLine(line: string): string[] {
     const result: string[] = [];
@@ -156,9 +151,9 @@ async function fetchRemoteCSV(): Promise<string | null> {
     }
 }
 
-function buildFuseIndex(animeList: Anime[]): void {
-    fuseIndex = new Fuse(animeList, FUSE_OPTIONS);
-    console.log(`[AnimeData] Built Fuse index with ${animeList.length} entries`);
+function buildSearchIndex(animeList: Anime[]): void {
+    const filterableItems = toFilterableItems(animeList);
+    initializeFuseIndex(filterableItems);
 }
 
 async function saveToRedis(animeList: Anime[]): Promise<void> {
@@ -303,42 +298,37 @@ function initialiseSubscriber(): void {
 
     subscriber.on("message", async (channel, message) => {
         if (channel === REDIS_KEYS.REFRESH_CHANNEL && message === "refresh") {
-            console.log("[Redis Subscriber] Received refresh notification, rebuilding Fuse index...");
-            // Clear Fuse index to force rebuild from Redis
-            fuseIndex = null;
-            // Trigger rebuild
-            await ensureFuseIndex();
+            console.log("[Redis Subscriber] Received refresh notification, rebuilding search index...");
+            clearFuseIndex();
+            await ensureSearchIndex();
         }
     });
 }
 
-export async function ensureFuseIndex(): Promise<void> {
+export async function ensureSearchIndex(): Promise<void> {
     initialiseSubscriber();
 
-    if (fuseIndex) {
+    if (hasFuseIndex()) {
         return;
     }
 
-    if (fuseLoadingPromise) {
-        return fuseLoadingPromise;
+    if (dataLoadingPromise) {
+        return dataLoadingPromise;
     }
 
-    fuseLoadingPromise = (async () => {
-        // Try loading from Redis first
+    dataLoadingPromise = (async () => {
         const cachedList = await loadFromRedis();
         if (cachedList && cachedList.length > 0) {
-            buildFuseIndex(cachedList);
-            // Ensure indexes exist (migration for existing Redis data)
+            buildSearchIndex(cachedList);
             await ensureSortedLists(cachedList);
             await ensureTitleIndex(cachedList);
             return;
         }
 
-        // Fetch from remote CSV
         const remoteCSV = await fetchRemoteCSV();
         if (remoteCSV) {
             const animeList = parseCSVContent(remoteCSV);
-            buildFuseIndex(animeList);
+            buildSearchIndex(animeList);
             await saveToRedis(animeList);
             return;
         }
@@ -347,9 +337,9 @@ export async function ensureFuseIndex(): Promise<void> {
     })();
 
     try {
-        await fuseLoadingPromise;
+        await dataLoadingPromise;
     } finally {
-        fuseLoadingPromise = null;
+        dataLoadingPromise = null;
     }
 }
 
@@ -368,7 +358,7 @@ export async function refreshAnimeData(): Promise<{ success: boolean; count: num
     }
 
     const animeList = parseCSVContent(remoteCSV);
-    buildFuseIndex(animeList);
+    buildSearchIndex(animeList);
     await saveToRedis(animeList);
 
     await publishRefresh();
@@ -484,11 +474,6 @@ export async function getAnimeFromRedisByIds(ids: number[]): Promise<Map<number,
     return result;
 }
 
-export async function getFuseIndex(): Promise<Fuse<Anime>> {
-    await ensureFuseIndex();
-    return fuseIndex!;
-}
-
 export async function lookupByTitle(title: string): Promise<Anime | null> {
     const redis = getRedis();
     const normalised = normaliseTitle(title);
@@ -506,27 +491,31 @@ export async function lookupByTitle(title: string): Promise<Anime | null> {
 }
 
 export async function findAnimeByTitle(title: string): Promise<Anime | null> {
-    const fuse = await getFuseIndex();
-    const results = fuse.search(title, { limit: 1 });
-
-    if (results.length > 0 && results[0].score !== undefined && results[0].score < 0.35) {
-        return results[0].item;
-    }
-
-    return null;
+    await ensureSearchIndex();
+    return fuzzySearchOne(title);
 }
 
 export async function searchAnime(query: string, limit: number = 20, hideSpecials: boolean = false): Promise<Anime[]> {
-    const fuse = await getFuseIndex();
+    await ensureSearchIndex();
+    const redis = getRedis();
 
-    const results = fuse.search(query, { limit: limit * 3 });
-    let items = results.map(result => result.item);
-
-    if (hideSpecials) {
-        items = items.filter(anime => anime.media_type !== "special");
+    const data = await redis.get(REDIS_KEYS.ANIME_LIST);
+    if (!data) {
+        return [];
     }
 
-    return items.sort((a, b) => (b.mean || 0) - (a.mean || 0)).slice(0, limit);
+    const allAnime = JSON.parse(data) as Anime[];
+    const filterableItems = toFilterableItems(allAnime);
+
+    const filtered = filterAnime(filterableItems, {
+        query,
+        searchStrategy: "fuzzy",
+        hideSpecials,
+        sort: "rating",
+        limit,
+    });
+
+    return filtered.items.map(item => item.anime);
 }
 
 export async function getFeaturedAnime(): Promise<Anime[]> {

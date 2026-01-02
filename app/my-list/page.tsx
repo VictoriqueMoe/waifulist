@@ -1,14 +1,13 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Anime, SortType } from "@/types/anime";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWatchList } from "@/contexts/WatchListContext";
-import { useLoading } from "@/contexts/LoadingContext";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useBackup, useRestore } from "@/hooks";
-import { AnimeListView, WatchedItem } from "@/components/AnimeListView/AnimeListView";
+import { AnimeListView } from "@/components/AnimeListView/AnimeListView";
 import { Button } from "@/components/Button/Button";
 import styles from "./page.module.scss";
 
@@ -21,21 +20,10 @@ interface ImportResult {
 export default function MyListPage() {
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
-    const {
-        getAllWatched,
-        bulkAddToWatchList,
-        refreshList,
-        ensureLoaded,
-        loaded,
-        loading: contextLoading,
-    } = useWatchList();
-    const { isLoading } = useLoading();
+    const { bulkAddToWatchList, refreshList } = useWatchList();
     const { settings, loading: settingsLoading, updateMyListSettings } = useSettings();
     const { backupList } = useBackup();
     const { restoreList } = useRestore();
-
-    const [animeData, setAnimeData] = useState<Map<number, Anime>>(new Map());
-    const [animeLoading, setAnimeLoading] = useState(true);
 
     const handleSortChange = useCallback(
         (sort: SortType) => {
@@ -49,29 +37,6 @@ export default function MyListPage() {
             router.push("/login");
         }
     }, [user, authLoading, router]);
-
-    useEffect(() => {
-        ensureLoaded();
-    }, [ensureLoaded]);
-
-    // Fetch anime data once watchlist is loaded
-    useEffect(() => {
-        if (!loaded || contextLoading) {
-            return;
-        }
-
-        setAnimeLoading(true);
-        fetch("/api/watchlist/anime")
-            .then(res => (res.ok ? res.json() : {}))
-            .then(data => {
-                const map = new Map<number, Anime>(
-                    Object.entries(data).map(([id, anime]) => [Number(id), anime as Anime]),
-                );
-                setAnimeData(map);
-            })
-            .catch(console.error)
-            .finally(() => setAnimeLoading(false));
-    }, [loaded, contextLoading]);
 
     const [showImportModal, setShowImportModal] = useState(false);
     const [showRestoreModal, setShowRestoreModal] = useState(false);
@@ -87,18 +52,6 @@ export default function MyListPage() {
     const [copied, setCopied] = useState(false);
     const [restoreLoading, setRestoreLoading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const watchedItems = getAllWatched();
-
-    const convertedItems: WatchedItem[] = useMemo(() => {
-        return watchedItems.map(item => ({
-            animeId: item.animeId,
-            status: item.status,
-            rating: item.rating ?? null,
-            notes: item.notes,
-            dateAdded: item.dateAdded,
-        }));
-    }, [watchedItems]);
 
     const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -264,10 +217,9 @@ export default function MyListPage() {
         <>
             <AnimeListView
                 title="My Anime List"
-                subtitle={`${watchedItems.length} anime in your list`}
-                watchedItems={convertedItems}
-                animeData={animeData}
-                loading={(restoreLoading || contextLoading || animeLoading) && !isLoading}
+                subtitle="Your anime collection"
+                apiEndpoint="/api/watchlist/anime"
+                loading={restoreLoading}
                 headerActions={headerActions}
                 showStatusBadge={true}
                 initialSort={settingsLoading ? "added" : (settings.myList.sort as SortType) || "added"}

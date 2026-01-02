@@ -25,9 +25,14 @@ export function SearchBar({
     const [hasUserTyped, setHasUserTyped] = useState(false);
     const router = useRouter();
     const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+    const onLiveSearchRef = useRef(onLiveSearch);
 
     useEffect(() => {
-        if (!onLiveSearch || !hasUserTyped) {
+        onLiveSearchRef.current = onLiveSearch;
+    }, [onLiveSearch]);
+
+    useEffect(() => {
+        if (!onLiveSearchRef.current || !hasUserTyped) {
             return;
         }
 
@@ -36,7 +41,7 @@ export function SearchBar({
         }
 
         debounceTimer.current = setTimeout(() => {
-            onLiveSearch(query);
+            onLiveSearchRef.current?.(query);
         }, debounceMs);
 
         return () => {
@@ -44,7 +49,7 @@ export function SearchBar({
                 clearTimeout(debounceTimer.current);
             }
         };
-    }, [query, onLiveSearch, debounceMs, hasUserTyped]);
+    }, [query, debounceMs, hasUserTyped]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setQuery(e.target.value);

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Anime, SortType, WatchStatus, watchStatusLabels } from "@/types/anime";
 import { AnimeCard, AnimeCardWatchData } from "@/components/AnimeCard/AnimeCard";
@@ -8,20 +8,30 @@ import { Button } from "@/components/Button/Button";
 import { Pagination } from "@/components/Pagination/Pagination";
 import styles from "./AnimeListView.module.scss";
 
-export interface WatchedItem {
-    animeId: number;
-    status: WatchStatus;
-    rating: number | null;
-    notes?: string | null;
-    dateAdded: string;
+interface FilteredItem {
+    anime: Anime;
+    watchData: {
+        status?: WatchStatus;
+        rating: number | null;
+        dateAdded?: string;
+    };
+}
+
+interface FilterResponse {
+    items: FilteredItem[];
+    total: number;
+    filtered: number;
+    page: number;
+    totalPages: number;
+    counts: Record<string, number>;
+    username?: string;
 }
 
 interface AnimeListViewProps {
     title: string;
     subtitle: string;
-    watchedItems: WatchedItem[];
-    animeData: Map<number, Anime>;
-    loading: boolean;
+    apiEndpoint: string;
+    loading?: boolean;
     headerActions?: React.ReactNode;
     showStatusBadge?: boolean;
     initialSort?: SortType;
@@ -29,16 +39,21 @@ interface AnimeListViewProps {
     ratingLabel?: string;
 }
 
+function mapSortToApi(sort: SortType): string {
+    if (sort === "rating (personal)") {
+        return "rating_personal";
+    }
+    return sort;
+}
+
 const statusOrder: WatchStatus[] = ["watching", "plan_to_watch", "completed", "on_hold", "dropped"];
 const sortByOptions: SortType[] = ["added", "name", "rating", "rating (personal)"];
-const PAGE_SIZE = 24;
 
 export function AnimeListView({
     title,
     subtitle,
-    watchedItems,
-    animeData,
-    loading,
+    apiEndpoint,
+    loading: externalLoading = false,
     headerActions,
     showStatusBadge = true,
     initialSort = "added",
@@ -50,13 +65,64 @@ export function AnimeListView({
 
     const [activeTab, setActiveTab] = useState<WatchStatus | "all">("all");
     const [page, setPage] = useState(initialPage);
+    const [inputValue, setInputValue] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState<SortType>(initialSort);
+    const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Sync sortBy when initialSort changes (after settings load)
+    const [items, setItems] = useState<FilteredItem[]>([]);
+    const [counts, setCounts] = useState<Record<string, number>>({ all: 0 });
+    const [filtered, setFiltered] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const [loading, setLoading] = useState(true);
+
     useEffect(() => {
         setSortBy(initialSort);
     }, [initialSort]);
+
+    useEffect(() => {
+        return () => {
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
+            }
+        };
+    }, []);
+
+    const fetchData = useCallback(async () => {
+        setLoading(true);
+        try {
+            const params = new URLSearchParams();
+            if (searchQuery.trim()) {
+                params.set("q", searchQuery.trim());
+            }
+            params.set("sort", mapSortToApi(sortBy));
+            if (activeTab !== "all") {
+                params.set("status", activeTab);
+            }
+            params.set("page", String(page));
+
+            const url = `${apiEndpoint}?${params.toString()}`;
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error("Failed to fetch");
+            }
+
+            const data: FilterResponse = await response.json();
+            setItems(data.items);
+            setCounts(data.counts);
+            setFiltered(data.filtered);
+            setTotalPages(data.totalPages);
+        } catch (error) {
+            console.error("Failed to fetch list:", error);
+            setItems([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [apiEndpoint, searchQuery, sortBy, activeTab, page]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const updatePageUrl = useCallback((newPage: number) => {
         const url = new URL(window.location.href);
@@ -67,83 +133,6 @@ export function AnimeListView({
         }
         window.history.replaceState({}, "", url);
     }, []);
-
-    const getTabItems = useCallback(() => {
-        if (activeTab === "all") {
-            return watchedItems;
-        }
-        return watchedItems.filter(item => item.status === activeTab);
-    }, [activeTab, watchedItems]);
-
-    const filteredItems = useMemo(() => {
-        const query = searchQuery.trim().toLowerCase();
-
-        const items = getTabItems().filter(item => {
-            const anime = animeData.get(item.animeId);
-            if (!anime) {
-                return false;
-            }
-            return !query || anime.title.toLowerCase().includes(query);
-        });
-
-        return items.sort((a, b) => {
-            const animeA = animeData.get(a.animeId);
-            const animeB = animeData.get(b.animeId);
-
-            if (!animeA || !animeB) {
-                return !animeA && !animeB ? 0 : !animeA ? 1 : -1;
-            }
-
-            if (sortBy === "rating") {
-                return (animeB.mean ?? 0) - (animeA.mean ?? 0);
-            }
-
-            if (sortBy === "rating (personal)") {
-                return (b.rating ?? 0) - (a.rating ?? 0);
-            }
-
-            if (sortBy === "added") {
-                return new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime();
-            }
-
-            return animeA.title.localeCompare(animeB.title);
-        });
-    }, [getTabItems, searchQuery, sortBy, animeData]);
-
-    const getPagedItems = useCallback((): { anime: Anime; watchData: AnimeCardWatchData }[] => {
-        const startIndex = (page - 1) * PAGE_SIZE;
-        const pageItems = filteredItems.slice(startIndex, startIndex + PAGE_SIZE);
-        const result: { anime: Anime; watchData: AnimeCardWatchData }[] = [];
-        for (const item of pageItems) {
-            const anime = animeData.get(item.animeId);
-            if (anime) {
-                result.push({
-                    anime,
-                    watchData: {
-                        status: item.status,
-                        rating: item.rating,
-                        notes: item.notes ?? undefined,
-                        dateAdded: item.dateAdded,
-                    },
-                });
-            }
-        }
-        return result;
-    }, [filteredItems, page, animeData]);
-
-    const getCounts = useCallback(() => {
-        const counts: Record<string, number> = { all: watchedItems.length };
-
-        for (const status of statusOrder) {
-            counts[status] = watchedItems.filter(item => item.status === status).length;
-        }
-
-        return counts;
-    }, [watchedItems]);
-
-    const counts = getCounts();
-    const totalPages = Math.ceil(filteredItems.length / PAGE_SIZE);
-    const pagedItems = getPagedItems();
 
     const handleTabChange = useCallback(
         (tab: WatchStatus | "all") => {
@@ -156,9 +145,18 @@ export function AnimeListView({
 
     const handleSearchChange = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
-            setSearchQuery(e.target.value);
-            setPage(1);
-            updatePageUrl(1);
+            const value = e.target.value;
+            setInputValue(value);
+
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
+            }
+
+            debounceRef.current = setTimeout(() => {
+                setSearchQuery(value);
+                setPage(1);
+                updatePageUrl(1);
+            }, 300);
         },
         [updatePageUrl],
     );
@@ -182,16 +180,19 @@ export function AnimeListView({
         [updatePageUrl],
     );
 
-    if (loading) {
-        return (
-            <div className={styles.page}>
-                <div className={styles.loading}>
-                    <div className={styles.spinner} />
-                    <p>Loading...</p>
-                </div>
-            </div>
-        );
-    }
+    const pagedItems: { anime: Anime; watchData: AnimeCardWatchData }[] = items
+        .filter(item => item.watchData.status && item.watchData.dateAdded)
+        .map(item => ({
+            anime: item.anime,
+            watchData: {
+                status: item.watchData.status!,
+                rating: item.watchData.rating,
+                notes: undefined,
+                dateAdded: item.watchData.dateAdded!,
+            },
+        }));
+
+    const isLoading = loading || externalLoading;
 
     return (
         <div className={styles.page}>
@@ -208,13 +209,17 @@ export function AnimeListView({
                         <input
                             type="text"
                             placeholder="Search this list..."
-                            value={searchQuery}
+                            value={inputValue}
                             onChange={handleSearchChange}
                         />
-                        {searchQuery && (
+                        {inputValue && (
                             <button
                                 className={styles.clearSearch}
                                 onClick={() => {
+                                    if (debounceRef.current) {
+                                        clearTimeout(debounceRef.current);
+                                    }
+                                    setInputValue("");
                                     setSearchQuery("");
                                     setPage(1);
                                     updatePageUrl(1);
@@ -224,9 +229,9 @@ export function AnimeListView({
                             </button>
                         )}
                     </div>
-                    {searchQuery && (
+                    {searchQuery && !isLoading && (
                         <span className={styles.searchResults}>
-                            {filteredItems.length} result{filteredItems.length !== 1 ? "s" : ""}
+                            {filtered} result{filtered !== 1 ? "s" : ""}
                         </span>
                     )}
                 </div>
@@ -237,7 +242,7 @@ export function AnimeListView({
                         size="sm"
                         onClick={() => handleTabChange("all")}
                     >
-                        All ({counts.all})
+                        All ({counts.all || 0})
                     </Button>
                     {statusOrder.map(status => (
                         <Button
@@ -246,7 +251,7 @@ export function AnimeListView({
                             size="sm"
                             onClick={() => handleTabChange(status)}
                         >
-                            {watchStatusLabels[status]} ({counts[status]})
+                            {watchStatusLabels[status]} ({counts[status] || 0})
                         </Button>
                     ))}
                     <label style={{ marginLeft: 24, translate: "0px 8px" }}>Sort By:</label>
@@ -259,7 +264,12 @@ export function AnimeListView({
                     </select>
                 </div>
 
-                {filteredItems.length > 0 ? (
+                {isLoading ? (
+                    <div className={styles.loading}>
+                        <div className={styles.spinner} />
+                        <p>Loading...</p>
+                    </div>
+                ) : filtered > 0 ? (
                     <>
                         <div className={styles.grid}>
                             {pagedItems.map(({ anime, watchData }) => (

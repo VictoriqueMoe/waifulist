@@ -128,6 +128,7 @@ function BrowseContent() {
 
     const handleSortChange = useCallback(
         (newSort: BrowseSortType) => {
+            lastFetchedSettingsRef.current = `${newSort}-${hideSpecials}`;
             updateBrowseSettings({ sort: newSort });
             setPage(1);
             performSearch(query, 1, newSort, hideSpecials);
@@ -137,6 +138,7 @@ function BrowseContent() {
 
     const handleHideSpecialsChange = useCallback(
         (checked: boolean) => {
+            lastFetchedSettingsRef.current = `${sort}-${checked}`;
             updateBrowseSettings({ hideSpecials: checked });
             setPage(1);
             performSearch(query, 1, sort, checked);
