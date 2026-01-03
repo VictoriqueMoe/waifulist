@@ -29,6 +29,7 @@ export async function getFilteredWatchList(userId: number, url: URL): Promise<Wa
         status: item.status as WatchStatus,
         rating: item.rating ?? undefined,
         dateAdded: item.date_added,
+        notes: item.notes,
     }));
 
     return filterWatchList(watchedItems, animeMap, { query, sort, status, page, limit });
@@ -58,6 +59,7 @@ function filterWatchList(
             status: item.watchData?.status,
             rating: item.watchData?.rating ?? null,
             dateAdded: item.watchData?.dateAdded,
+            notes: item.watchData?.notes,
         },
     }));
 
@@ -93,6 +95,7 @@ function toFilterableItemsFromWatchList(
                     status: watched.status,
                     rating: watched.rating ?? undefined,
                     dateAdded: watched.dateAdded,
+                    notes: watched.notes,
                 },
             });
         }

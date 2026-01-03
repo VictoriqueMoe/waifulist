@@ -14,6 +14,7 @@ interface FilteredItem {
         status?: WatchStatus;
         rating: number | null;
         dateAdded?: string;
+        notes?: string | null;
     };
 }
 
@@ -201,7 +202,7 @@ export function AnimeListView({
             watchData: {
                 status: item.watchData.status!,
                 rating: item.watchData.rating,
-                notes: undefined,
+                notes: item.watchData.notes,
                 dateAdded: item.watchData.dateAdded!,
             },
         }));
