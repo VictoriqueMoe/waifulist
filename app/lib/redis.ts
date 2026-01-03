@@ -59,6 +59,8 @@ export const REDIS_KEYS = {
     ANIME_SORTED_RATING: "anime:sorted:rating",
     ANIME_SORTED_NEWEST: "anime:sorted:newest",
     ANIME_BROWSE_COUNT: "anime:browse:count",
+    ANIME_SEASON: (year: number, season: string) => `anime:season:${year}:${season}`,
+    ANIME_SEASON_COUNT: (year: number, season: string) => `anime:season:${year}:${season}:count`,
     LAST_FETCH_TIME: "anime:lastFetchTime",
     REFRESH_CHANNEL: "anime:refresh",
     OG_IMAGE: (uuid: string, hash: string) => `og:${uuid}:${hash}`,

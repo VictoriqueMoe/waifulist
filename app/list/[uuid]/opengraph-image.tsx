@@ -5,6 +5,19 @@ import { getRedis, REDIS_KEYS, REDIS_TTL } from "@/lib/redis";
 
 export const size = { width: 1200, height: 630 };
 
+const petals = [
+    { top: 40, left: 850, rotate: 25, size: 24, opacity: 0.7 },
+    { top: 120, left: 950, rotate: -15, size: 18, opacity: 0.5 },
+    { top: 80, left: 1050, rotate: 45, size: 22, opacity: 0.6 },
+    { top: 200, left: 1100, rotate: -30, size: 20, opacity: 0.4 },
+    { top: 350, left: 900, rotate: 60, size: 16, opacity: 0.5 },
+    { top: 450, left: 1000, rotate: -45, size: 26, opacity: 0.6 },
+    { top: 500, left: 850, rotate: 15, size: 20, opacity: 0.4 },
+    { top: 550, left: 1100, rotate: -20, size: 18, opacity: 0.5 },
+    { top: 150, left: 100, rotate: 30, size: 20, opacity: 0.3 },
+    { top: 400, left: 50, rotate: -35, size: 16, opacity: 0.25 },
+];
+
 function createHash(data: string): string {
     let hash = 0;
     for (let i = 0; i < data.length; i++) {
@@ -69,19 +82,6 @@ export default async function OGImage({ params }: { params: Promise<{ uuid: stri
         }
     }
 
-    const petals = [
-        { top: 40, left: 850, rotate: 25, size: 24, opacity: 0.7 },
-        { top: 120, left: 950, rotate: -15, size: 18, opacity: 0.5 },
-        { top: 80, left: 1050, rotate: 45, size: 22, opacity: 0.6 },
-        { top: 200, left: 1100, rotate: -30, size: 20, opacity: 0.4 },
-        { top: 350, left: 900, rotate: 60, size: 16, opacity: 0.5 },
-        { top: 450, left: 1000, rotate: -45, size: 26, opacity: 0.6 },
-        { top: 500, left: 850, rotate: 15, size: 20, opacity: 0.4 },
-        { top: 550, left: 1100, rotate: -20, size: 18, opacity: 0.5 },
-        { top: 150, left: 100, rotate: 30, size: 20, opacity: 0.3 },
-        { top: 400, left: 50, rotate: -35, size: 16, opacity: 0.25 },
-    ];
-
     const imageResponse = new ImageResponse(
         <div
             style={{
@@ -137,7 +137,6 @@ export default async function OGImage({ params }: { params: Promise<{ uuid: stri
                 }}
             />
 
-            {/* Sakura petals */}
             {petals.map((petal, i) => (
                 <div
                     key={i}
@@ -206,7 +205,7 @@ export default async function OGImage({ params }: { params: Promise<{ uuid: stri
     try {
         const arrayBuffer = await imageResponse.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        await redis.set(cacheKey, buffer, "EX", REDIS_TTL.OG_IMAGE);
+        await redis.setex(cacheKey, REDIS_TTL.OG_IMAGE, buffer);
 
         return new Response(new Uint8Array(arrayBuffer), {
             headers: { "Content-Type": "image/png" },

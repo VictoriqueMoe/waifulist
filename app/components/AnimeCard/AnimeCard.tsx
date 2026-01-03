@@ -20,6 +20,7 @@ interface AnimeCardProps {
     showStatus?: boolean;
     watchData?: AnimeCardWatchData | null;
     ratingLabel?: string;
+    showStartDate?: boolean;
 }
 
 function parseUtcDate(dateString: string): Date {
@@ -50,7 +51,48 @@ function formatDateAdded(dateString: string): string {
     return date.toLocaleDateString();
 }
 
-export function AnimeCard({ anime, showStatus = true, watchData: watchDataProp, ratingLabel }: AnimeCardProps) {
+function getOrdinalSuffix(day: number): string {
+    if (day > 3 && day < 21) {
+        return "th";
+    }
+    switch (day % 10) {
+        case 1:
+            return "st";
+        case 2:
+            return "nd";
+        case 3:
+            return "rd";
+        default:
+            return "th";
+    }
+}
+
+function formatStartDate(dateString: string): string {
+    const parts = dateString.split("-");
+    if (parts.length < 2) {
+        return dateString;
+    }
+
+    const year = parts[0];
+    const month = parseInt(parts[1], 10);
+    const day = parts[2] ? parseInt(parts[2], 10) : null;
+
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthName = monthNames[month - 1] || "";
+
+    if (day) {
+        return `${day}${getOrdinalSuffix(day)} ${monthName} ${year}`;
+    }
+    return `${monthName} ${year}`;
+}
+
+export function AnimeCard({
+    anime,
+    showStatus = true,
+    watchData: watchDataProp,
+    ratingLabel,
+    showStartDate = false,
+}: AnimeCardProps) {
     const { getWatchData } = useWatchList();
     const contextWatchData = getWatchData(anime.id);
     const watchData = watchDataProp !== undefined ? watchDataProp : contextWatchData;
@@ -122,9 +164,17 @@ export function AnimeCard({ anime, showStatus = true, watchData: watchDataProp, 
                     {anime.source && <span className={styles.type}>{anime.source.toUpperCase()}</span>}
                 </div>
                 <div className={styles.episodes}>{anime.num_episodes ? `${anime.num_episodes} eps` : "N/A"}</div>
-                {watchData && (
+                {showStartDate && anime.start_date && (
+                    <div className={styles.dateAdded} title={anime.start_date}>
+                        <i className="bi bi-calendar-event" />
+                        <span className={styles.dateLabel}>Aires:</span>
+                        {formatStartDate(anime.start_date)}
+                    </div>
+                )}
+                {!showStartDate && watchData && (
                     <div className={styles.dateAdded} title={parseUtcDate(watchData.dateAdded).toLocaleString()}>
                         <i className="bi bi-calendar-plus" />
+                        <span className={styles.dateLabel}>Added:</span>
                         {formatDateAdded(watchData.dateAdded)}
                     </div>
                 )}

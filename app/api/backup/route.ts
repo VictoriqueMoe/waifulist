@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth";
 import { getAllWatched } from "@/lib/db";
+import { NextResponse } from "next/server";
 
 export async function POST(): Promise<Response> {
     const user = await getCurrentUser();
@@ -10,8 +11,7 @@ export async function POST(): Promise<Response> {
         });
     }
     try {
-        const items = getAllWatched(user.id);
-        return new Response(JSON.stringify(items));
+        return NextResponse.json(getAllWatched(user.id));
     } catch (error) {
         console.error("Export error:", error);
         return new Response(JSON.stringify({ error: "Failed to export file" }), {

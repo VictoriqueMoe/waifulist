@@ -1,6 +1,7 @@
 import { Anime } from "@/types/anime";
 import { getRedis, getSubscriber, REDIS_KEYS, REDIS_TTL } from "@/lib/redis";
 import { fetchAnimeFromCdn } from "@/lib/cdn";
+import { getCurrentSeason, parseSeasonFromStartDate, Season } from "@/lib/seasonUtils";
 import {
     BrowseSortType,
     clearFuseIndex,
@@ -169,13 +170,9 @@ async function saveToRedis(animeList: Anime[]): Promise<void> {
         }
         await pipeline.exec();
 
-        // Build and save pre-sorted lists for browsing
-        await saveSortedLists(animeList);
+        await saveLists(animeList);
 
-        // Build and save title index for fast lookups
-        await saveTitleIndex(animeList);
-
-        console.log(`[Redis] Saved ${animeList.length} anime entries (list + individual + sorted + titles)`);
+        console.log(`[Redis] Saved ${animeList.length} anime entries`);
     } catch (error) {
         console.error("[Redis] Failed to save anime list:", error);
     }
@@ -233,6 +230,46 @@ async function saveTitleIndex(animeList: Anime[]): Promise<void> {
     console.log(`[Redis] Saved title index`);
 }
 
+async function saveSeasonalLists(animeList: Anime[]): Promise<void> {
+    const redis = getRedis();
+    const seasonMap = new Map<string, Anime[]>();
+
+    for (const anime of animeList) {
+        const parsed = parseSeasonFromStartDate(anime.start_date);
+        if (!parsed) {
+            continue;
+        }
+        const key = `${parsed.year}:${parsed.season}`;
+        const existing = seasonMap.get(key) || [];
+        existing.push(anime);
+        seasonMap.set(key, existing);
+    }
+
+    for (const [, animeList] of seasonMap) {
+        animeList.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+    }
+
+    const pipeline = redis.pipeline();
+
+    for (const [key, animeList] of seasonMap) {
+        const [yearStr, season] = key.split(":");
+        const year = parseInt(yearStr, 10);
+        const listKey = REDIS_KEYS.ANIME_SEASON(year, season);
+        const countKey = REDIS_KEYS.ANIME_SEASON_COUNT(year, season);
+
+        pipeline.del(listKey);
+        for (const anime of animeList) {
+            pipeline.rpush(listKey, JSON.stringify(anime));
+        }
+        pipeline.set(countKey, animeList.length.toString());
+        pipeline.expire(listKey, REDIS_TTL.ANIME_LIST);
+        pipeline.expire(countKey, REDIS_TTL.ANIME_LIST);
+    }
+
+    await pipeline.exec();
+    console.log(`[Redis] Saved ${seasonMap.size} seasonal lists`);
+}
+
 async function ensureSortedLists(animeList: Anime[]): Promise<void> {
     const redis = getRedis();
     try {
@@ -246,6 +283,12 @@ async function ensureSortedLists(animeList: Anime[]): Promise<void> {
     }
 }
 
+async function saveLists(animeList: Anime[]): Promise<void> {
+    await saveSortedLists(animeList);
+    await saveTitleIndex(animeList);
+    await saveSeasonalLists(animeList);
+}
+
 async function ensureTitleIndex(animeList: Anime[]): Promise<void> {
     const redis = getRedis();
     try {
@@ -257,6 +300,26 @@ async function ensureTitleIndex(animeList: Anime[]): Promise<void> {
     } catch (error) {
         console.error("[Redis] Failed to check title index:", error);
     }
+}
+
+async function ensureSeasonalLists(animeList: Anime[]): Promise<void> {
+    const redis = getRedis();
+    try {
+        const { year, season } = getCurrentSeason();
+        const exists = await redis.exists(REDIS_KEYS.ANIME_SEASON(year, season));
+        if (!exists) {
+            console.log("[Redis] Seasonal lists missing, building...");
+            await saveSeasonalLists(animeList);
+        }
+    } catch (error) {
+        console.error("[Redis] Failed to check seasonal lists:", error);
+    }
+}
+
+async function ensureLists(cachedList: Anime[]): Promise<void> {
+    await ensureSortedLists(cachedList);
+    await ensureTitleIndex(cachedList);
+    await ensureSeasonalLists(cachedList);
 }
 
 async function loadFromRedis(): Promise<Anime[] | null> {
@@ -320,8 +383,7 @@ export async function ensureSearchIndex(): Promise<void> {
         const cachedList = await loadFromRedis();
         if (cachedList && cachedList.length > 0) {
             buildSearchIndex(cachedList);
-            await ensureSortedLists(cachedList);
-            await ensureTitleIndex(cachedList);
+            await ensureLists(cachedList);
             return;
         }
 
@@ -530,7 +592,6 @@ export async function browseAnime(
     hideSpecials: boolean = false,
 ): Promise<{ anime: Anime[]; total: number }> {
     const redis = getRedis();
-
     const listKey = sort === "newest" ? REDIS_KEYS.ANIME_SORTED_NEWEST : REDIS_KEYS.ANIME_SORTED_RATING;
 
     try {
@@ -560,4 +621,33 @@ export async function browseAnime(
 export async function getHomePageAnime(): Promise<{ featured: Anime[]; popular: Anime[] }> {
     const [featured, popularResult] = await Promise.all([getFeaturedAnime(), browseAnime(20)]);
     return { featured, popular: popularResult.anime };
+}
+
+export async function getAnimeBySeason(
+    year: number,
+    season: Season,
+    options?: { limit?: number; offset?: number },
+): Promise<{ anime: Anime[]; total: number }> {
+    const redis = getRedis();
+    const listKey = REDIS_KEYS.ANIME_SEASON(year, season);
+    const countKey = REDIS_KEYS.ANIME_SEASON_COUNT(year, season);
+    const limit = options?.limit ?? 24;
+    const offset = options?.offset ?? 0;
+
+    try {
+        const countStr = await redis.get(countKey);
+        const total = countStr ? parseInt(countStr, 10) : 0;
+
+        if (total === 0) {
+            return { anime: [], total: 0 };
+        }
+
+        const items = await redis.lrange(listKey, offset, offset + limit - 1);
+        const anime = items.map(item => JSON.parse(item) as Anime);
+
+        return { anime, total };
+    } catch (error) {
+        console.error(`[Redis] Failed to get seasonal anime for ${season} ${year}:`, error);
+        return { anime: [], total: 0 };
+    }
 }
