@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { dispatchRestore } from "@/services/backupService";
 
 export function useRestore() {
     const restoreList = useCallback(async (selectedFile: File): Promise<void> => {
@@ -27,15 +28,9 @@ export function useRestore() {
         if (!checkBackupFile(content)) {
             throw new Error("File does not contain correct fields");
         }
-        const response = await fetch("/api/restore", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content }),
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || "Restore failed");
+        const response = dispatchRestore(content);
+        if (response === null) {
+            throw new Error("Restore Failed");
         }
     }, []);
 

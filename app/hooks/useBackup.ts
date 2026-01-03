@@ -2,23 +2,17 @@
 
 import { useCallback } from "react";
 import { useLoading } from "@/contexts/LoadingContext";
+import { dispatchBackup } from "@/services/backupService";
 
 export function useBackup() {
     const { withLoading } = useLoading();
 
     const backupList = useCallback(async (): Promise<void> => {
         await withLoading(async () => {
-            const response = await fetch("/api/backup", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || "Backup failed");
+            const text = await dispatchBackup();
+            if (text === null) {
+                throw new Error("Backup failed");
             }
-
-            const text = await response.text();
             const blob = new Blob([text], { type: "text/json" });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
