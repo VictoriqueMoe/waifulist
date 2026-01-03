@@ -71,6 +71,10 @@ export function Header() {
                             <i className="bi bi-calendar3" />
                             <span>Seasonal</span>
                         </Link>
+                        <Link href="/trace" className={`${styles.navLink} ${isActive("/trace") ? styles.active : ""}`}>
+                            <i className="bi bi-search-heart" />
+                            <span>Trace</span>
+                        </Link>
                         {user && (
                             <Link
                                 href="/my-list"
