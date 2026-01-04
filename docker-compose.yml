@@ -40,9 +40,8 @@ services:
     image: mongo:latest
     container_name: mongodb_jikan
     restart: always
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=jikan
-      - MONGO_INITDB_ROOT_PASSWORD=jikan_secret
+    env_file:
+      - jikan.env
     volumes:
       - mongodb_jikan_data:/data/db
 

@@ -16,6 +16,7 @@ A personal anime tracking application built with Next.js. Track your watched ani
 - **Framework**: Next.js 16 (App Router)
 - **Database**: SQLite with better-sqlite3
 - **Cache**: Redis (ioredis)
+- **Anime API**: Self-hosted Jikan (MyAnimeList API)
 - **Authentication**: JWT with bcrypt password hashing
 - **Styling**: SCSS Modules
 - **Search**: Fuse.js for fuzzy matching
@@ -55,12 +56,15 @@ npm start
 
 ## Environment Variables
 
-| Variable                         | Description                     | Required              |
-|----------------------------------|---------------------------------|-----------------------|
-| `JWT_SECRET`                     | Secret key for JWT signing      | Yes (has dev default) |
-| `REDIS_URL`                      | Redis connection URL            | Yes                   |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key   | No                    |
-| `TURNSTILE_SECRET_KEY`           | Cloudflare Turnstile secret key | No                    |
+| Variable                         | Description                     | Required                   |
+|----------------------------------|---------------------------------|----------------------------|
+| `JWT_SECRET`                     | Secret key for JWT signing      | Yes (has dev default)      |
+| `REDIS_URL`                      | Redis connection URL            | Yes                        |
+| `JIKAN_API_URL`                  | Jikan API base URL              | Yes                        |
+| `DB_USERNAME`                    | MongoDB username for Jikan      | No (default: jikan)        |
+| `DB_PASSWORD`                    | MongoDB password for Jikan      | No (default: jikan_secret) |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key   | No                         |
+| `TURNSTILE_SECRET_KEY`           | Cloudflare Turnstile secret key | No                         |
 
 ### Redis Configuration
 
@@ -83,6 +87,40 @@ Clear Redis cache:
 ```bash
 docker exec redis_waifulist redis-cli FLUSHALL
 ```
+
+### Jikan Configuration
+
+Jikan is a self-hosted unofficial MyAnimeList API used to enrich anime data with synopsis, trailers, pictures, recommendations, and related anime.
+
+**Docker deployment** (using docker-compose service name):
+```
+JIKAN_API_URL=http://jikan:8080/v4
+```
+
+**Local development** (if running Jikan on host):
+```
+JIKAN_API_URL=http://localhost:8080/v4
+```
+
+Start Jikan with MongoDB:
+```bash
+docker compose up jikan mongodb_jikan -d
+```
+
+**Setup:**
+1. Copy `jikan.env.example` to `jikan.env`
+2. For production, change credentials in `jikan.env` (update all 4 username/password fields to match)
+3. If changing credentials, delete the MongoDB volume to reinitialize:
+   ```bash
+   docker compose down
+   docker volume rm waifulist_mongodb_jikan_data
+   docker compose up jikan mongodb_jikan -d
+   ```
+
+The Jikan service:
+- Caches MAL responses in MongoDB to avoid rate limits
+- Provides endpoints: `/anime/{id}/full`, `/anime/{id}/pictures`, `/anime/{id}/recommendations`
+- Retries automatically on 500 errors (cold start can cause initial failures)
 
 ### Optional: Cloudflare Turnstile
 
@@ -120,9 +158,17 @@ getAnimeById(123, includeDetails=true)
 ────────────────────────────────────────────────────
 Redis anime:id:123 → found → return
        │
-       └─ not found → CDN fetch → cache to Redis → return
+       └─ not found → Jikan fetch → cache to Redis → return
        │
-       └─ if includeDetails && no synopsis → CDN fetch → enrich → cache
+       └─ if includeDetails && no synopsis → Jikan /anime/{id}/full → enrich → cache
+
+Anime Detail Page
+────────────────────────────────────────────────────
+Parallel fetch:
+  - getAnimeById(id, includeDetails=true)
+  - fetchAnimePictures(id) → Jikan /anime/{id}/pictures
+  - fetchAnimeRecommendations(id) → Jikan /anime/{id}/recommendations
+  - Related anime lookups for each relation
 
 searchAnime("gosick")
 ────────────────────────────────────────────────────
