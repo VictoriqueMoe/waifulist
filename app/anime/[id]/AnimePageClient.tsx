@@ -10,6 +10,7 @@ import { Button } from "@/components/Button/Button";
 import { Pill } from "@/components/Pill/Pill";
 import { PictureGallery } from "@/components/PictureGallery/PictureGallery";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
+import { Tab, Tabs } from "@/components/Tabs/Tabs";
 import styles from "./page.module.scss";
 
 interface AnimePageClientProps {
@@ -34,7 +35,8 @@ interface SynopsisParagraph {
     isAttribution: boolean;
 }
 
-type TabId = "overview" | "media" | "related";
+const statusOptions: WatchStatus[] = ["watching", "plan_to_watch", "completed", "on_hold", "dropped"];
+const MAX_NOTE_LENGTH = 500;
 
 function RelatedAnimeSection({ relations, relatedAnime }: RelatedAnimeSectionProps) {
     const animeRelations = relations
@@ -143,127 +145,137 @@ function formatSynopsis(text: string): SynopsisParagraph[] {
     }));
 }
 
-function ContentTabs({ anime, pictures, relatedAnime }: ContentTabsProps) {
-    const [activeTab, setActiveTab] = useState<TabId>("overview");
-
-    const hasMedia = anime.trailer?.youtube_id || (pictures && pictures.length > 0);
-    const hasRelated = anime.relations && anime.relations.length > 0;
+function OverviewContent({ anime }: { anime: Anime }) {
     const synopsisParagraphs = anime.synopsis ? formatSynopsis(anime.synopsis) : [];
 
-    const tabs: { id: TabId; label: string; show: boolean }[] = [
-        { id: "overview", label: "Overview", show: true },
-        { id: "media", label: "Media", show: !!hasMedia },
-        { id: "related", label: "Related", show: !!hasRelated },
-    ];
-
-    const visibleTabs = tabs.filter(t => t.show);
-
     return (
-        <div className={styles.contentTabs}>
-            <div className={styles.tabBar}>
-                {visibleTabs.map(tab => (
-                    <button
-                        key={tab.id}
-                        className={`${styles.tabButton} ${activeTab === tab.id ? styles.active : ""}`}
-                        onClick={() => setActiveTab(tab.id)}
-                    >
-                        {tab.label}
-                    </button>
-                ))}
-            </div>
-
-            <div className={styles.tabContent}>
-                {activeTab === "overview" && (
-                    <div className={styles.overviewTab}>
-                        {synopsisParagraphs.length > 0 && (
-                            <div className={styles.synopsis}>
-                                {synopsisParagraphs.map((paragraph, index) => (
-                                    <p
-                                        key={index}
-                                        className={paragraph.isAttribution ? styles.synopsisAttribution : undefined}
-                                    >
-                                        {paragraph.text}
-                                    </p>
-                                ))}
-                            </div>
-                        )}
-                        <div className={styles.infoGrid}>
-                            {anime.studios && anime.studios.length > 0 && (
-                                <div className={styles.infoItem}>
-                                    <span className={styles.infoLabel}>Studios</span>
-                                    <span className={styles.infoValue}>
-                                        {anime.studios.map(s => s.name).join(", ")}
-                                    </span>
-                                </div>
-                            )}
-                            {anime.aired?.from && (
-                                <div className={styles.infoItem}>
-                                    <span className={styles.infoLabel}>Aired</span>
-                                    <span className={styles.infoValue}>{anime.aired.string || anime.aired.from}</span>
-                                </div>
-                            )}
-                            {anime.source && (
-                                <div className={styles.infoItem}>
-                                    <span className={styles.infoLabel}>Source</span>
-                                    <span className={styles.infoValue}>{anime.source}</span>
-                                </div>
-                            )}
-                            {anime.rank && (
-                                <div className={styles.infoItem}>
-                                    <span className={styles.infoLabel}>Rank</span>
-                                    <span className={styles.infoValue}>#{anime.rank}</span>
-                                </div>
-                            )}
-                            {anime.popularity && (
-                                <div className={styles.infoItem}>
-                                    <span className={styles.infoLabel}>Popularity</span>
-                                    <span className={styles.infoValue}>#{anime.popularity}</span>
-                                </div>
-                            )}
-                            {anime.duration && (
-                                <div className={styles.infoItem}>
-                                    <span className={styles.infoLabel}>Duration</span>
-                                    <span className={styles.infoValue}>{anime.duration}</span>
-                                </div>
-                            )}
-                        </div>
+        <div className={styles.overviewTab}>
+            {synopsisParagraphs.length > 0 && (
+                <div className={styles.synopsis}>
+                    {synopsisParagraphs.map((paragraph, index) => (
+                        <p key={index} className={paragraph.isAttribution ? styles.synopsisAttribution : undefined}>
+                            {paragraph.text}
+                        </p>
+                    ))}
+                </div>
+            )}
+            <div className={styles.infoGrid}>
+                {anime.studios && anime.studios.length > 0 && (
+                    <div className={styles.infoItem}>
+                        <span className={styles.infoLabel}>Studios</span>
+                        <span className={styles.infoValue}>{anime.studios.map(s => s.name).join(", ")}</span>
                     </div>
                 )}
-
-                {activeTab === "media" && hasMedia && (
-                    <div className={styles.mediaTab}>
-                        {anime.trailer?.youtube_id && (
-                            <div className={styles.trailerSection}>
-                                <h4>Trailer</h4>
-                                <div className={styles.trailerWrapper}>
-                                    <iframe
-                                        src={`https://www.youtube.com/embed/${anime.trailer.youtube_id}`}
-                                        title={`${anime.title} Trailer`}
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowFullScreen
-                                    />
-                                </div>
-                            </div>
-                        )}
-                        {pictures && pictures.length > 0 && (
-                            <div className={styles.gallerySection}>
-                                <h4>Gallery</h4>
-                                <PictureGallery pictures={pictures} />
-                            </div>
-                        )}
+                {anime.aired?.from && (
+                    <div className={styles.infoItem}>
+                        <span className={styles.infoLabel}>Aired</span>
+                        <span className={styles.infoValue}>{anime.aired.string || anime.aired.from}</span>
                     </div>
                 )}
-
-                {activeTab === "related" && hasRelated && (
-                    <RelatedAnimeSection relations={anime.relations!} relatedAnime={relatedAnime} />
+                {anime.source && (
+                    <div className={styles.infoItem}>
+                        <span className={styles.infoLabel}>Source</span>
+                        <span className={styles.infoValue}>{anime.source}</span>
+                    </div>
+                )}
+                {anime.rank && (
+                    <div className={styles.infoItem}>
+                        <span className={styles.infoLabel}>Rank</span>
+                        <span className={styles.infoValue}>#{anime.rank}</span>
+                    </div>
+                )}
+                {anime.popularity && (
+                    <div className={styles.infoItem}>
+                        <span className={styles.infoLabel}>Popularity</span>
+                        <span className={styles.infoValue}>#{anime.popularity}</span>
+                    </div>
+                )}
+                {anime.duration && (
+                    <div className={styles.infoItem}>
+                        <span className={styles.infoLabel}>Duration</span>
+                        <span className={styles.infoValue}>{anime.duration}</span>
+                    </div>
                 )}
             </div>
         </div>
     );
 }
 
-const statusOptions: WatchStatus[] = ["watching", "plan_to_watch", "completed", "on_hold", "dropped"];
-const MAX_NOTE_LENGTH = 500;
+function TrailerContent({ trailerId, title }: { trailerId: string; title: string }) {
+    return (
+        <div className={styles.trailerContent}>
+            <div className={styles.trailerWrapper}>
+                <iframe
+                    src={`https://www.youtube.com/embed/${trailerId}`}
+                    title={`${title} Trailer`}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                />
+            </div>
+        </div>
+    );
+}
+
+function MediaContent({ anime, pictures }: { anime: Anime; pictures?: AnimePicture[] }) {
+    const trailerId = anime.trailer?.youtube_id;
+    const hasTrailer = !!trailerId;
+    const hasPictures = pictures && pictures.length > 0;
+
+    const mediaTabs: Tab[] = [];
+
+    if (hasTrailer) {
+        mediaTabs.push({
+            id: "trailer",
+            label: "Trailer",
+            content: <TrailerContent trailerId={trailerId} title={anime.title} />,
+        });
+    }
+
+    if (hasPictures) {
+        mediaTabs.push({
+            id: "gallery",
+            label: "Gallery",
+            content: <PictureGallery pictures={pictures} />,
+        });
+    }
+
+    if (mediaTabs.length === 0) {
+        return null;
+    }
+
+    return <Tabs tabs={mediaTabs} />;
+}
+
+function ContentTabs({ anime, pictures, relatedAnime }: ContentTabsProps) {
+    const hasMedia = anime.trailer?.youtube_id || (pictures && pictures.length > 0);
+    const hasRelated = anime.relations && anime.relations.some(r => r.entry.some(e => e.type === "anime"));
+
+    const tabs: Tab[] = [
+        {
+            id: "overview",
+            label: "Overview",
+            content: <OverviewContent anime={anime} />,
+        },
+    ];
+
+    if (hasMedia) {
+        tabs.push({
+            id: "media",
+            label: "Media",
+            content: <MediaContent anime={anime} pictures={pictures} />,
+        });
+    }
+
+    if (hasRelated) {
+        tabs.push({
+            id: "related",
+            label: "Related",
+            content: <RelatedAnimeSection relations={anime.relations!} relatedAnime={relatedAnime} />,
+        });
+    }
+
+    return <Tabs tabs={tabs} />;
+}
 
 export function AnimePageClient({ anime, relatedAnime, pictures }: AnimePageClientProps) {
     const [showStatusMenu, setShowStatusMenu] = useState(false);

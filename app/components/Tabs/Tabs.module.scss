@@ -1,0 +1,50 @@
+@use "../../styles/variables" as *;
+
+.tabs {
+    background: var(--bg-secondary);
+    border-radius: $radius-lg;
+    overflow: hidden;
+}
+
+.tabBar {
+    display: flex;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tabButton {
+    flex: 1;
+    padding: $spacing-md $spacing-lg;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all $transition-fast;
+    position: relative;
+
+    &:hover {
+        color: var(--text-primary);
+        background: rgba(var(--accent-primary-rgb), 0.05);
+    }
+
+    &.active {
+        color: var(--accent-primary);
+        background: var(--bg-secondary);
+
+        &::after {
+            content: "";
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent-primary);
+        }
+    }
+}
+
+.tabContent {
+    padding: $spacing-lg;
+}

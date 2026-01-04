@@ -506,46 +506,28 @@
     height: fit-content;
 }
 
-.mediaTab {
+.trailerContent {
     display: flex;
-    flex-direction: column;
-    gap: $spacing-xl;
-
-    @include lg {
-        flex-direction: row;
-        justify-content: center;
-    }
-
-    h4 {
-        font-size: 1.1rem;
-        margin-bottom: $spacing-md;
-        color: var(--text-primary);
-        text-align: center;
-    }
-}
-
-.trailerSection,
-.gallerySection {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.trailer {
-    h3 {
-        font-size: 1.25rem;
-        margin-bottom: $spacing-sm;
-    }
+    justify-content: center;
 }
 
 .trailerWrapper {
     position: relative;
-    width: 100%;
-    max-width: 640px;
-    aspect-ratio: 16 / 9;
+    width: 320px;
+    height: 180px;
     border-radius: $radius-md;
     overflow: hidden;
     background: var(--bg-tertiary);
+
+    @include md {
+        width: 480px;
+        height: 270px;
+    }
+
+    @include lg {
+        width: 560px;
+        height: 315px;
+    }
 
     iframe {
         position: absolute;
