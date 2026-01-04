@@ -23,14 +23,8 @@ export async function getUserStats(userId: number): Promise<UserStats | null> {
     for (const watched of watchedList) {
         const anime = animeMap.get(watched.anime_id);
         if (anime?.genres) {
-            for (const genreObj of anime.genres) {
-                const genres = genreObj.name
-                    .split(",")
-                    .map(g => g.trim())
-                    .filter(g => g);
-                for (const genre of genres) {
-                    genreCountMap.set(genre, (genreCountMap.get(genre) || 0) + 1);
-                }
+            for (const genre of anime.genres) {
+                genreCountMap.set(genre.name, (genreCountMap.get(genre.name) || 0) + 1);
             }
         }
     }
@@ -71,9 +65,9 @@ export async function getUserStats(userId: number): Promise<UserStats | null> {
     let totalEpisodes = 0;
     for (const watched of watchedList) {
         const anime = animeMap.get(watched.anime_id);
-        if (anime?.num_episodes) {
+        if (anime?.episodes) {
             if (watched.status === "completed") {
-                totalEpisodes += anime.num_episodes;
+                totalEpisodes += anime.episodes;
             } else if (watched.episodes_watched > 0) {
                 totalEpisodes += watched.episodes_watched;
             }

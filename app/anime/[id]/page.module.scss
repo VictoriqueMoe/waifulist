@@ -485,3 +485,129 @@
         color: var(--text-primary);
     }
 }
+
+.relatedSection {
+    margin-top: $spacing-lg;
+    padding: $spacing-lg;
+    background: var(--bg-secondary);
+    border-radius: $radius-lg;
+
+    h3 {
+        font-size: 1.25rem;
+        margin: 0 0 $spacing-md 0;
+    }
+}
+
+.relationTabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-xs;
+    margin-bottom: $spacing-md;
+}
+
+.relationTab {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-xs $spacing-sm;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: $radius-sm;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+        border-color: var(--accent-primary);
+        color: var(--text-primary);
+    }
+
+    &.active {
+        background: var(--accent-primary);
+        border-color: var(--accent-primary);
+        color: white;
+
+        .tabCount {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+    }
+}
+
+.tabCount {
+    font-size: 0.75rem;
+    padding: 1px 6px;
+    background: var(--bg-secondary);
+    border-radius: 10px;
+    color: var(--text-muted);
+}
+
+.relatedGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: $spacing-md;
+    transition:
+        opacity 0.15s ease-in-out,
+        transform 0.15s ease-in-out;
+
+    @include md {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    }
+
+    &.fadeOut {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    &.fadeIn {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.relatedItem {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+    text-decoration: none;
+    transition: transform $transition-fast;
+
+    &:hover {
+        transform: translateY(-2px);
+
+        .relatedThumb {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+    }
+}
+
+.relatedThumb {
+    position: relative;
+    aspect-ratio: 2 / 3;
+    border-radius: $radius-sm;
+    overflow: hidden;
+    background: var(--bg-tertiary);
+    transition: box-shadow $transition-fast;
+
+    img {
+        object-fit: cover;
+    }
+}
+
+.relatedTitle {
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.noImage {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-tertiary);
+}

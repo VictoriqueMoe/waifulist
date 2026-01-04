@@ -289,7 +289,7 @@ export function AnimeListView({
                         <div className={styles.grid}>
                             {pagedItems.map(({ anime, watchData }) => (
                                 <AnimeCard
-                                    key={anime.id}
+                                    key={anime.mal_id}
                                     anime={anime}
                                     showStatus={showStatusBadge}
                                     watchData={watchData}

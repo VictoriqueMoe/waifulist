@@ -2,33 +2,60 @@ export type WatchStatus = "watching" | "completed" | "plan_to_watch" | "on_hold"
 
 export type SortType = "added" | "name" | "rating" | "rating (personal)";
 
+export interface RelatedAnimeEntry {
+    mal_id: number;
+    type: string;
+    name: string;
+    url: string;
+}
+
+export interface AnimeRelation {
+    relation: string;
+    entry: RelatedAnimeEntry[];
+}
+
 export interface Anime {
-    id: number;
+    mal_id: number;
     title: string;
-    main_picture?: {
-        medium: string;
-        large: string;
+    title_english?: string;
+    title_japanese?: string;
+    title_synonyms?: string[];
+    images?: {
+        jpg?: {
+            image_url?: string;
+            small_image_url?: string;
+            large_image_url?: string;
+        };
     };
-    alternative_titles?: {
-        synonyms?: string[];
-        en?: string;
-        ja?: string;
-    };
-    start_date?: string;
-    end_date?: string;
     synopsis?: string;
-    mean?: number;
+    background?: string;
+    score?: number;
     rank?: number;
     popularity?: number;
-    num_list_users?: number;
-    num_scoring_users?: number;
+    members?: number;
+    scored_by?: number;
+    episodes?: number;
     status?: string;
-    genres?: { id: number; name: string }[];
-    num_episodes?: number;
-    source?: string;
-    studios?: { id: number; name: string }[];
     rating?: string;
-    media_type?: string;
+    source?: string;
+    type?: string;
+    aired?: {
+        from?: string;
+        to?: string;
+        string?: string;
+    };
+    genres?: { mal_id: number; name: string }[];
+    studios?: { mal_id: number; name: string }[];
+    relations?: AnimeRelation[];
+    trailer?: {
+        youtube_id?: string | null;
+        url?: string | null;
+        embed_url?: string | null;
+    };
+    theme?: {
+        openings?: string[];
+        endings?: string[];
+    };
 }
 
 export interface WatchedAnime {

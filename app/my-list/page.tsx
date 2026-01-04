@@ -147,7 +147,7 @@ export default function MyListPage() {
                             };
                             setImportResult(result);
 
-                            const animeIds = result.matched.map(m => m.anime.id);
+                            const animeIds = result.matched.map(m => m.anime.mal_id);
                             await bulkAddToWatchList(animeIds, "completed");
                             listRef.current?.reload();
                         }

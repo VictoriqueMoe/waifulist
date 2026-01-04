@@ -147,7 +147,7 @@ export function SeasonalPageClient() {
 
                         <div className={styles.grid}>
                             {anime.map(item => (
-                                <AnimeCard key={item.id} anime={item} showStartDate />
+                                <AnimeCard key={item.mal_id} anime={item} showStartDate />
                             ))}
                         </div>
 

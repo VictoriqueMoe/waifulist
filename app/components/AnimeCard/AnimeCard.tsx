@@ -93,12 +93,12 @@ export function AnimeCard({
     showStartDate = false,
 }: AnimeCardProps) {
     const { getWatchData } = useWatchList();
-    const contextWatchData = getWatchData(anime.id);
+    const contextWatchData = getWatchData(anime.mal_id);
     const watchData = watchDataProp !== undefined ? watchDataProp : contextWatchData;
     const [showNotePopover, setShowNotePopover] = useState(false);
     const popoverRef = useRef<HTMLDivElement>(null);
 
-    const imageUrl = anime.main_picture?.large || anime.main_picture?.medium || "/placeholder.png";
+    const imageUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || "/placeholder.png";
     const hasNote = watchData?.notes && watchData.notes.trim().length > 0;
 
     useEffect(() => {
@@ -123,7 +123,7 @@ export function AnimeCard({
     };
 
     return (
-        <Link href={`/anime/${anime.id}`} className={styles.card}>
+        <Link href={`/anime/${anime.mal_id}`} className={styles.card}>
             <div className={styles.imageContainer}>
                 <Image
                     src={imageUrl}
@@ -133,10 +133,10 @@ export function AnimeCard({
                     className={styles.image}
                     loading="lazy"
                 />
-                {anime.mean && (
+                {anime.score && (
                     <div className={styles.score}>
                         <i className="bi bi-star-fill" />
-                        {anime.mean.toFixed(1)}
+                        {anime.score.toFixed(1)}
                     </div>
                 )}
                 {hasNote && (
@@ -154,7 +154,7 @@ export function AnimeCard({
             <div className={styles.info}>
                 <h3 className={styles.title}>{anime.title}</h3>
                 <div className={styles.meta}>
-                    {anime.media_type && <span className={styles.type}>{anime.media_type.toUpperCase()}</span>}
+                    {anime.type && <span className={styles.type}>{anime.type.toUpperCase()}</span>}
                     {anime.source && <span className={styles.type}>{anime.source.toUpperCase()}</span>}
                 </div>
                 {showStatus && watchData && (
@@ -162,12 +162,12 @@ export function AnimeCard({
                         {watchData.status === "completed" ? "Watched" : watchStatusLabels[watchData.status]}
                     </span>
                 )}
-                <div className={styles.episodes}>{anime.num_episodes ? `${anime.num_episodes} eps` : "N/A"}</div>
-                {showStartDate && anime.start_date && (
-                    <div className={styles.dateAdded} title={anime.start_date}>
+                <div className={styles.episodes}>{anime.episodes ? `${anime.episodes} eps` : "N/A"}</div>
+                {showStartDate && anime.aired?.from && (
+                    <div className={styles.dateAdded} title={anime.aired.from}>
                         <i className="bi bi-calendar-event" />
                         <span className={styles.dateLabel}>Aires:</span>
-                        {formatStartDate(anime.start_date)}
+                        {formatStartDate(anime.aired.from)}
                     </div>
                 )}
                 {!showStartDate && watchData && (

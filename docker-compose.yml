@@ -11,6 +11,7 @@ services:
       - .env
     depends_on:
       - redis
+      - jikan
     restart: always
 
   redis:
@@ -24,5 +25,27 @@ services:
     ports:
       - "127.0.0.1:6339:6379"
 
+  jikan:
+    image: jikanme/jikan-rest:latest
+    container_name: jikan
+    restart: always
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./jikan.env:/app/.env
+    depends_on:
+      - mongodb_jikan
+
+  mongodb_jikan:
+    image: mongo:latest
+    container_name: mongodb_jikan
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=jikan
+      - MONGO_INITDB_ROOT_PASSWORD=jikan_secret
+    volumes:
+      - mongodb_jikan_data:/data/db
+
 volumes:
   waifulist-data:
+  mongodb_jikan_data:

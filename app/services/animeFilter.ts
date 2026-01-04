@@ -7,8 +7,8 @@ export type { BrowseSortType, FilterableItem, UnifiedSortType } from "@/types/fi
 const FUSE_OPTIONS: IFuseOptions<FilterableItem> = {
     keys: [
         { name: "anime.title", weight: 0.4 },
-        { name: "anime.alternative_titles.en", weight: 0.3 },
-        { name: "anime.alternative_titles.ja", weight: 0.2 },
+        { name: "anime.title_english", weight: 0.3 },
+        { name: "anime.title_japanese", weight: 0.2 },
         { name: "anime.genres.name", weight: 0.1 },
     ],
     threshold: 0.3,
@@ -110,9 +110,9 @@ function getSortComparator<T extends Anime>(
 
     switch (sort) {
         case "rating":
-            return (a, b) => multiplier * ((b.anime.mean ?? 0) - (a.anime.mean ?? 0));
+            return (a, b) => multiplier * ((b.anime.score ?? 0) - (a.anime.score ?? 0));
         case "newest":
-            return (a, b) => multiplier * (b.anime.start_date ?? "").localeCompare(a.anime.start_date ?? "");
+            return (a, b) => multiplier * (b.anime.aired?.from ?? "").localeCompare(a.anime.aired?.from ?? "");
         case "added":
             return (a, b) =>
                 multiplier *
@@ -137,15 +137,15 @@ function applyStatusFilter<T extends Anime>(
 }
 
 function applyHideSpecials<T extends Anime>(items: FilterableItem<T>[]): FilterableItem<T>[] {
-    return items.filter(item => item.anime.media_type !== "special");
+    return items.filter(item => item.anime.type?.toLowerCase() !== "special");
 }
 
 function searchSimple<T extends Anime>(items: FilterableItem<T>[], query: string): FilterableItem<T>[] {
     const lowerQuery = query.toLowerCase();
     return items.filter(item => {
         const title = item.anime.title.toLowerCase();
-        const enTitle = item.anime.alternative_titles?.en?.toLowerCase() || "";
-        const jaTitle = item.anime.alternative_titles?.ja?.toLowerCase() || "";
+        const enTitle = item.anime.title_english?.toLowerCase() || "";
+        const jaTitle = item.anime.title_japanese?.toLowerCase() || "";
         return title.includes(lowerQuery) || enTitle.includes(lowerQuery) || jaTitle.includes(lowerQuery);
     });
 }
@@ -153,10 +153,10 @@ function searchSimple<T extends Anime>(items: FilterableItem<T>[], query: string
 function searchFuzzy<T extends Anime>(items: FilterableItem<T>[], query: string): FilterableItem<T>[] {
     if (cachedFuseIndex) {
         const results = cachedFuseIndex.search(query);
-        const itemsById = new Map(items.map(item => [item.anime.id, item]));
+        const itemsById = new Map(items.map(item => [item.anime.mal_id, item]));
         const matched: FilterableItem<T>[] = [];
         for (const result of results) {
-            const item = itemsById.get(result.item.anime.id);
+            const item = itemsById.get(result.item.anime.mal_id);
             if (item) {
                 matched.push(item);
             }

@@ -76,8 +76,8 @@ export default async function OGImage({ params }: { params: Promise<{ uuid: stri
     const animeCovers: string[] = [];
     for (const id of topAnimeIds) {
         const anime = animeMap.get(id);
-        if (anime?.main_picture?.large) {
-            const jpgUrl = anime.main_picture.large.replace(".webp", ".jpg");
+        if (anime?.images?.jpg?.large_image_url) {
+            const jpgUrl = anime.images.jpg.large_image_url.replace(".webp", ".jpg");
             animeCovers.push(jpgUrl);
         }
     }

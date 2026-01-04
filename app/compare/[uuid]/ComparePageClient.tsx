@@ -62,24 +62,24 @@ function CompareCard({
     section: "shared" | "youOnly" | "theyOnly";
 }) {
     const { anime, yourData, theirData } = item;
-    const imageUrl = anime.main_picture?.large || anime.main_picture?.medium || "/placeholder.png";
+    const imageUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || "/placeholder.png";
 
     return (
-        <Link href={`/anime/${anime.id}`} className={styles.compareCard}>
+        <Link href={`/anime/${anime.mal_id}`} className={styles.compareCard}>
             <div className={styles.cardImage}>
                 <Image src={imageUrl} alt={anime.title} fill sizes="120px" loading="lazy" />
-                {anime.mean && (
+                {anime.score && (
                     <div className={styles.score}>
                         <i className="bi bi-star-fill" />
-                        {anime.mean.toFixed(1)}
+                        {anime.score.toFixed(1)}
                     </div>
                 )}
             </div>
             <div className={styles.cardInfo}>
                 <h4 className={styles.cardTitle}>{anime.title}</h4>
                 <div className={styles.cardMeta}>
-                    {anime.media_type && <span>{anime.media_type.toUpperCase()}</span>}
-                    {anime.num_episodes && <span>{anime.num_episodes} eps</span>}
+                    {anime.type && <span>{anime.type.toUpperCase()}</span>}
+                    {anime.episodes && <span>{anime.episodes} eps</span>}
                 </div>
                 <div className={styles.ratings}>
                     {section === "shared" && (
@@ -150,7 +150,7 @@ function VennSection({
                             <div ref={gridRef} className={styles.cardGrid}>
                                 {visibleItems.map(item => (
                                     <CompareCard
-                                        key={item.anime.id}
+                                        key={item.anime.mal_id}
                                         item={item}
                                         theirUsername={theirUsername}
                                         section={section}

@@ -93,9 +93,9 @@ export async function getComparison(
         }
     }
 
-    shared.sort((a, b) => (b.anime.mean || 0) - (a.anime.mean || 0));
-    youOnly.sort((a, b) => (b.anime.mean || 0) - (a.anime.mean || 0));
-    theyOnly.sort((a, b) => (b.anime.mean || 0) - (a.anime.mean || 0));
+    shared.sort((a, b) => (b.anime.score || 0) - (a.anime.score || 0));
+    youOnly.sort((a, b) => (b.anime.score || 0) - (a.anime.score || 0));
+    theyOnly.sort((a, b) => (b.anime.score || 0) - (a.anime.score || 0));
 
     const unionSize = yourAnimeIds.size + theirAnimeIds.size - sharedIds.length;
     const compatibilityScore = unionSize > 0 ? Math.round((sharedIds.length / unionSize) * 100) : 0;

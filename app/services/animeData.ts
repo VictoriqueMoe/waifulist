@@ -50,22 +50,22 @@ function parseCSVLine(line: string): string[] {
     return result;
 }
 
-function parseGenres(genresStr: string): { id: number; name: string }[] {
+function parseGenres(genresStr: string): { mal_id: number; name: string }[] {
     if (!genresStr) {
         return [];
     }
-    return genresStr.split("|").map((name, index) => ({
-        id: index,
+    return genresStr.split(",").map((name, index) => ({
+        mal_id: index,
         name: name.trim(),
     }));
 }
 
-function parseStudios(studiosStr: string): { id: number; name: string }[] {
+function parseStudios(studiosStr: string): { mal_id: number; name: string }[] {
     if (!studiosStr) {
         return [];
     }
-    return studiosStr.split("|").map((name, index) => ({
-        id: index,
+    return studiosStr.split(",").map((name, index) => ({
+        mal_id: index,
         name: name.trim(),
     }));
 }
@@ -86,38 +86,39 @@ function parseCSVContent(csvContent: string): Anime[] {
 
         const values = parseCSVLine(line);
 
-        const id = parseInt(values[getIndex("id")], 10);
-        if (isNaN(id)) {
+        const mal_id = parseInt(values[getIndex("id")], 10);
+        if (isNaN(mal_id)) {
             continue;
         }
 
         const imageUrl = values[getIndex("image")];
+        const startDate = values[getIndex("start_date")] || undefined;
+        const endDate = values[getIndex("end_date")] || undefined;
 
         anime.push({
-            id,
+            mal_id,
             title: values[getIndex("title")] || values[getIndex("titleEn")] || "Unknown",
-            alternative_titles: {
-                en: values[getIndex("titleEn")] || undefined,
-                ja: values[getIndex("titleJa")] || undefined,
-            },
-            main_picture: imageUrl
+            title_english: values[getIndex("titleEn")] || undefined,
+            title_japanese: values[getIndex("titleJa")] || undefined,
+            images: imageUrl
                 ? {
-                      medium: imageUrl,
-                      large: imageUrl,
+                      jpg: {
+                          image_url: imageUrl,
+                          large_image_url: imageUrl,
+                      },
                   }
                 : undefined,
-            mean: values[getIndex("mean")] ? parseFloat(values[getIndex("mean")]) : undefined,
+            score: values[getIndex("mean")] ? parseFloat(values[getIndex("mean")]) : undefined,
             rank: values[getIndex("rank")] ? parseInt(values[getIndex("rank")], 10) : undefined,
             popularity: values[getIndex("num_list_users")]
                 ? parseInt(values[getIndex("num_list_users")], 10)
                 : undefined,
-            num_scoring_users: values[getIndex("num_scoring_users")]
+            scored_by: values[getIndex("num_scoring_users")]
                 ? parseInt(values[getIndex("num_scoring_users")], 10)
                 : undefined,
-            num_episodes: values[getIndex("num_episodes")] ? parseInt(values[getIndex("num_episodes")], 10) : undefined,
-            start_date: values[getIndex("start_date")] || undefined,
-            end_date: values[getIndex("end_date")] || undefined,
-            media_type: values[getIndex("media_type")] || undefined,
+            episodes: values[getIndex("num_episodes")] ? parseInt(values[getIndex("num_episodes")], 10) : undefined,
+            aired: startDate || endDate ? { from: startDate, to: endDate } : undefined,
+            type: values[getIndex("media_type")] || undefined,
             status: values[getIndex("status")] || undefined,
             rating: values[getIndex("rating")] || undefined,
             genres: parseGenres(values[getIndex("genres")]),
@@ -166,7 +167,7 @@ async function saveToRedis(animeList: Anime[]): Promise<void> {
         // Save individual anime for fast lookups
         const pipeline = redis.pipeline();
         for (const anime of animeList) {
-            pipeline.setex(REDIS_KEYS.ANIME_BY_ID(anime.id), REDIS_TTL.ANIME_LIST, JSON.stringify(anime));
+            pipeline.setex(REDIS_KEYS.ANIME_BY_ID(anime.mal_id), REDIS_TTL.ANIME_LIST, JSON.stringify(anime));
         }
         await pipeline.exec();
 
@@ -181,11 +182,11 @@ async function saveToRedis(animeList: Anime[]): Promise<void> {
 async function saveSortedLists(animeList: Anime[]): Promise<void> {
     const redis = getRedis();
 
-    const browsable = animeList.filter(anime => !FEATURED_IDS_SET.has(anime.id));
+    const browsable = animeList.filter(anime => !FEATURED_IDS_SET.has(anime.mal_id));
 
-    const byRating = [...browsable].sort((a, b) => (b.mean || 0) - (a.mean || 0));
+    const byRating = [...browsable].sort((a, b) => (b.score || 0) - (a.score || 0));
 
-    const byNewest = [...browsable].sort((a, b) => (b.start_date || "").localeCompare(a.start_date || ""));
+    const byNewest = [...browsable].sort((a, b) => (b.aired?.from || "").localeCompare(a.aired?.from || ""));
 
     const pipeline = redis.pipeline();
     pipeline.del(REDIS_KEYS.ANIME_SORTED_RATING);
@@ -215,12 +216,12 @@ async function saveTitleIndex(animeList: Anime[]): Promise<void> {
     for (const anime of animeList) {
         const mainTitle = normaliseTitle(anime.title);
         if (mainTitle) {
-            pipeline.hset(REDIS_KEYS.ANIME_TITLE_INDEX, mainTitle, anime.id.toString());
+            pipeline.hset(REDIS_KEYS.ANIME_TITLE_INDEX, mainTitle, anime.mal_id.toString());
         }
-        if (anime.alternative_titles?.en) {
-            const enTitle = normaliseTitle(anime.alternative_titles.en);
+        if (anime.title_english) {
+            const enTitle = normaliseTitle(anime.title_english);
             if (enTitle) {
-                pipeline.hset(REDIS_KEYS.ANIME_TITLE_INDEX, enTitle, anime.id.toString());
+                pipeline.hset(REDIS_KEYS.ANIME_TITLE_INDEX, enTitle, anime.mal_id.toString());
             }
         }
     }
@@ -235,7 +236,7 @@ async function saveSeasonalLists(animeList: Anime[]): Promise<void> {
     const seasonMap = new Map<string, Anime[]>();
 
     for (const anime of animeList) {
-        const parsed = parseSeasonFromStartDate(anime.start_date);
+        const parsed = parseSeasonFromStartDate(anime.aired?.from);
         if (!parsed) {
             continue;
         }
@@ -491,18 +492,15 @@ export async function getAnimeById(
         return null;
     }
 
-    // Fetch additional details from CDN if needed (bypass Redis cache)
+    // Fetch full details from Jikan if needed
     if (includeDetails && !anime.synopsis) {
         const detailedAnime = await fetchAnimeFromCdn(id);
-        if (detailedAnime?.synopsis) {
-            anime.synopsis = detailedAnime.synopsis;
-            if (!anime.source && detailedAnime.source) {
-                anime.source = detailedAnime.source;
-            }
+        if (detailedAnime) {
             const redis = getRedis();
             try {
-                await redis.setex(REDIS_KEYS.ANIME_BY_ID(id), REDIS_TTL.ANIME_BY_ID, JSON.stringify(anime));
+                await redis.setex(REDIS_KEYS.ANIME_BY_ID(id), REDIS_TTL.ANIME_BY_ID, JSON.stringify(detailedAnime));
             } catch {}
+            return detailedAnime;
         }
     }
 
@@ -610,7 +608,7 @@ export async function browseAnime(
 
         const items = await redis.lrange(listKey, offset, offset + limit * 3 - 1);
         const parsed = items.map(item => JSON.parse(item) as Anime);
-        const filtered = parsed.filter(anime => anime.media_type !== "special");
+        const filtered = parsed.filter(anime => anime.type?.toLowerCase() !== "special");
         return { anime: filtered.slice(0, limit), total };
     } catch (error) {
         console.error("[Redis] Failed to browse anime:", error);

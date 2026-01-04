@@ -202,7 +202,7 @@ function BrowseContent() {
                     <>
                         <div className={styles.grid}>
                             {anime.map(item => (
-                                <AnimeCard key={item.id} anime={item} />
+                                <AnimeCard key={item.mal_id} anime={item} />
                             ))}
                         </div>
 

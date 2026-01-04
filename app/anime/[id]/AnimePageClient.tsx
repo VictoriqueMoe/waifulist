@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Anime, WatchStatus } from "@/types/anime";
+import { Anime, AnimeRelation, WatchStatus } from "@/types/anime";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWatchList } from "@/contexts/WatchListContext";
 import { Button } from "@/components/Button/Button";
@@ -13,12 +13,83 @@ import styles from "./page.module.scss";
 
 interface AnimePageClientProps {
     anime: Anime;
+    relatedAnime?: Record<number, Anime>;
+}
+
+interface RelatedAnimeSectionProps {
+    relations: AnimeRelation[];
+    relatedAnime?: Record<number, Anime>;
+}
+
+function RelatedAnimeSection({ relations, relatedAnime }: RelatedAnimeSectionProps) {
+    const animeRelations = relations
+        .map(r => ({
+            ...r,
+            entry: r.entry.filter(e => e.type === "anime"),
+        }))
+        .filter(r => r.entry.length > 0);
+
+    const [activeTab, setActiveTab] = useState(0);
+    const [isTransitioning, setIsTransitioning] = useState(false);
+
+    if (animeRelations.length === 0) {
+        return null;
+    }
+
+    const activeRelation = animeRelations[activeTab];
+
+    const handleTabChange = (index: number) => {
+        if (index === activeTab) {
+            return;
+        }
+        setIsTransitioning(true);
+        setTimeout(() => {
+            setActiveTab(index);
+            setIsTransitioning(false);
+        }, 150);
+    };
+
+    return (
+        <div className={styles.relatedSection}>
+            <h3>Related Anime</h3>
+            <div className={styles.relationTabs}>
+                {animeRelations.map((relation, index) => (
+                    <button
+                        key={relation.relation}
+                        className={`${styles.relationTab} ${index === activeTab ? styles.active : ""}`}
+                        onClick={() => handleTabChange(index)}
+                    >
+                        {relation.relation}
+                        <span className={styles.tabCount}>{relation.entry.length}</span>
+                    </button>
+                ))}
+            </div>
+            <div className={`${styles.relatedGrid} ${isTransitioning ? styles.fadeOut : styles.fadeIn}`}>
+                {activeRelation.entry.map(entry => {
+                    const relatedData = relatedAnime?.[entry.mal_id];
+                    const imageUrl = relatedData?.images?.jpg?.large_image_url || relatedData?.images?.jpg?.image_url;
+                    return (
+                        <Link key={entry.mal_id} href={`/anime/${entry.mal_id}`} className={styles.relatedItem}>
+                            <div className={styles.relatedThumb}>
+                                {imageUrl ? (
+                                    <Image src={imageUrl} alt={entry.name} fill sizes="150px" />
+                                ) : (
+                                    <div className={styles.noImage} />
+                                )}
+                            </div>
+                            <span className={styles.relatedTitle}>{entry.name}</span>
+                        </Link>
+                    );
+                })}
+            </div>
+        </div>
+    );
 }
 
 const statusOptions: WatchStatus[] = ["watching", "plan_to_watch", "completed", "on_hold", "dropped"];
 const MAX_NOTE_LENGTH = 500;
 
-export function AnimePageClient({ anime }: AnimePageClientProps) {
+export function AnimePageClient({ anime, relatedAnime }: AnimePageClientProps) {
     const [showStatusMenu, setShowStatusMenu] = useState(false);
     const [localNoteText, setLocalNoteText] = useState<string | null>(null);
     const [noteSaved, setNoteSaved] = useState(false);
@@ -33,7 +104,7 @@ export function AnimePageClient({ anime }: AnimePageClientProps) {
         ensureLoaded();
     }, [ensureLoaded]);
 
-    const watchData = user ? getWatchData(anime.id) : undefined;
+    const watchData = user ? getWatchData(anime.mal_id) : undefined;
 
     const noteText = localNoteText !== null ? localNoteText : watchData?.notes || "";
 
@@ -44,14 +115,14 @@ export function AnimePageClient({ anime }: AnimePageClientProps) {
             if (trimmed === existingTrimmed) {
                 return;
             }
-            updateWatchStatus(anime.id, { notes: trimmed || null });
+            updateWatchStatus(anime.mal_id, { notes: trimmed || null });
             setNoteSaved(true);
             if (savedIndicatorTimeoutRef.current) {
                 clearTimeout(savedIndicatorTimeoutRef.current);
             }
             savedIndicatorTimeoutRef.current = setTimeout(() => setNoteSaved(false), 2000);
         },
-        [anime.id, watchData?.notes, updateWatchStatus],
+        [anime.mal_id, watchData?.notes, updateWatchStatus],
     );
 
     const handleNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -79,7 +150,7 @@ export function AnimePageClient({ anime }: AnimePageClientProps) {
             clearTimeout(saveTimeoutRef.current);
         }
         setLocalNoteText("");
-        updateWatchStatus(anime.id, { notes: null });
+        updateWatchStatus(anime.mal_id, { notes: null });
         setNoteSaved(true);
         if (savedIndicatorTimeoutRef.current) {
             clearTimeout(savedIndicatorTimeoutRef.current);
@@ -99,29 +170,29 @@ export function AnimePageClient({ anime }: AnimePageClientProps) {
     }, []);
 
     const handleAddToList = (status: WatchStatus) => {
-        if (isInWatchList(anime.id)) {
-            updateWatchStatus(anime.id, { status });
+        if (isInWatchList(anime.mal_id)) {
+            updateWatchStatus(anime.mal_id, { status });
         } else {
-            addToWatchList(anime.id, status);
+            addToWatchList(anime.mal_id, status);
         }
         setShowStatusMenu(false);
     };
 
     const handleRemoveFromList = () => {
-        removeFromWatchList(anime.id);
+        removeFromWatchList(anime.mal_id);
         setShowStatusMenu(false);
     };
 
     const handleEpisodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const episodes = Math.max(0, Math.min(parseInt(e.target.value) || 0, anime.num_episodes || 9999));
-        updateWatchStatus(anime.id, { episodesWatched: episodes });
+        const episodes = Math.max(0, Math.min(parseInt(e.target.value) || 0, anime.episodes || 9999));
+        updateWatchStatus(anime.mal_id, { episodesWatched: episodes });
     };
 
     const handleRatingChange = (rating: number) => {
-        updateWatchStatus(anime.id, { rating });
+        updateWatchStatus(anime.mal_id, { rating });
     };
 
-    const imageUrl = anime.main_picture?.large || anime.main_picture?.medium || "/placeholder.png";
+    const imageUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || "/placeholder.png";
 
     return (
         <div className={styles.page}>
@@ -145,35 +216,33 @@ export function AnimePageClient({ anime }: AnimePageClientProps) {
                     <div className={styles.details}>
                         <div className={styles.titleSection}>
                             <h1 className={styles.title}>{anime.title}</h1>
-                            {anime.alternative_titles?.en && anime.alternative_titles.en !== anime.title && (
-                                <p className={styles.altTitle}>{anime.alternative_titles.en}</p>
+                            {anime.title_english && anime.title_english !== anime.title && (
+                                <p className={styles.altTitle}>{anime.title_english}</p>
                             )}
                         </div>
 
                         <div className={styles.meta}>
-                            {anime.mean && (
+                            {anime.score && (
                                 <div className={styles.score}>
                                     <i className="bi bi-star-fill" />
-                                    <span>{anime.mean.toFixed(2)}</span>
+                                    <span>{anime.score.toFixed(2)}</span>
                                 </div>
                             )}
-                            {anime.media_type && <span className={styles.badge}>{anime.media_type.toUpperCase()}</span>}
+                            {anime.type && <span className={styles.badge}>{anime.type.toUpperCase()}</span>}
                             {anime.status && <span className={styles.badge}>{anime.status.replace(/_/g, " ")}</span>}
                             <span className={styles.badge}>
-                                {anime.num_episodes ? `${anime.num_episodes} episodes` : "N/A"}
+                                {anime.episodes ? `${anime.episodes} episodes` : "N/A"}
                             </span>
                             {anime.rating && <span className={styles.badge}>{anime.rating}</span>}
                         </div>
 
                         {anime.genres && anime.genres.length > 0 && (
                             <div className={styles.genres}>
-                                {anime.genres.map(genres =>
-                                    genres.name.split(",").map(genre => (
-                                        <Pill key={`${genre}-${genres.id}`} variant="accent">
-                                            {genre.trim()}
-                                        </Pill>
-                                    )),
-                                )}
+                                {anime.genres.map(genre => (
+                                    <Pill key={genre.mal_id} variant="accent">
+                                        {genre.name}
+                                    </Pill>
+                                ))}
                             </div>
                         )}
 
@@ -239,11 +308,11 @@ export function AnimePageClient({ anime }: AnimePageClientProps) {
                                             <input
                                                 type="number"
                                                 min="0"
-                                                max={anime.num_episodes || 9999}
+                                                max={anime.episodes || 9999}
                                                 value={watchData.episodesWatched}
                                                 onChange={handleEpisodeChange}
                                             />
-                                            <span>/ {anime.num_episodes || "?"}</span>
+                                            <span>/ {anime.episodes || "?"}</span>
                                         </div>
                                     </div>
                                 )}
@@ -343,13 +412,10 @@ export function AnimePageClient({ anime }: AnimePageClientProps) {
                                     </span>
                                 </div>
                             )}
-                            {anime.start_date && (
+                            {anime.aired?.from && (
                                 <div className={styles.infoItem}>
                                     <span className={styles.infoLabel}>Aired</span>
-                                    <span className={styles.infoValue}>
-                                        {anime.start_date}
-                                        {anime.end_date && ` to ${anime.end_date}`}
-                                    </span>
+                                    <span className={styles.infoValue}>{anime.aired.string || anime.aired.from}</span>
                                 </div>
                             )}
                             {anime.source && (
@@ -371,6 +437,10 @@ export function AnimePageClient({ anime }: AnimePageClientProps) {
                                 </div>
                             )}
                         </div>
+
+                        {anime.relations && anime.relations.length > 0 && (
+                            <RelatedAnimeSection relations={anime.relations} relatedAnime={relatedAnime} />
+                        )}
                     </div>
                 </div>
             </div>

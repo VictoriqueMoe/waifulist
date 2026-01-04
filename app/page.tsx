@@ -60,7 +60,7 @@ export default function Home() {
                     </div>
                     <div className={styles.grid}>
                         {featuredAnime.map(anime => (
-                            <AnimeCard key={anime.id} anime={anime} />
+                            <AnimeCard key={anime.mal_id} anime={anime} />
                         ))}
                     </div>
                 </div>
@@ -76,7 +76,7 @@ export default function Home() {
                     </div>
                     <div className={styles.grid}>
                         {popularAnime.map(anime => (
-                            <AnimeCard key={anime.id} anime={anime} />
+                            <AnimeCard key={anime.mal_id} anime={anime} />
                         ))}
                     </div>
                 </div>

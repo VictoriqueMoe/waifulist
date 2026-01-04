@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getAnimeById } from "@/services/animeData";
 import { AnimePageClient } from "./AnimePageClient";
+import { Anime } from "@/types/anime";
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -30,7 +31,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         ? anime.synopsis.split(" ").slice(0, 20).join(" ") + "..."
         : `Track ${anime.title} on WaifuList`;
 
-    const imageUrl = anime.main_picture?.large || anime.main_picture?.medium;
+    const imageUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url;
 
     return {
         title: `${anime.title} | WaifuList`,
@@ -64,5 +65,20 @@ export default async function AnimePage({ params }: PageProps) {
         notFound();
     }
 
-    return <AnimePageClient anime={anime} />;
+    // Fetch related anime data
+    const relatedAnime: Record<number, Anime> = {};
+    if (anime.relations) {
+        const relatedIds = anime.relations.flatMap(r => r.entry.filter(e => e.type === "anime").map(e => e.mal_id));
+
+        const relatedAnimeResults = await Promise.all(relatedIds.map(id => getAnimeById(id)));
+
+        relatedIds.forEach((id, index) => {
+            const result = relatedAnimeResults[index];
+            if (result) {
+                relatedAnime[id] = result;
+            }
+        });
+    }
+
+    return <AnimePageClient anime={anime} relatedAnime={relatedAnime} />;
 }
