@@ -105,9 +105,9 @@ export function Header() {
                             <div className={styles.desktopOnly}>
                                 {user ? (
                                     <div className={styles.userMenu}>
-                                        <span className={styles.username}>
+                                        <Link href="/profile" className={styles.username}>
                                             <i className="bi bi-person-circle" /> {user.username}
-                                        </span>
+                                        </Link>
                                         <Link href="/settings" className={styles.settingsLink} title="Settings">
                                             <i className="bi bi-gear" />
                                         </Link>
@@ -147,10 +147,10 @@ export function Header() {
                     </div>
                 ) : user ? (
                     <>
-                        <div className={styles.mobileUserInfo}>
+                        <Link href="/profile" className={styles.mobileUserInfo} onClick={closeMenu}>
                             <i className="bi bi-person-circle" />
                             <span>{user.username}</span>
-                        </div>
+                        </Link>
                         <nav className={styles.mobileNav}>
                             <Link href="/settings" className={styles.mobileNavLink} onClick={closeMenu}>
                                 <i className="bi bi-gear" />

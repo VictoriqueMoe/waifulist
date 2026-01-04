@@ -1,0 +1,151 @@
+@use "../styles/variables" as *;
+
+.page {
+    min-height: calc(100vh - 80px);
+    padding: $spacing-xl $spacing-lg;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: $spacing-xl;
+
+    h1 {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: $spacing-md;
+        font-size: 2rem;
+        margin-bottom: $spacing-sm;
+
+        i {
+            color: var(--accent-primary);
+        }
+    }
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+.loading {
+    @include flex-center;
+    flex-direction: column;
+    gap: $spacing-md;
+    padding: $spacing-2xl;
+    color: var(--text-secondary);
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-primary);
+    border-top-color: var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.error {
+    @include flex-center;
+    gap: $spacing-sm;
+    padding: $spacing-lg;
+    margin-top: $spacing-lg;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: $radius-md;
+    color: #ef4444;
+
+    i {
+        font-size: 1.25rem;
+    }
+}
+
+.summaryCards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: $spacing-lg;
+    margin-bottom: $spacing-xl;
+
+    @media (max-width: $breakpoint-sm) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.summaryCard {
+    @include card-base;
+    padding: $spacing-xl;
+    text-align: center;
+
+    i {
+        font-size: 2rem;
+        color: var(--accent-primary);
+        margin-bottom: $spacing-sm;
+    }
+}
+
+.summaryValue {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: $spacing-xs;
+}
+
+.summaryLabel {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.chartsGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $spacing-lg;
+    margin-bottom: $spacing-lg;
+
+    @media (max-width: $breakpoint-md) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.chartCard {
+    @include card-base;
+    padding: $spacing-lg;
+
+    h3 {
+        font-size: 1.125rem;
+        margin-bottom: $spacing-lg;
+        color: var(--text-primary);
+    }
+}
+
+.chartContainer {
+    height: 280px;
+    position: relative;
+}
+
+.chartCardWide {
+    @include card-base;
+    padding: $spacing-lg;
+    margin-bottom: $spacing-lg;
+
+    h3 {
+        font-size: 1.125rem;
+        margin-bottom: $spacing-lg;
+        color: var(--text-primary);
+    }
+}
+
+.chartContainerWide {
+    height: 300px;
+    position: relative;
+}
