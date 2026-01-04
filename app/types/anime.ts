@@ -2,24 +2,26 @@ export type WatchStatus = "watching" | "completed" | "plan_to_watch" | "on_hold"
 
 export type SortType = "added" | "name" | "rating" | "rating (personal)";
 
+export interface AnimePicture {
+    jpg?: {
+        image_url: string;
+        small_image_url: string;
+        large_image_url: string;
+    };
+    webp?: {
+        image_url: string;
+        small_image_url: string;
+        large_image_url: string;
+    };
+}
+
 export interface Anime {
     mal_id: number;
     title: string;
     title_english?: string;
     title_japanese?: string;
     title_synonyms?: string[];
-    images?: {
-        jpg?: {
-            image_url?: string;
-            small_image_url?: string;
-            large_image_url?: string;
-        };
-        webp?: {
-            image_url?: string;
-            small_image_url?: string;
-            large_image_url?: string;
-        };
-    };
+    images?: AnimePicture;
     titles?: Title[];
     synopsis?: string;
     background?: string;
@@ -88,21 +90,22 @@ interface From {
     year: number;
 }
 
-export interface AnimePicture {
-    jpg: {
-        image_url: string;
-        small_image_url: string;
-        large_image_url: string;
-    };
-    webp: {
-        image_url: string;
-        small_image_url: string;
-        large_image_url: string;
-    };
-}
-
 export interface PicturesResponse {
     data: AnimePicture[];
+}
+
+export interface AnimeRecommendation {
+    entry: {
+        mal_id: number;
+        url: string;
+        images: AnimePicture;
+        title: string;
+    };
+    votes: number;
+}
+
+export interface RecommendationsResponse {
+    data: AnimeRecommendation[];
 }
 
 export interface WatchedAnime {

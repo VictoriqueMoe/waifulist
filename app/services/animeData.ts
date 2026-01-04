@@ -104,6 +104,7 @@ function parseCSVContent(csvContent: string): Anime[] {
                 ? {
                       jpg: {
                           image_url: imageUrl,
+                          small_image_url: imageUrl,
                           large_image_url: imageUrl,
                       },
                   }

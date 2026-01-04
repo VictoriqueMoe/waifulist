@@ -917,3 +917,66 @@
     height: 100%;
     background: var(--bg-tertiary);
 }
+
+.recommendationsSection {
+    width: 100%;
+}
+
+.recommendationsGrid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: $spacing-lg;
+}
+
+.recommendationItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-xs;
+    text-decoration: none;
+    transition: transform $transition-fast;
+    width: 140px;
+
+    @include md {
+        width: 160px;
+    }
+
+    &:hover {
+        transform: translateY(-4px);
+
+        .recommendationThumb {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+    }
+}
+
+.recommendationThumb {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    border-radius: $radius-md;
+    overflow: hidden;
+    background: var(--bg-tertiary);
+    transition: box-shadow $transition-fast;
+
+    img {
+        object-fit: cover;
+    }
+}
+
+.recommendationTitle {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    line-height: 1.4;
+    text-align: center;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.recommendationVotes {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}

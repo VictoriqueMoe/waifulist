@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Anime, AnimePicture, AnimeRelation, WatchStatus } from "@/types/anime";
+import { Anime, AnimePicture, AnimeRecommendation, AnimeRelation, WatchStatus } from "@/types/anime";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWatchList } from "@/contexts/WatchListContext";
 import { Button } from "@/components/Button/Button";
@@ -17,6 +17,7 @@ interface AnimePageClientProps {
     anime: Anime;
     relatedAnime?: Record<number, Anime>;
     pictures?: AnimePicture[];
+    recommendations?: AnimeRecommendation[];
 }
 
 interface RelatedAnimeSectionProps {
@@ -28,6 +29,7 @@ interface ContentTabsProps {
     anime: Anime;
     pictures?: AnimePicture[];
     relatedAnime?: Record<number, Anime>;
+    recommendations?: AnimeRecommendation[];
 }
 
 interface SynopsisParagraph {
@@ -94,6 +96,38 @@ function RelatedAnimeSection({ relations, relatedAnime }: RelatedAnimeSectionPro
                                 )}
                             </div>
                             <span className={styles.relatedTitle}>{entry.name}</span>
+                        </Link>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+function RecommendationsSection({ recommendations }: { recommendations: AnimeRecommendation[] }) {
+    if (recommendations.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className={styles.recommendationsSection}>
+            <div className={styles.recommendationsGrid}>
+                {recommendations.map(rec => {
+                    const imageUrl = rec.entry.images?.jpg?.large_image_url;
+                    if (!imageUrl) {
+                        return null;
+                    }
+                    return (
+                        <Link
+                            key={rec.entry.mal_id}
+                            href={`/anime/${rec.entry.mal_id}`}
+                            className={styles.recommendationItem}
+                        >
+                            <div className={styles.recommendationThumb}>
+                                <Image src={imageUrl} alt={rec.entry.title} fill sizes="150px" />
+                            </div>
+                            <span className={styles.recommendationTitle}>{rec.entry.title}</span>
+                            <span className={styles.recommendationVotes}>{rec.votes} votes</span>
                         </Link>
                     );
                 })}
@@ -246,9 +280,10 @@ function MediaContent({ anime, pictures }: { anime: Anime; pictures?: AnimePictu
     return <Tabs tabs={mediaTabs} />;
 }
 
-function ContentTabs({ anime, pictures, relatedAnime }: ContentTabsProps) {
+function ContentTabs({ anime, pictures, relatedAnime, recommendations }: ContentTabsProps) {
     const hasMedia = anime.trailer?.youtube_id || (pictures && pictures.length > 0);
     const hasRelated = anime.relations && anime.relations.some(r => r.entry.some(e => e.type === "anime"));
+    const hasRecommendations = recommendations && recommendations.length > 0;
 
     const tabs: Tab[] = [
         {
@@ -274,10 +309,18 @@ function ContentTabs({ anime, pictures, relatedAnime }: ContentTabsProps) {
         });
     }
 
+    if (hasRecommendations) {
+        tabs.push({
+            id: "recommendations",
+            label: "Recommendations",
+            content: <RecommendationsSection recommendations={recommendations} />,
+        });
+    }
+
     return <Tabs tabs={tabs} />;
 }
 
-export function AnimePageClient({ anime, relatedAnime, pictures }: AnimePageClientProps) {
+export function AnimePageClient({ anime, relatedAnime, pictures, recommendations }: AnimePageClientProps) {
     const [showStatusMenu, setShowStatusMenu] = useState(false);
     const [localNoteText, setLocalNoteText] = useState<string | null>(null);
     const [noteSaved, setNoteSaved] = useState(false);
@@ -584,7 +627,12 @@ export function AnimePageClient({ anime, relatedAnime, pictures }: AnimePageClie
                             </div>
                         )}
 
-                        <ContentTabs anime={anime} pictures={pictures} relatedAnime={relatedAnime} />
+                        <ContentTabs
+                            anime={anime}
+                            pictures={pictures}
+                            relatedAnime={relatedAnime}
+                            recommendations={recommendations}
+                        />
                     </div>
                 </div>
             </div>

@@ -1,4 +1,11 @@
-import { Anime, AnimePicture, AnimeRelation, PicturesResponse } from "@/types/anime";
+import {
+    Anime,
+    AnimePicture,
+    AnimeRecommendation,
+    AnimeRelation,
+    PicturesResponse,
+    RecommendationsResponse,
+} from "@/types/anime";
 
 const JIKAN_API_URL = process.env.JIKAN_API_URL || "http://jikan:8080/v4";
 const JIKAN_TIMEOUT = 10000;
@@ -90,6 +97,14 @@ export async function fetchAnimeFromJikan(id: number): Promise<Anime | null> {
 export async function fetchAnimePictures(id: number): Promise<AnimePicture[]> {
     const response = await fetchFromJikan<PicturesResponse | null>(`/anime/${id}/pictures`, null);
     return response?.data || [];
+}
+
+export async function fetchAnimeRecommendations(id: number, limit = 12): Promise<AnimeRecommendation[]> {
+    const response = await fetchFromJikan<RecommendationsResponse | null>(`/anime/${id}/recommendations`, null);
+    if (!response?.data) {
+        return [];
+    }
+    return response.data.sort((a, b) => b.votes - a.votes).slice(0, limit);
 }
 
 export const fetchAnimeFromCdn = fetchAnimeFromJikan;
