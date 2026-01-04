@@ -162,11 +162,51 @@ function BrowseContent() {
                 refreshList().then(() => {
                     if (!isInWatchList(animeId)) {
                         contextMenuItems.push({
-                            id: "add",
-                            label: "Add to List",
+                            id: "add-complete",
+                            label: "Add as Complete",
                             icon: <i className="bi bi-check-circle"></i>,
                             onClick: () => {
                                 addToWatchList(animeId, "completed").then(() => {
+                                    performSearch(query, page, sort, hideSpecials);
+                                });
+                            },
+                        });
+                        contextMenuItems.push({
+                            id: "add-watching",
+                            label: "Add as Watching",
+                            icon: <i className="bi bi-play-circle"></i>,
+                            onClick: () => {
+                                addToWatchList(animeId, "watching").then(() => {
+                                    performSearch(query, page, sort, hideSpecials);
+                                });
+                            },
+                        });
+                        contextMenuItems.push({
+                            id: "add-plan",
+                            label: "Add as Plan to Watch",
+                            icon: <i className="bi bi-clock"></i>,
+                            onClick: () => {
+                                addToWatchList(animeId, "plan_to_watch").then(() => {
+                                    performSearch(query, page, sort, hideSpecials);
+                                });
+                            },
+                        });
+                        contextMenuItems.push({
+                            id: "add-hold",
+                            label: "Add as On Hold",
+                            icon: <i className="bi bi-pause-circle"></i>,
+                            onClick: () => {
+                                addToWatchList(animeId, "on_hold").then(() => {
+                                    performSearch(query, page, sort, hideSpecials);
+                                });
+                            },
+                        });
+                        contextMenuItems.push({
+                            id: "add-dropped",
+                            label: "Add as Dropped",
+                            icon: <i className="bi bi-x-circle"></i>,
+                            onClick: () => {
+                                addToWatchList(animeId, "dropped").then(() => {
                                     performSearch(query, page, sort, hideSpecials);
                                 });
                             },
