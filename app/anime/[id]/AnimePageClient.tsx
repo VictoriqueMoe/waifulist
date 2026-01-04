@@ -3,23 +3,38 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Anime, AnimeRelation, WatchStatus } from "@/types/anime";
+import { Anime, AnimePicture, AnimeRelation, WatchStatus } from "@/types/anime";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWatchList } from "@/contexts/WatchListContext";
 import { Button } from "@/components/Button/Button";
 import { Pill } from "@/components/Pill/Pill";
+import { PictureGallery } from "@/components/PictureGallery/PictureGallery";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
 import styles from "./page.module.scss";
 
 interface AnimePageClientProps {
     anime: Anime;
     relatedAnime?: Record<number, Anime>;
+    pictures?: AnimePicture[];
 }
 
 interface RelatedAnimeSectionProps {
     relations: AnimeRelation[];
     relatedAnime?: Record<number, Anime>;
 }
+
+interface ContentTabsProps {
+    anime: Anime;
+    pictures?: AnimePicture[];
+    relatedAnime?: Record<number, Anime>;
+}
+
+interface SynopsisParagraph {
+    text: string;
+    isAttribution: boolean;
+}
+
+type TabId = "overview" | "media" | "related";
 
 function RelatedAnimeSection({ relations, relatedAnime }: RelatedAnimeSectionProps) {
     const animeRelations = relations
@@ -51,7 +66,6 @@ function RelatedAnimeSection({ relations, relatedAnime }: RelatedAnimeSectionPro
 
     return (
         <div className={styles.relatedSection}>
-            <h3>Related Anime</h3>
             <div className={styles.relationTabs}>
                 {animeRelations.map((relation, index) => (
                     <button
@@ -86,10 +100,172 @@ function RelatedAnimeSection({ relations, relatedAnime }: RelatedAnimeSectionPro
     );
 }
 
+function formatSynopsis(text: string): SynopsisParagraph[] {
+    const paragraphs = text.split(/\n\n+/).filter(p => p.trim());
+
+    if (paragraphs.length === 1 && text.length > 400) {
+        const result: SynopsisParagraph[] = [];
+        let remaining = text;
+
+        const attributionMatch = remaining.match(/\s*\[([^\]]+)]\s*$/);
+        let attribution = "";
+        if (attributionMatch) {
+            attribution = `[${attributionMatch[1]}]`;
+            remaining = remaining.slice(0, attributionMatch.index).trim();
+        }
+
+        const sentences = remaining.split(/(?<=[.!?])\s+(?=[A-Z])/);
+        let currentParagraph = "";
+
+        for (const sentence of sentences) {
+            if (currentParagraph.length + sentence.length > 350 && currentParagraph.length > 200) {
+                result.push({ text: currentParagraph.trim(), isAttribution: false });
+                currentParagraph = sentence;
+            } else {
+                currentParagraph += (currentParagraph ? " " : "") + sentence;
+            }
+        }
+
+        if (currentParagraph.trim()) {
+            result.push({ text: currentParagraph.trim(), isAttribution: false });
+        }
+
+        if (attribution) {
+            result.push({ text: attribution, isAttribution: true });
+        }
+
+        return result;
+    }
+
+    return paragraphs.map((p, i) => ({
+        text: p,
+        isAttribution: i === paragraphs.length - 1 && p.startsWith("["),
+    }));
+}
+
+function ContentTabs({ anime, pictures, relatedAnime }: ContentTabsProps) {
+    const [activeTab, setActiveTab] = useState<TabId>("overview");
+
+    const hasMedia = anime.trailer?.youtube_id || (pictures && pictures.length > 0);
+    const hasRelated = anime.relations && anime.relations.length > 0;
+    const synopsisParagraphs = anime.synopsis ? formatSynopsis(anime.synopsis) : [];
+
+    const tabs: { id: TabId; label: string; show: boolean }[] = [
+        { id: "overview", label: "Overview", show: true },
+        { id: "media", label: "Media", show: !!hasMedia },
+        { id: "related", label: "Related", show: !!hasRelated },
+    ];
+
+    const visibleTabs = tabs.filter(t => t.show);
+
+    return (
+        <div className={styles.contentTabs}>
+            <div className={styles.tabBar}>
+                {visibleTabs.map(tab => (
+                    <button
+                        key={tab.id}
+                        className={`${styles.tabButton} ${activeTab === tab.id ? styles.active : ""}`}
+                        onClick={() => setActiveTab(tab.id)}
+                    >
+                        {tab.label}
+                    </button>
+                ))}
+            </div>
+
+            <div className={styles.tabContent}>
+                {activeTab === "overview" && (
+                    <div className={styles.overviewTab}>
+                        {synopsisParagraphs.length > 0 && (
+                            <div className={styles.synopsis}>
+                                {synopsisParagraphs.map((paragraph, index) => (
+                                    <p
+                                        key={index}
+                                        className={paragraph.isAttribution ? styles.synopsisAttribution : undefined}
+                                    >
+                                        {paragraph.text}
+                                    </p>
+                                ))}
+                            </div>
+                        )}
+                        <div className={styles.infoGrid}>
+                            {anime.studios && anime.studios.length > 0 && (
+                                <div className={styles.infoItem}>
+                                    <span className={styles.infoLabel}>Studios</span>
+                                    <span className={styles.infoValue}>
+                                        {anime.studios.map(s => s.name).join(", ")}
+                                    </span>
+                                </div>
+                            )}
+                            {anime.aired?.from && (
+                                <div className={styles.infoItem}>
+                                    <span className={styles.infoLabel}>Aired</span>
+                                    <span className={styles.infoValue}>{anime.aired.string || anime.aired.from}</span>
+                                </div>
+                            )}
+                            {anime.source && (
+                                <div className={styles.infoItem}>
+                                    <span className={styles.infoLabel}>Source</span>
+                                    <span className={styles.infoValue}>{anime.source}</span>
+                                </div>
+                            )}
+                            {anime.rank && (
+                                <div className={styles.infoItem}>
+                                    <span className={styles.infoLabel}>Rank</span>
+                                    <span className={styles.infoValue}>#{anime.rank}</span>
+                                </div>
+                            )}
+                            {anime.popularity && (
+                                <div className={styles.infoItem}>
+                                    <span className={styles.infoLabel}>Popularity</span>
+                                    <span className={styles.infoValue}>#{anime.popularity}</span>
+                                </div>
+                            )}
+                            {anime.duration && (
+                                <div className={styles.infoItem}>
+                                    <span className={styles.infoLabel}>Duration</span>
+                                    <span className={styles.infoValue}>{anime.duration}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === "media" && hasMedia && (
+                    <div className={styles.mediaTab}>
+                        {anime.trailer?.youtube_id && (
+                            <div className={styles.trailerSection}>
+                                <h4>Trailer</h4>
+                                <div className={styles.trailerWrapper}>
+                                    <iframe
+                                        src={`https://www.youtube.com/embed/${anime.trailer.youtube_id}`}
+                                        title={`${anime.title} Trailer`}
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                    />
+                                </div>
+                            </div>
+                        )}
+                        {pictures && pictures.length > 0 && (
+                            <div className={styles.gallerySection}>
+                                <h4>Gallery</h4>
+                                <PictureGallery pictures={pictures} />
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {activeTab === "related" && hasRelated && (
+                    <RelatedAnimeSection relations={anime.relations!} relatedAnime={relatedAnime} />
+                )}
+            </div>
+        </div>
+    );
+}
+
 const statusOptions: WatchStatus[] = ["watching", "plan_to_watch", "completed", "on_hold", "dropped"];
 const MAX_NOTE_LENGTH = 500;
 
-export function AnimePageClient({ anime, relatedAnime }: AnimePageClientProps) {
+export function AnimePageClient({ anime, relatedAnime, pictures }: AnimePageClientProps) {
     const [showStatusMenu, setShowStatusMenu] = useState(false);
     const [localNoteText, setLocalNoteText] = useState<string | null>(null);
     const [noteSaved, setNoteSaved] = useState(false);
@@ -396,51 +572,7 @@ export function AnimePageClient({ anime, relatedAnime }: AnimePageClientProps) {
                             </div>
                         )}
 
-                        {anime.synopsis && (
-                            <div className={styles.synopsis}>
-                                <h3>Synopsis</h3>
-                                <p>{anime.synopsis}</p>
-                            </div>
-                        )}
-
-                        <div className={styles.info}>
-                            {anime.studios && anime.studios.length > 0 && (
-                                <div className={styles.infoItem}>
-                                    <span className={styles.infoLabel}>Studios</span>
-                                    <span className={styles.infoValue}>
-                                        {anime.studios.map(s => s.name).join(", ")}
-                                    </span>
-                                </div>
-                            )}
-                            {anime.aired?.from && (
-                                <div className={styles.infoItem}>
-                                    <span className={styles.infoLabel}>Aired</span>
-                                    <span className={styles.infoValue}>{anime.aired.string || anime.aired.from}</span>
-                                </div>
-                            )}
-                            {anime.source && (
-                                <div className={styles.infoItem}>
-                                    <span className={styles.infoLabel}>Source</span>
-                                    <span className={styles.infoValue}>{anime.source}</span>
-                                </div>
-                            )}
-                            {anime.rank && (
-                                <div className={styles.infoItem}>
-                                    <span className={styles.infoLabel}>Rank</span>
-                                    <span className={styles.infoValue}>#{anime.rank}</span>
-                                </div>
-                            )}
-                            {anime.popularity && (
-                                <div className={styles.infoItem}>
-                                    <span className={styles.infoLabel}>Popularity</span>
-                                    <span className={styles.infoValue}>#{anime.popularity}</span>
-                                </div>
-                            )}
-                        </div>
-
-                        {anime.relations && anime.relations.length > 0 && (
-                            <RelatedAnimeSection relations={anime.relations} relatedAnime={relatedAnime} />
-                        )}
+                        <ContentTabs anime={anime} pictures={pictures} relatedAnime={relatedAnime} />
                     </div>
                 </div>
             </div>

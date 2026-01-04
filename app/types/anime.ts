@@ -2,18 +2,6 @@ export type WatchStatus = "watching" | "completed" | "plan_to_watch" | "on_hold"
 
 export type SortType = "added" | "name" | "rating" | "rating (personal)";
 
-export interface RelatedAnimeEntry {
-    mal_id: number;
-    type: string;
-    name: string;
-    url: string;
-}
-
-export interface AnimeRelation {
-    relation: string;
-    entry: RelatedAnimeEntry[];
-}
-
 export interface Anime {
     mal_id: number;
     title: string;
@@ -26,7 +14,13 @@ export interface Anime {
             small_image_url?: string;
             large_image_url?: string;
         };
+        webp?: {
+            image_url?: string;
+            small_image_url?: string;
+            large_image_url?: string;
+        };
     };
+    titles?: Title[];
     synopsis?: string;
     background?: string;
     score?: number;
@@ -39,14 +33,12 @@ export interface Anime {
     rating?: string;
     source?: string;
     type?: string;
-    aired?: {
-        from?: string;
-        to?: string;
-        string?: string;
-    };
-    genres?: { mal_id: number; name: string }[];
-    studios?: { mal_id: number; name: string }[];
+    aired?: Aired;
+    genres?: Omit<GenericMalReference, "type" | "url">[];
+    studios?: Omit<GenericMalReference, "type" | "url">[];
+    demographics?: GenericMalReference[];
     relations?: AnimeRelation[];
+    duration?: string;
     trailer?: {
         youtube_id?: string | null;
         url?: string | null;
@@ -56,6 +48,61 @@ export interface Anime {
         openings?: string[];
         endings?: string[];
     };
+    favorites?: number;
+    season?: string;
+    year?: number;
+}
+
+interface GenericMalReference {
+    mal_id: number;
+    type: string;
+    name: string;
+    url: string;
+}
+
+export interface AnimeRelation {
+    relation: string;
+    entry: GenericMalReference[];
+}
+
+interface Title {
+    type: string;
+    title: string;
+}
+
+interface Aired {
+    from?: string;
+    to?: string;
+    prop?: Prop;
+    string?: string;
+}
+
+interface Prop {
+    from: From;
+    to: From;
+}
+
+interface From {
+    day: number;
+    month: number;
+    year: number;
+}
+
+export interface AnimePicture {
+    jpg: {
+        image_url: string;
+        small_image_url: string;
+        large_image_url: string;
+    };
+    webp: {
+        image_url: string;
+        small_image_url: string;
+        large_image_url: string;
+    };
+}
+
+export interface PicturesResponse {
+    data: AnimePicture[];
 }
 
 export interface WatchedAnime {

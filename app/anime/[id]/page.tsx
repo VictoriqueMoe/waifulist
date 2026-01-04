@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getAnimeById } from "@/services/animeData";
+import { fetchAnimePictures } from "@/lib/cdn";
 import { AnimePageClient } from "./AnimePageClient";
 import { Anime } from "@/types/anime";
 
@@ -65,20 +66,22 @@ export default async function AnimePage({ params }: PageProps) {
         notFound();
     }
 
-    // Fetch related anime data
     const relatedAnime: Record<number, Anime> = {};
-    if (anime.relations) {
-        const relatedIds = anime.relations.flatMap(r => r.entry.filter(e => e.type === "anime").map(e => e.mal_id));
+    const relatedIds = anime.relations
+        ? anime.relations.flatMap(r => r.entry.filter(e => e.type === "anime").map(e => e.mal_id))
+        : [];
 
-        const relatedAnimeResults = await Promise.all(relatedIds.map(id => getAnimeById(id)));
+    const [relatedAnimeResults, pictures] = await Promise.all([
+        Promise.all(relatedIds.map(id => getAnimeById(id))),
+        fetchAnimePictures(animeId),
+    ]);
 
-        relatedIds.forEach((id, index) => {
-            const result = relatedAnimeResults[index];
-            if (result) {
-                relatedAnime[id] = result;
-            }
-        });
-    }
+    relatedIds.forEach((id, index) => {
+        const result = relatedAnimeResults[index];
+        if (result) {
+            relatedAnime[id] = result;
+        }
+    });
 
-    return <AnimePageClient anime={anime} relatedAnime={relatedAnime} />;
+    return <AnimePageClient anime={anime} relatedAnime={relatedAnime} pictures={pictures} />;
 }
