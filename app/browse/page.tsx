@@ -10,6 +10,9 @@ import { useWatchList } from "@/contexts/WatchListContext";
 import { SearchBar } from "@/components/SearchBar/SearchBar";
 import { AnimeCard } from "@/components/AnimeCard/AnimeCard";
 import { Pagination } from "@/components/Pagination/Pagination";
+import { ContextMenu, type ContextMenuItem } from "@/components/ContextMenu";
+import { useContextMenu } from "@/hooks/useContextMenu";
+import { useAuth } from "@/contexts/AuthContext";
 import styles from "./page.module.scss";
 
 const PAGE_SIZE = 24;
@@ -22,11 +25,15 @@ function BrowseContent() {
     const { searchAnimeSilent, browseAnimeSilent } = useAnime();
     const { isLoading } = useLoading();
     const { settings, loading: settingsLoading, updateBrowseSettings } = useSettings();
-    const { ensureLoaded } = useWatchList();
+    const { ensureLoaded, removeFromWatchList, addToWatchList, isInWatchList, getAllWatched, refreshList } =
+        useWatchList();
+    const { contextMenu, showContextMenu, hideContextMenu } = useContextMenu();
+    const { user } = useAuth();
 
     useEffect(() => {
+        getAllWatched();
         ensureLoaded();
-    }, [ensureLoaded]);
+    }, [ensureLoaded, getAllWatched]);
 
     const [anime, setAnime] = useState<Anime[]>([]);
     const [loading, setLoading] = useState(true);
@@ -146,6 +153,56 @@ function BrowseContent() {
         [performSearch, query, sort, updateBrowseSettings],
     );
 
+    const handleContextMenu = useCallback(
+        (event: React.MouseEvent, animeId?: number) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const contextMenuItems: ContextMenuItem[] = [];
+            if (animeId && user) {
+                refreshList().then(() => {
+                    if (!isInWatchList(animeId)) {
+                        contextMenuItems.push({
+                            id: "add",
+                            label: "Add to List",
+                            icon: <i className="bi bi-check-circle"></i>,
+                            onClick: () => {
+                                addToWatchList(animeId, "completed").then(() => {
+                                    performSearch(query, page, sort, hideSpecials);
+                                });
+                            },
+                        });
+                    }
+                    if (isInWatchList(animeId)) {
+                        contextMenuItems.push({
+                            id: "remove",
+                            label: "Remove from List",
+                            icon: <i className="bi bi-trash"></i>,
+                            onClick: () => {
+                                removeFromWatchList(animeId).then(() => {
+                                    performSearch(query, page, sort, hideSpecials);
+                                });
+                            },
+                        });
+                    }
+                    showContextMenu(event.nativeEvent, contextMenuItems);
+                });
+            }
+        },
+        [
+            showContextMenu,
+            addToWatchList,
+            removeFromWatchList,
+            performSearch,
+            sort,
+            hideSpecials,
+            query,
+            page,
+            refreshList,
+            isInWatchList,
+            user,
+        ],
+    );
+
     const showLoading = (loading || settingsLoading) && !isLoading;
 
     return (
@@ -202,7 +259,7 @@ function BrowseContent() {
                     <>
                         <div className={styles.grid}>
                             {anime.map(item => (
-                                <AnimeCard key={item.id} anime={item} />
+                                <AnimeCard key={item.id} anime={item} onContextMenu={handleContextMenu} />
                             ))}
                         </div>
 
@@ -218,6 +275,13 @@ function BrowseContent() {
                     </div>
                 )}
             </div>
+            <ContextMenu
+                visible={contextMenu.visible}
+                x={contextMenu.x}
+                y={contextMenu.y}
+                items={contextMenu.items}
+                onClose={hideContextMenu}
+            />
         </div>
     );
 }

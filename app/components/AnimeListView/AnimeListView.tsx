@@ -4,8 +4,11 @@ import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } 
 import { useSearchParams } from "next/navigation";
 import { Anime, SortType, WatchStatus, watchStatusLabels } from "@/types/anime";
 import { AnimeCard, AnimeCardWatchData } from "@/components/AnimeCard/AnimeCard";
+import { ContextMenu, type ContextMenuItem } from "@/components/ContextMenu";
+import { useContextMenu } from "@/hooks/useContextMenu";
 import { Button } from "@/components/Button/Button";
 import { Pagination } from "@/components/Pagination/Pagination";
+import { useWatchList } from "@/contexts/WatchListContext";
 import styles from "./AnimeListView.module.scss";
 
 interface FilteredItem {
@@ -82,6 +85,8 @@ export function AnimeListView({
     const [filtered, setFiltered] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [loading, setLoading] = useState(true);
+    const { contextMenu, showContextMenu, hideContextMenu } = useContextMenu();
+    const { removeFromWatchList } = useWatchList();
 
     useEffect(() => {
         setSortBy(initialSort);
@@ -195,6 +200,28 @@ export function AnimeListView({
         [updatePageUrl],
     );
 
+    const handleContextMenu = useCallback(
+        (event: React.MouseEvent, animeId?: number) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const contextMenuItems: ContextMenuItem[] = [];
+            if (animeId) {
+                contextMenuItems.push({
+                    id: "remove",
+                    label: "Remove from List",
+                    icon: <i className="bi bi-trash"></i>,
+                    onClick: () => {
+                        removeFromWatchList(animeId).then(() => {
+                            fetchData();
+                        });
+                    },
+                });
+                showContextMenu(event.nativeEvent, contextMenuItems);
+            }
+        },
+        [showContextMenu, removeFromWatchList, fetchData],
+    );
+
     const pagedItems: { anime: Anime; watchData: AnimeCardWatchData }[] = items
         .filter(item => item.watchData.status && item.watchData.dateAdded)
         .map(item => ({
@@ -294,6 +321,7 @@ export function AnimeListView({
                                     showStatus={showStatusBadge}
                                     watchData={watchData}
                                     ratingLabel={ratingLabel}
+                                    onContextMenu={handleContextMenu}
                                 />
                             ))}
                         </div>
@@ -320,6 +348,13 @@ export function AnimeListView({
                     </div>
                 )}
             </div>
+            <ContextMenu
+                visible={contextMenu.visible}
+                x={contextMenu.x}
+                y={contextMenu.y}
+                items={contextMenu.items}
+                onClose={hideContextMenu}
+            />
         </div>
     );
 }
