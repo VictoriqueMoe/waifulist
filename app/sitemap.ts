@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getAllAnimeIds } from "@/services/animeData";
+import { getAllAnimeFromRedis } from "@/services/animeData";
 import { getRedis, REDIS_KEYS, REDIS_TTL } from "@/lib/redis";
 
 async function saveSitemapToRedis(sitemap: MetadataRoute.Sitemap): Promise<void> {
@@ -52,9 +52,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }
     }
 
-    const animeIds = await getAllAnimeIds();
-    const animeLinks: MetadataRoute.Sitemap = animeIds.map(id => ({
-        url: `${baseUrl}/anime/${id}`,
+    const animeIds = (await getAllAnimeFromRedis()) ?? [];
+    const animeLinks: MetadataRoute.Sitemap = animeIds.map(a => ({
+        url: `${baseUrl}/anime/${a.mal_id}`,
         lastModified: new Date(),
     }));
 
