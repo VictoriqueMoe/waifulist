@@ -65,7 +65,6 @@ npm start
 | `DB_PASSWORD`                    | MongoDB password for Jikan      | No (default: jikan_secret) |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key   | No                         |
 | `TURNSTILE_SECRET_KEY`           | Cloudflare Turnstile secret key | No                         |
-| `BASE_URL`                       | Base URL used by sitemap        | No                         |
 
 ### Redis Configuration
 

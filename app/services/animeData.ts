@@ -557,15 +557,7 @@ export async function findAnimeByTitle(title: string): Promise<Anime | null> {
 }
 
 export async function getAllAnimeIds(): Promise<number[]> {
-    await ensureSearchIndex();
-    const redis = getRedis();
-
-    const data = await redis.get(REDIS_KEYS.ANIME_LIST);
-    if (!data) {
-        return [];
-    }
-
-    const allAnime = JSON.parse(data) as Anime[];
+    const allAnime = (await loadFromRedis()) ?? [];
     return allAnime.map(a => a.mal_id);
 }
 

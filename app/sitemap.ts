@@ -2,7 +2,12 @@ import type { MetadataRoute } from "next";
 import { getAllAnimeIds } from "@/services/animeData";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const baseUrl = process.env.BASE_URL ?? "http://localhost";
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost";
+    const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+    if (isBuildPhase) {
+        return [];
+    }
+
     const staticLinks: MetadataRoute.Sitemap = [
         {
             url: baseUrl,
