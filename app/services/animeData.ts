@@ -556,6 +556,19 @@ export async function findAnimeByTitle(title: string): Promise<Anime | null> {
     return fuzzySearchOne(title);
 }
 
+export async function getAllAnimeIds(): Promise<number[]> {
+    await ensureSearchIndex();
+    const redis = getRedis();
+
+    const data = await redis.get(REDIS_KEYS.ANIME_LIST);
+    if (!data) {
+        return [];
+    }
+
+    const allAnime = JSON.parse(data) as Anime[];
+    return allAnime.map(a => a.mal_id);
+}
+
 export async function searchAnime(query: string, limit: number = 20, hideSpecials: boolean = false): Promise<Anime[]> {
     await ensureSearchIndex();
     const redis = getRedis();
