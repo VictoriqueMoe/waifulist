@@ -16,6 +16,7 @@ import {
     TopReview,
     TopReviewsResponse,
 } from "@/types/anime";
+import { CharacterFull, CharacterFullResponse } from "@/types/character";
 
 const JIKAN_API_URL = process.env.JIKAN_API_URL || "http://jikan:8080/v4";
 const JIKAN_TIMEOUT = 10000;
@@ -167,3 +168,8 @@ export async function fetchTopReviews(limit: number = 6): Promise<TopReview[]> {
 }
 
 export const fetchAnimeFromCdn = fetchAnimeFromJikan;
+
+export async function fetchCharacterById(id: number): Promise<CharacterFull | null> {
+    const response = await fetchFromJikan<CharacterFullResponse | null>(`/characters/${id}/full`, null);
+    return response?.data || null;
+}

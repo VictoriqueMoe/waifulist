@@ -1,0 +1,72 @@
+@use "../../styles/variables" as *;
+
+.pillTabs {
+    width: 100%;
+}
+
+.tabBar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-lg;
+}
+
+.tab {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-xs $spacing-sm;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: $radius-sm;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+        border-color: var(--accent-primary);
+        color: var(--text-primary);
+    }
+
+    &.active {
+        background: var(--accent-primary);
+        border-color: var(--accent-primary);
+        color: white;
+
+        .count {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+    }
+}
+
+.count {
+    font-size: 0.75rem;
+    padding: 1px 6px;
+    background: var(--bg-secondary);
+    border-radius: 10px;
+    color: var(--text-muted);
+}
+
+.content {
+    transition:
+        opacity 0.15s ease-in-out,
+        transform 0.15s ease-in-out;
+
+    &.fadeOut {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    &.fadeIn {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.emptyMessage {
+    color: var(--text-muted);
+    font-style: italic;
+}

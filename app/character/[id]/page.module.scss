@@ -1,0 +1,324 @@
+@use "../../styles/variables" as *;
+
+.page {
+    min-height: calc(100vh - 80px);
+    position: relative;
+    overflow-x: hidden;
+}
+
+.backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 400px;
+    overflow: hidden;
+    z-index: 0;
+}
+
+.backdropImage {
+    object-fit: cover;
+    filter: blur(20px);
+    transform: scale(1.1);
+    opacity: 0.3;
+}
+
+.backdropOverlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 0%, var(--bg-primary) 100%);
+}
+
+.container {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: $spacing-lg $spacing-sm;
+
+    @include md {
+        padding: $spacing-xl $spacing-lg;
+    }
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xl;
+
+    @include md {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+    }
+
+    @include lg {
+        grid-template-columns: 320px 1fr;
+    }
+}
+
+.imageSection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-md;
+
+    @include md {
+        align-items: flex-start;
+    }
+}
+
+.characterImage {
+    position: relative;
+    width: 200px;
+    aspect-ratio: 2 / 3;
+    border-radius: $radius-lg;
+    overflow: hidden;
+    box-shadow: var(--shadow-primary);
+
+    @include md {
+        width: 100%;
+    }
+
+    img {
+        object-fit: cover;
+    }
+}
+
+.noImage {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-tertiary);
+}
+
+.favorites {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+
+    i {
+        color: #ec4899;
+    }
+}
+
+.malLink {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-sm $spacing-md;
+    background: var(--bg-secondary);
+    border-radius: $radius-md;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    text-decoration: none;
+    transition: all $transition-fast;
+
+    &:hover {
+        background: var(--accent-primary);
+        color: white;
+    }
+}
+
+.infoSection {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+}
+
+.header {
+    text-align: center;
+
+    @include md {
+        text-align: left;
+    }
+}
+
+.name {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: $spacing-xs;
+
+    @include md {
+        font-size: 2.5rem;
+    }
+}
+
+.nameKanji {
+    color: var(--text-secondary);
+    font-size: 1.125rem;
+}
+
+.nicknames {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: $spacing-xs;
+
+    @include md {
+        justify-content: flex-start;
+    }
+}
+
+.about {
+    background: var(--bg-secondary);
+    border-radius: $radius-lg;
+    padding: $spacing-lg;
+
+    p {
+        color: var(--text-secondary);
+        line-height: 1.8;
+        margin-bottom: $spacing-md;
+        white-space: pre-wrap;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+}
+
+.attribution {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.contentTabs {
+    background: var(--bg-secondary);
+    border-radius: $radius-lg;
+    overflow: hidden;
+}
+
+.tabContentSection {
+    padding: $spacing-lg;
+}
+
+.actorCards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-sm;
+}
+
+.actorCard {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-xs $spacing-sm;
+    background: var(--bg-tertiary);
+    border-radius: $radius-md;
+    text-decoration: none;
+    transition: all $transition-fast;
+
+    &:hover {
+        background: var(--bg-hover);
+        transform: translateY(-2px);
+    }
+}
+
+.actorImage {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+
+    @include md {
+        width: 40px;
+        height: 40px;
+    }
+
+    img {
+        object-fit: cover;
+    }
+}
+
+.actorName {
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-weight: 500;
+
+    @include md {
+        font-size: 0.875rem;
+    }
+}
+
+.appearancesGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-md;
+}
+
+.appearanceCard {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+    width: 120px;
+    text-decoration: none;
+    transition: transform $transition-fast;
+
+    @include md {
+        width: 140px;
+    }
+
+    &:hover {
+        transform: translateY(-4px);
+
+        .appearanceImage {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+    }
+}
+
+.appearanceImage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    border-radius: $radius-md;
+    overflow: hidden;
+    background: var(--bg-tertiary);
+    transition: box-shadow $transition-fast;
+
+    img {
+        object-fit: cover;
+    }
+}
+
+.appearanceTitle {
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+
+    @include md {
+        font-size: 0.875rem;
+    }
+}
+
+.appearanceRole {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.showMoreButton {
+    display: block;
+    margin-top: $spacing-md;
+    padding: $spacing-sm $spacing-md;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: $radius-md;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+        background: var(--bg-hover);
+        border-color: var(--accent-primary);
+        color: var(--text-primary);
+    }
+}

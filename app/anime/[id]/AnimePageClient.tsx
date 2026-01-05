@@ -22,6 +22,7 @@ import { useWatchList } from "@/contexts/WatchListContext";
 import { Button } from "@/components/Button/Button";
 import { Pill } from "@/components/Pill/Pill";
 import { PictureGallery } from "@/components/PictureGallery/PictureGallery";
+import { RoleTabs } from "@/components/RoleTabs/RoleTabs";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
 import { Spinner } from "@/components/Spinner/Spinner";
 import { Tab, Tabs } from "@/components/Tabs/Tabs";
@@ -157,27 +158,9 @@ function RecommendationsSection({ recommendations }: { recommendations: AnimeRec
 }
 
 function CharactersSection({ characters }: { characters: AnimeCharacter[] }) {
-    const [activeTab, setActiveTab] = useState<"Main" | "Supporting">("Main");
-    const [isTransitioning, setIsTransitioning] = useState(false);
-
     if (characters.length === 0) {
         return null;
     }
-
-    const mainCharacters = characters.filter(c => c.role === "Main");
-    const supportingCharacters = characters.filter(c => c.role === "Supporting");
-    const activeCharacters = activeTab === "Main" ? mainCharacters : supportingCharacters;
-
-    const handleTabChange = (tab: "Main" | "Supporting") => {
-        if (tab === activeTab) {
-            return;
-        }
-        setIsTransitioning(true);
-        setTimeout(() => {
-            setActiveTab(tab);
-            setIsTransitioning(false);
-        }, 150);
-    };
 
     const formatName = (name: string) => {
         const parts = name.split(", ");
@@ -187,63 +170,55 @@ function CharactersSection({ characters }: { characters: AnimeCharacter[] }) {
         return name;
     };
 
+    const renderCharacters = (items: AnimeCharacter[]) => (
+        <div className={styles.charactersGrid}>
+            {items.map(char => {
+                const imageUrl = char.character.images?.webp?.image_url || char.character.images?.jpg?.image_url;
+                const japaneseVA = char.voice_actors.find(va => va.language === "Japanese");
+                return (
+                    <Link
+                        key={char.character.mal_id}
+                        href={`/character/${char.character.mal_id}`}
+                        className={styles.characterCard}
+                    >
+                        <div className={styles.characterImageWrapper}>
+                            {imageUrl ? (
+                                <Image
+                                    src={imageUrl}
+                                    alt={char.character.name}
+                                    fill
+                                    sizes="120px"
+                                    className={styles.characterImage}
+                                />
+                            ) : (
+                                <div className={styles.noImage} />
+                            )}
+                        </div>
+                        <div className={styles.characterInfo}>
+                            <span className={styles.characterName}>{formatName(char.character.name)}</span>
+                            {japaneseVA && (
+                                <span className={styles.voiceActor}>
+                                    <i className="bi bi-mic-fill" /> {formatName(japaneseVA.person.name)}
+                                </span>
+                            )}
+                            <span className={styles.characterFavorites}>
+                                <i className="bi bi-heart-fill" /> {char.favorites.toLocaleString()}
+                            </span>
+                        </div>
+                    </Link>
+                );
+            })}
+        </div>
+    );
+
     return (
         <div className={styles.charactersSection}>
-            <div className={styles.characterTabs}>
-                <button
-                    className={`${styles.characterTab} ${activeTab === "Main" ? styles.active : ""}`}
-                    onClick={() => handleTabChange("Main")}
-                >
-                    Main
-                    <span className={styles.tabCount}>{mainCharacters.length}</span>
-                </button>
-                <button
-                    className={`${styles.characterTab} ${activeTab === "Supporting" ? styles.active : ""}`}
-                    onClick={() => handleTabChange("Supporting")}
-                >
-                    Supporting
-                    <span className={styles.tabCount}>{supportingCharacters.length}</span>
-                </button>
-            </div>
-            <div className={`${styles.charactersGrid} ${isTransitioning ? styles.fadeOut : styles.fadeIn}`}>
-                {activeCharacters.map(char => {
-                    const imageUrl = char.character.images?.webp?.image_url || char.character.images?.jpg?.image_url;
-                    const japaneseVA = char.voice_actors.find(va => va.language === "Japanese");
-                    return (
-                        <div key={char.character.mal_id} className={styles.characterCard}>
-                            <div className={styles.characterImageWrapper}>
-                                {imageUrl ? (
-                                    <Image
-                                        src={imageUrl}
-                                        alt={char.character.name}
-                                        fill
-                                        sizes="120px"
-                                        className={styles.characterImage}
-                                    />
-                                ) : (
-                                    <div className={styles.noImage} />
-                                )}
-                            </div>
-                            <div className={styles.characterInfo}>
-                                <span className={styles.characterName}>{formatName(char.character.name)}</span>
-                                {japaneseVA && (
-                                    <a
-                                        href={japaneseVA.person.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className={styles.voiceActor}
-                                    >
-                                        <i className="bi bi-mic-fill" /> {formatName(japaneseVA.person.name)}
-                                    </a>
-                                )}
-                                <span className={styles.characterFavorites}>
-                                    <i className="bi bi-heart-fill" /> {char.favorites.toLocaleString()}
-                                </span>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
+            <RoleTabs
+                items={characters}
+                getRole={char => char.role}
+                renderItems={renderCharacters}
+                emptyMessage={role => `No ${role.toLowerCase()} characters`}
+            />
         </div>
     );
 }

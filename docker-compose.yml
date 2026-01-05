@@ -33,8 +33,10 @@ services:
       - "127.0.0.1:8080:8080"
     volumes:
       - ./jikan.env:/app/.env
+      - ./jikan-entrypoint.sh:/app/jikan-entrypoint.sh:ro
     depends_on:
       - mongodb_jikan
+    entrypoint: ["/app/jikan-entrypoint.sh"]
 
   mongodb_jikan:
     image: mongo:latest
