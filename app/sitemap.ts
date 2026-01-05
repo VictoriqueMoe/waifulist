@@ -2,6 +2,8 @@ import type { MetadataRoute } from "next";
 import { getAllAnimeFromRedis } from "@/services/animeData";
 import { getRedis, REDIS_KEYS, REDIS_TTL } from "@/lib/redis";
 
+export const dynamic = "force-dynamic";
+
 async function saveSitemapToRedis(sitemap: MetadataRoute.Sitemap): Promise<void> {
     const redis = getRedis();
     try {
@@ -13,10 +15,6 @@ async function saveSitemapToRedis(sitemap: MetadataRoute.Sitemap): Promise<void>
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost";
-    const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
-    if (isBuildPhase) {
-        return [];
-    }
 
     try {
         const redis = getRedis();
