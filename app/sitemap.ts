@@ -1,11 +1,31 @@
 import type { MetadataRoute } from "next";
 import { getAllAnimeIds } from "@/services/animeData";
+import { getRedis, REDIS_KEYS, REDIS_TTL } from "@/lib/redis";
+
+async function saveSitemapToRedis(sitemap: MetadataRoute.Sitemap): Promise<void> {
+    const redis = getRedis();
+    try {
+        await redis.setex(REDIS_KEYS.ANIME_SITEMAP, REDIS_TTL.ANIME_SITEMAP, JSON.stringify(sitemap));
+    } catch (error) {
+        console.error("[Redis] Failed to save sitemap:", error);
+    }
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost";
     const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
     if (isBuildPhase) {
         return [];
+    }
+
+    try {
+        const redis = getRedis();
+        const cachedSitemap = await redis.get(REDIS_KEYS.ANIME_SITEMAP);
+        if (cachedSitemap) {
+            return JSON.parse(cachedSitemap) as MetadataRoute.Sitemap;
+        }
+    } catch (error) {
+        console.error(`Failed to retrieve sitemap from redis: ${error}`);
     }
 
     const staticLinks: MetadataRoute.Sitemap = [
@@ -38,5 +58,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: new Date(),
     }));
 
-    return [...staticLinks, ...seasonalLinks, ...animeLinks];
+    const completeLinks: MetadataRoute.Sitemap = [...staticLinks, ...seasonalLinks, ...animeLinks];
+    await saveSitemapToRedis(completeLinks);
+
+    return completeLinks;
 }
