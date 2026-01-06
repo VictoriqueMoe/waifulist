@@ -597,7 +597,7 @@ function StatisticsSection({ statistics }: { statistics: AnimeStatistics }) {
 
     return (
         <div className={styles.statisticsSection}>
-            <h3 className={styles.statisticsTitle}>Statistics</h3>
+            <h3 className={styles.statisticsTitle}>Statistics from MAL</h3>
             <div className={styles.chartsRow}>
                 <div className={styles.statusChart}>
                     <h4 className={styles.chartTitle}>

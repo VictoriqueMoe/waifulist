@@ -6,7 +6,7 @@ interface RouteParams {
     params: Promise<{ uuid: string }>;
 }
 
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(_request: NextRequest, { params }: RouteParams) {
     const user = await getCurrentUser();
     if (!user) {
         return NextResponse.json({ isBookmarked: false });

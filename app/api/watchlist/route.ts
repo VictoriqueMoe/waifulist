@@ -3,6 +3,8 @@ import { getCurrentUser } from "@/lib/auth";
 import {
     addToWatchList,
     bulkAddToWatchList,
+    BulkImportEntry,
+    bulkImportToWatchList,
     DatabaseError,
     getAllWatched,
     getWatchedByStatus,
@@ -43,6 +45,12 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json();
+
+        if (body.importEntries && Array.isArray(body.importEntries)) {
+            const entries: BulkImportEntry[] = body.importEntries;
+            const count = bulkImportToWatchList(user.id, entries);
+            return NextResponse.json({ added: count });
+        }
 
         if (body.animeIds && Array.isArray(body.animeIds)) {
             const count = bulkAddToWatchList(user.id, body.animeIds, body.status || "completed");

@@ -1,7 +1,9 @@
 import { NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { ensureSearchIndex, findAnimeByTitle, lookupByTitle } from "@/services/animeData";
-import { Anime } from "@/types/anime";
+import { runImport } from "@/services/import/ImportManager";
+import type { ImportType } from "@/services/import/engines/IImportEngine";
+
+const VALID_IMPORT_TYPES: ImportType[] = ["txt", "mal"];
 
 export async function POST(request: NextRequest): Promise<Response> {
     const user = await getCurrentUser();
@@ -15,6 +17,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     try {
         const body = await request.json();
         const content = body.content as string;
+        const type: ImportType = VALID_IMPORT_TYPES.includes(body.type) ? body.type : "txt";
 
         if (!content) {
             return new Response(JSON.stringify({ error: "No file content provided" }), {
@@ -23,84 +26,36 @@ export async function POST(request: NextRequest): Promise<Response> {
             });
         }
 
-        const lines = content
-            .split("\n")
-            .map(line => line.trim())
-            .filter(line => line.length > 0);
-
-        await ensureSearchIndex();
-
         const encoder = new TextEncoder();
-        let cancelled = false;
+        const abortController = new AbortController();
 
         const stream = new ReadableStream({
             async start(controller) {
-                const matched: { title: string; anime: Anime }[] = [];
-                const unmatched: string[] = [];
-                const total = lines.length;
-                let fuzzySearchCount = 0;
-
                 try {
-                    for (let i = 0; i < lines.length; i++) {
-                        if (cancelled) {
-                            console.log("Import cancelled by client");
-                            return;
-                        }
-
-                        const title = lines[i];
-
-                        let anime = await lookupByTitle(title);
-
-                        if (!anime) {
-                            fuzzySearchCount++;
-                            anime = await findAnimeByTitle(title);
-                        }
-
-                        if (anime) {
-                            matched.push({ title, anime });
-                        } else {
-                            unmatched.push(title);
-                        }
-
-                        if ((i + 1) % 100 === 0 || i === lines.length - 1) {
-                            if (cancelled) {
+                    await runImport({
+                        content,
+                        type,
+                        signal: abortController.signal,
+                        onEvent: event => {
+                            if (abortController.signal.aborted) {
                                 return;
                             }
-
-                            const progress = {
-                                type: "progress",
-                                current: i + 1,
-                                total,
-                                matchedCount: matched.length,
-                            };
-                            controller.enqueue(encoder.encode(`data: ${JSON.stringify(progress)}\n\n`));
-                            await new Promise(resolve => setTimeout(resolve, 0));
-                        }
-                    }
-
-                    console.log(
-                        `Import complete: ${matched.length} matched, ${unmatched.length} unmatched, ${fuzzySearchCount} fuzzy searches`,
-                    );
-
-                    if (cancelled) {
-                        return;
-                    }
-
-                    const result = {
-                        type: "complete",
-                        matched,
-                        unmatched,
-                        total,
-                    };
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(result)}\n\n`));
+                            controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+                        },
+                    });
                     controller.close();
                 } catch (err) {
                     console.log("Import stream error:", err);
+                    if (!abortController.signal.aborted) {
+                        const errorEvent = { type: "error", message: String(err) };
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorEvent)}\n\n`));
+                    }
+                    controller.close();
                 }
             },
             cancel() {
                 console.log("Import cancelled - stream closed");
-                cancelled = true;
+                abortController.abort();
             },
         });
 

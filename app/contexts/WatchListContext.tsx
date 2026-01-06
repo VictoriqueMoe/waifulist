@@ -4,12 +4,21 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { WatchedAnime, WatchStatus } from "@/types/anime";
 import { useAuth } from "./AuthContext";
 
+export type ImportEntry = {
+    animeId: number;
+    status: WatchStatus;
+    episodesWatched: number;
+    rating: number | null;
+    notes: string | null;
+};
+
 interface WatchListContextType {
     watchedList: Map<number, WatchedAnime>;
     loading: boolean;
     loaded: boolean;
     addToWatchList: (animeId: number, status: WatchStatus) => Promise<void>;
     bulkAddToWatchList: (animeIds: number[], status: WatchStatus) => Promise<number>;
+    bulkImportToWatchList: (entries: ImportEntry[]) => Promise<number>;
     updateWatchStatus: (animeId: number, updates: Partial<WatchedAnime>) => void;
     removeFromWatchList: (animeId: number) => Promise<void>;
     getWatchData: (animeId: number) => WatchedAnime | undefined;
@@ -148,6 +157,32 @@ export function WatchListProvider({ children }: React.PropsWithChildren) {
                 }
             } catch (error) {
                 console.error("Failed to bulk add:", error);
+            }
+            return 0;
+        },
+        [user, refreshList],
+    );
+
+    const bulkImportToWatchList = useCallback(
+        async (entries: ImportEntry[]): Promise<number> => {
+            if (!user) {
+                return 0;
+            }
+
+            try {
+                const response = await fetch("/api/watchlist", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ importEntries: entries }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    await refreshList();
+                    return data.added;
+                }
+            } catch (error) {
+                console.error("Failed to bulk import:", error);
             }
             return 0;
         },
@@ -312,6 +347,7 @@ export function WatchListProvider({ children }: React.PropsWithChildren) {
                 loaded,
                 addToWatchList,
                 bulkAddToWatchList,
+                bulkImportToWatchList,
                 updateWatchStatus,
                 removeFromWatchList,
                 getWatchData,

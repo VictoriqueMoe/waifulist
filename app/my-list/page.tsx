@@ -1,19 +1,42 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Anime, SortType } from "@/types/anime";
+import { Anime, SortType, WatchStatus, watchStatusLabels } from "@/types/anime";
 import { useAuth } from "@/contexts/AuthContext";
-import { useWatchList } from "@/contexts/WatchListContext";
+import { ImportEntry, useWatchList } from "@/contexts/WatchListContext";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useBackup, useRestore } from "@/hooks";
 import { AnimeListView, AnimeListViewHandle } from "@/components/AnimeListView/AnimeListView";
 import { Button } from "@/components/Button/Button";
 import { Spinner } from "@/components/Spinner/Spinner";
+import type { ImportType } from "@/services/import/engines/IImportEngine";
 import styles from "./page.module.scss";
 
+const IMPORT_TYPE_CONFIG: Record<ImportType, { label: string; description: string; accept: string }> = {
+    txt: {
+        label: "Text File",
+        description: "One anime title per line",
+        accept: ".txt,.text",
+    },
+    mal: {
+        label: "MyAnimeList Export",
+        description: "XML export from MyAnimeList",
+        accept: ".xml",
+    },
+};
+
 interface ImportResult {
-    matched: { title: string; anime: Anime }[];
+    matched: {
+        title: string;
+        anime: Anime;
+        watchData: {
+            status: WatchStatus;
+            episodesWatched: number;
+            rating: number | null;
+            notes: string | null;
+        };
+    }[];
     unmatched: string[];
     total: number;
 }
@@ -21,7 +44,7 @@ interface ImportResult {
 export default function MyListPage() {
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
-    const { bulkAddToWatchList, refreshList } = useWatchList();
+    const { bulkImportToWatchList, refreshList } = useWatchList();
     const { settings, loading: settingsLoading, updateMyListSettings } = useSettings();
     const { backupList } = useBackup();
     const { restoreList } = useRestore();
@@ -44,6 +67,7 @@ export default function MyListPage() {
     const [importing, setImporting] = useState(false);
     const [importResult, setImportResult] = useState<ImportResult | null>(null);
     const [importError, setImportError] = useState<string | null>(null);
+    const [importType, setImportType] = useState<ImportType>("txt");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [importProgress, setImportProgress] = useState<{
         current: number;
@@ -53,10 +77,58 @@ export default function MyListPage() {
     const [copied, setCopied] = useState(false);
     const [restoreLoading, setRestoreLoading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const importStatusBreakdown = useMemo(() => {
+        if (!importResult) {
+            return null;
+        }
+        const counts: Partial<Record<WatchStatus, number>> = {};
+        let withRatings = 0;
+        let withNotes = 0;
+        for (const m of importResult.matched) {
+            counts[m.watchData.status] = (counts[m.watchData.status] || 0) + 1;
+            if (m.watchData.rating !== null) {
+                withRatings++;
+            }
+            if (m.watchData.notes) {
+                withNotes++;
+            }
+        }
+        return { counts, withRatings, withNotes };
+    }, [importResult]);
     const listRef = useRef<AnimeListViewHandle>(null);
+
+    const [isDragging, setIsDragging] = useState(false);
 
     const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
+        if (file) {
+            setSelectedFile(file);
+        }
+    }, []);
+
+    const handleDragOver = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+    }, []);
+
+    const handleDragEnter = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(true);
+    }, []);
+
+    const handleDragLeave = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+    }, []);
+
+    const handleDrop = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+        const file = e.dataTransfer.files?.[0];
         if (file) {
             setSelectedFile(file);
         }
@@ -104,7 +176,7 @@ export default function MyListPage() {
             const response = await fetch("/api/import", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ content }),
+                body: JSON.stringify({ content, type: importType }),
             });
 
             if (!response.ok) {
@@ -148,8 +220,14 @@ export default function MyListPage() {
                             };
                             setImportResult(result);
 
-                            const animeIds = result.matched.map(m => m.anime.mal_id);
-                            await bulkAddToWatchList(animeIds, "completed");
+                            const entries: ImportEntry[] = result.matched.map(m => ({
+                                animeId: m.anime.mal_id,
+                                status: m.watchData.status,
+                                episodesWatched: m.watchData.episodesWatched,
+                                rating: m.watchData.rating,
+                                notes: m.watchData.notes,
+                            }));
+                            await bulkImportToWatchList(entries);
                             listRef.current?.reload();
                         }
                     }
@@ -161,13 +239,15 @@ export default function MyListPage() {
             setImporting(false);
             setImportProgress(null);
         }
-    }, [selectedFile, bulkAddToWatchList]);
+    }, [selectedFile, importType, bulkImportToWatchList]);
 
     const closeModal = useCallback(() => {
         setShowImportModal(false);
         setImportResult(null);
         setImportError(null);
+        setImportType("txt");
         setSelectedFile(null);
+        setIsDragging(false);
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
@@ -245,28 +325,59 @@ export default function MyListPage() {
                         <div className={styles.modalBody}>
                             {!importing && !importResult && !importError && (
                                 <>
-                                    <p>Select a text file with one anime title per line:</p>
+                                    <div className={styles.importTypeSection}>
+                                        <label htmlFor="import-type" className={styles.fieldLabel}>
+                                            Import Format
+                                        </label>
+                                        <select
+                                            id="import-type"
+                                            className={styles.select}
+                                            value={importType}
+                                            onChange={e => {
+                                                setImportType(e.target.value as ImportType);
+                                                setSelectedFile(null);
+                                                if (fileInputRef.current) {
+                                                    fileInputRef.current.value = "";
+                                                }
+                                            }}
+                                        >
+                                            {(Object.keys(IMPORT_TYPE_CONFIG) as ImportType[]).map(type => (
+                                                <option key={type} value={type}>
+                                                    {IMPORT_TYPE_CONFIG[type].label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <p className={styles.fieldHint}>{IMPORT_TYPE_CONFIG[importType].description}</p>
+                                    </div>
+
                                     <div className={styles.fileInput}>
                                         <input
                                             ref={fileInputRef}
                                             type="file"
-                                            accept=".txt,.text"
+                                            accept={IMPORT_TYPE_CONFIG[importType].accept}
                                             onChange={handleFileSelect}
                                             id="anime-import-file"
                                         />
-                                        <label htmlFor="anime-import-file" className={styles.fileLabel}>
-                                            <i className="bi bi-file-earmark-text" />
-                                            {selectedFile ? selectedFile.name : "Choose file..."}
+                                        <label
+                                            htmlFor="anime-import-file"
+                                            className={`${styles.fileLabel} ${isDragging ? styles.dragging : ""}`}
+                                            onDragOver={handleDragOver}
+                                            onDragEnter={handleDragEnter}
+                                            onDragLeave={handleDragLeave}
+                                            onDrop={handleDrop}
+                                        >
+                                            <i className={isDragging ? "bi bi-download" : "bi bi-file-earmark-text"} />
+                                            {isDragging
+                                                ? "Drop file here..."
+                                                : selectedFile
+                                                  ? selectedFile.name
+                                                  : "Choose or drop file..."}
                                         </label>
                                     </div>
-                                    <p
-                                        style={{
-                                            marginTop: "1rem",
-                                            color: "var(--text-secondary)",
-                                            fontSize: "0.875rem",
-                                        }}
-                                    >
-                                        All matched anime will be added to your &quot;Completed&quot; list.
+                                    <p className={styles.fieldHint} style={{ marginTop: "1rem" }}>
+                                        {importType === "txt"
+                                            ? 'All matched anime will be added to your "Completed" list.'
+                                            : "Your watch status, ratings, and notes will be preserved."}
                                     </p>
                                 </>
                             )}
@@ -304,7 +415,7 @@ export default function MyListPage() {
                                 </div>
                             )}
 
-                            {importResult && (
+                            {importResult && importStatusBreakdown && (
                                 <>
                                     <div className={styles.importStats}>
                                         <div className={styles.stat}>
@@ -320,6 +431,31 @@ export default function MyListPage() {
                                             <div className={styles.statLabel}>Not Found</div>
                                         </div>
                                     </div>
+
+                                    <div className={styles.statusBreakdown}>
+                                        {(Object.entries(importStatusBreakdown.counts) as [WatchStatus, number][]).map(
+                                            ([status, count]) => (
+                                                <span key={status} className={styles.statusPill}>
+                                                    {watchStatusLabels[status]}: {count}
+                                                </span>
+                                            ),
+                                        )}
+                                    </div>
+
+                                    {(importStatusBreakdown.withRatings > 0 || importStatusBreakdown.withNotes > 0) && (
+                                        <p className={styles.importExtras}>
+                                            <i className="bi bi-check-circle" />
+                                            {importStatusBreakdown.withRatings > 0 && (
+                                                <span>{importStatusBreakdown.withRatings} ratings</span>
+                                            )}
+                                            {importStatusBreakdown.withRatings > 0 &&
+                                                importStatusBreakdown.withNotes > 0 && <span> and </span>}
+                                            {importStatusBreakdown.withNotes > 0 && (
+                                                <span>{importStatusBreakdown.withNotes} notes</span>
+                                            )}
+                                            <span> imported</span>
+                                        </p>
+                                    )}
 
                                     {importResult.unmatched.length > 0 && (
                                         <div className={styles.unmatchedList}>

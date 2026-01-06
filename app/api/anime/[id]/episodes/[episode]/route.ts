@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchAnimeEpisodeDetail } from "@/lib/cdn";
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string; episode: string }> }) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string; episode: string }> }) {
     const { id, episode } = await params;
     const animeId = parseInt(id, 10);
     const episodeId = parseInt(episode, 10);

@@ -6,7 +6,7 @@ interface RouteParams {
     params: Promise<{ animeId: string }>;
 }
 
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(_request: NextRequest, { params }: RouteParams) {
     const user = await getCurrentUser();
     if (!user) {
         return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
@@ -62,7 +62,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 }
 
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     const user = await getCurrentUser();
     if (!user) {
         return NextResponse.json({ error: "Unauthorised" }, { status: 401 });

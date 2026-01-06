@@ -132,6 +132,37 @@
     }
 }
 
+.statusBreakdown {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-xs;
+    justify-content: center;
+    margin-bottom: $spacing-md;
+}
+
+.statusPill {
+    display: inline-block;
+    padding: $spacing-xs $spacing-sm;
+    background: var(--bg-tertiary);
+    border-radius: $radius-full;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.importExtras {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-xs;
+    font-size: 0.875rem;
+    color: var(--success);
+    margin-bottom: $spacing-md;
+
+    i {
+        font-size: 1rem;
+    }
+}
+
 .unmatchedList {
     max-height: 300px;
     overflow-y: auto;
@@ -191,6 +222,51 @@
     color: var(--text-secondary);
 }
 
+.importTypeSection {
+    margin-bottom: $spacing-lg;
+}
+
+.fieldLabel {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: $spacing-xs;
+}
+
+.fieldHint {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-top: $spacing-xs;
+}
+
+.select {
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: $radius-md;
+    color: var(--text-primary);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        border-color: var(--accent-primary);
+    }
+
+    &:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 2px rgba(var(--accent-primary-rgb), 0.2);
+    }
+
+    option {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+    }
+}
+
 .fileInput {
     margin-top: $spacing-md;
 
@@ -225,5 +301,11 @@
     &:hover {
         border-color: var(--accent-primary);
         background: var(--bg-tertiary);
+    }
+
+    &.dragging {
+        border-color: var(--accent-primary);
+        background: var(--bg-tertiary);
+        border-style: solid;
     }
 }

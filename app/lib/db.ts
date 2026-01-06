@@ -302,6 +302,55 @@ export function bulkAddToWatchList(userId: number, animeIds: number[], status: s
     }
 }
 
+export type BulkImportEntry = {
+    animeId: number;
+    status: WatchStatus;
+    episodesWatched: number;
+    rating: number | null;
+    notes: string | null;
+};
+
+export function bulkImportToWatchList(userId: number, entries: BulkImportEntry[]): number {
+    const stmt = db.prepare(`
+        INSERT INTO watched_anime (user_id, anime_id, status, episodes_watched, rating, notes)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(user_id, anime_id) DO UPDATE SET
+            status = excluded.status,
+            episodes_watched = excluded.episodes_watched,
+            rating = excluded.rating,
+            notes = excluded.notes,
+            date_updated = datetime('now')
+    `);
+
+    const importMany = db.transaction((items: BulkImportEntry[]) => {
+        let count = 0;
+        for (const entry of items) {
+            const result = stmt.run(
+                userId,
+                entry.animeId,
+                entry.status,
+                entry.episodesWatched,
+                entry.rating,
+                entry.notes,
+            );
+            if (result.changes > 0) {
+                count++;
+            }
+        }
+        return count;
+    });
+
+    try {
+        return importMany(entries);
+    } catch (error) {
+        throw new DatabaseError(
+            `Failed to bulk import ${entries.length} anime to watch list`,
+            "bulkImportToWatchList",
+            error,
+        );
+    }
+}
+
 export function updateWatchStatus(
     userId: number,
     animeId: number,
