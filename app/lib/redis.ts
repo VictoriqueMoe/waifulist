@@ -8,6 +8,9 @@ declare global {
 }
 
 export function getRedis(): Redis {
+    if (process.env.NEXT_PHASE === "phase-production-build") {
+        return {} as Redis;
+    }
     if (!globalThis.redis) {
         globalThis.redis = new Redis(REDIS_URL, {
             maxRetriesPerRequest: 3,
