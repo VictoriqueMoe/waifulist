@@ -9,6 +9,7 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { useBackup, useRestore } from "@/hooks";
 import { AnimeListView, AnimeListViewHandle } from "@/components/AnimeListView/AnimeListView";
 import { Button } from "@/components/Button/Button";
+import { Pill } from "@/components/Pill/Pill";
 import { Spinner } from "@/components/Spinner/Spinner";
 import type { ImportType } from "@/services/import/engines/IImportEngine";
 import styles from "./page.module.scss";
@@ -435,9 +436,9 @@ export default function MyListPage() {
                                     <div className={styles.statusBreakdown}>
                                         {(Object.entries(importStatusBreakdown.counts) as [WatchStatus, number][]).map(
                                             ([status, count]) => (
-                                                <span key={status} className={styles.statusPill}>
+                                                <Pill key={status} size="sm">
                                                     {watchStatusLabels[status]}: {count}
-                                                </span>
+                                                </Pill>
                                             ),
                                         )}
                                     </div>

@@ -140,15 +140,6 @@
     margin-bottom: $spacing-md;
 }
 
-.statusPill {
-    display: inline-block;
-    padding: $spacing-xs $spacing-sm;
-    background: var(--bg-tertiary);
-    border-radius: $radius-full;
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-}
-
 .importExtras {
     display: flex;
     align-items: center;
