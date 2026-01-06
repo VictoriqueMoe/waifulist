@@ -62,6 +62,8 @@ export const REDIS_KEYS = {
     ANIME_SEASON: (year: number, season: string) => `anime:season:${year}:${season}`,
     ANIME_SEASON_COUNT: (year: number, season: string) => `anime:season:${year}:${season}:count`,
     ANIME_SITEMAP: "anime:sitemap",
+    ANIME_PEOPLE_IDS: "anime:peopleIds",
+    ANIME_CHARACTER_IDS: "anime:characterIds",
     LAST_FETCH_TIME: "anime:lastFetchTime",
     REFRESH_CHANNEL: "anime:refresh",
     OG_IMAGE: (uuid: string, hash: string) => `og:${uuid}:${hash}`,
@@ -72,6 +74,8 @@ export const REDIS_TTL = {
     JIKAN_ENRICHED_ANIME: 60 * 60 * 24, // 24 hours (CDN-fetched)
     OG_IMAGE: 60 * 60, // 1 hour
     ANIME_SITEMAP: 60 * 60 * 24, // 24 hours
+    ANIME_PEOPLE_IDS: 60 * 60 * 24 * 7, // 7 days
+    ANIME_CHARACTER_IDS: 60 * 60 * 24 * 7, // 7 days
 } as const;
 
 export async function invalidateOgImageCache(uuid: string): Promise<number> {

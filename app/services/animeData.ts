@@ -1,4 +1,4 @@
-import { Anime, TopReviewWithAnime } from "@/types/anime";
+import { Anime, TopReviewWithAnime, IdList } from "@/types/anime";
 import { getRedis, getSubscriber, REDIS_KEYS, REDIS_TTL } from "@/lib/redis";
 import { fetchAnimeFromCdn, fetchTopReviews } from "@/lib/cdn";
 import { getCurrentSeason, parseSeasonFromStartDate, Season } from "@/lib/seasonUtils";
@@ -11,11 +11,15 @@ import {
     initializeFuseIndex,
     toFilterableItems,
 } from "./animeFilter";
+import type { MetadataRoute } from "next";
 
 export type { BrowseSortType };
 
 const CSV_URL =
     "https://raw.githubusercontent.com/meesvandongen/anime-dataset/refs/heads/main/data/anime-standalone.csv";
+const PEOPLE_URL = "https://raw.githubusercontent.com/purarue/mal-id-cache/master/cache/people_cache.json";
+const CHARACTER_URL =
+    "https://raw.githubusercontent.com/purarue/mal-id-cache/refs/heads/master/cache/character_cache.json";
 
 let dataLoadingPromise: Promise<void> | null = null;
 let subscriberInitialised = false;
@@ -149,6 +153,54 @@ async function fetchRemoteCSV(): Promise<string | null> {
             console.error("Fetch remote CSV timed out after 30s");
         } else {
             console.error("Failed to fetch remote CSV:", error);
+        }
+        return null;
+    }
+}
+
+async function fetchPeopleIds(): Promise<IdList | null> {
+    try {
+        console.log("Fetching people ids from remote JSON...");
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000);
+        const response = await fetch(PEOPLE_URL, {
+            cache: "no-store",
+            signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch: ${response.status}`);
+        }
+        return (await response.json()) as IdList;
+    } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+            console.error("Fetch people ids timed out after 30s");
+        } else {
+            console.error("Failed to fetch people ids:", error);
+        }
+        return null;
+    }
+}
+
+async function fetchCharacterIds(): Promise<IdList | null> {
+    try {
+        console.log("Fetching character ids from remote JSON...");
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000);
+        const response = await fetch(CHARACTER_URL, {
+            cache: "no-store",
+            signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch: ${response.status}`);
+        }
+        return (await response.json()) as IdList;
+    } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+            console.error("Fetch character ids timed out after 30s");
+        } else {
+            console.error("Failed to fetch character ids:", error);
         }
         return null;
     }
@@ -668,4 +720,50 @@ export async function getTopReviews(limit: number = 6): Promise<TopReviewWithAni
         ...review,
         anime: animeMap.get(review.entry.mal_id) || null,
     }));
+}
+
+export async function getPeopleIds(): Promise<IdList> {
+    try {
+        const redis = getRedis();
+        const cachedIds = await redis.get(REDIS_KEYS.ANIME_PEOPLE_IDS);
+        if (cachedIds) {
+            return JSON.parse(cachedIds) as IdList;
+        }
+    } catch (error) {
+        console.error(`Failed to retrieve people ids from redis: ${error}`);
+    }
+
+    const ids = await fetchPeopleIds();
+
+    try {
+        const redis = getRedis();
+        await redis.setex(REDIS_KEYS.ANIME_PEOPLE_IDS, REDIS_TTL.ANIME_PEOPLE_IDS, JSON.stringify(ids));
+        console.log(`[Redis] Saved ${ids?.ids.length} people ids`);
+    } catch (error) {
+        console.error("[Redis] Failed to save people ids:", error);
+    }
+    return ids ?? { ids: [] };
+}
+
+export async function getCharacterIds(): Promise<IdList> {
+    try {
+        const redis = getRedis();
+        const cachedIds = await redis.get(REDIS_KEYS.ANIME_CHARACTER_IDS);
+        if (cachedIds) {
+            return JSON.parse(cachedIds) as IdList;
+        }
+    } catch (error) {
+        console.error(`Failed to retrieve character ids from redis: ${error}`);
+    }
+
+    const ids = await fetchCharacterIds();
+
+    try {
+        const redis = getRedis();
+        await redis.setex(REDIS_KEYS.ANIME_CHARACTER_IDS, REDIS_TTL.ANIME_CHARACTER_IDS, JSON.stringify(ids));
+        console.log(`[Redis] Saved ${ids?.ids.length} character ids`);
+    } catch (error) {
+        console.error("[Redis] Failed to save character ids:", error);
+    }
+    return ids ?? { ids: [] };
 }

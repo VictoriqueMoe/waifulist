@@ -282,3 +282,7 @@ export const watchStatusColors: Record<WatchStatus, string> = {
     on_hold: "var(--status-hold)",
     dropped: "var(--status-dropped)",
 };
+
+export interface IdList {
+    ids: number[];
+}
