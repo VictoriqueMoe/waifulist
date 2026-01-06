@@ -2,53 +2,55 @@ import Redis from "ioredis";
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 
-let redis: Redis | null = null;
-let subscriber: Redis | null = null;
+declare global {
+    var redis: Redis | undefined;
+    var subscriber: Redis | undefined;
+}
 
 export function getRedis(): Redis {
-    if (!redis) {
-        redis = new Redis(REDIS_URL, {
+    if (!globalThis.redis) {
+        globalThis.redis = new Redis(REDIS_URL, {
             maxRetriesPerRequest: 3,
             retryStrategy(times) {
                 return Math.min(times * 50, 2000);
             },
         });
 
-        redis.on("error", err => {
+        globalThis.redis.on("error", err => {
             console.error("[Redis] Connection error:", err.message);
         });
 
-        redis.on("connect", () => {
+        globalThis.redis.on("connect", () => {
             console.log("[Redis] Connected");
         });
     }
-    return redis;
+    return globalThis.redis;
 }
 
 export function getSubscriber(): Redis {
-    if (!subscriber) {
-        subscriber = new Redis(REDIS_URL, {
+    if (!globalThis.subscriber) {
+        globalThis.subscriber = new Redis(REDIS_URL, {
             maxRetriesPerRequest: 3,
             retryStrategy(times) {
                 return Math.min(times * 50, 2000);
             },
         });
 
-        subscriber.on("error", err => {
+        globalThis.subscriber.on("error", err => {
             console.error("[Redis Subscriber] Connection error:", err.message);
         });
     }
-    return subscriber;
+    return globalThis.subscriber;
 }
 
 export async function closeRedis(): Promise<void> {
-    if (redis) {
-        await redis.quit();
-        redis = null;
+    if (globalThis.redis) {
+        await globalThis.redis.quit();
+        globalThis.redis = undefined;
     }
-    if (subscriber) {
-        await subscriber.quit();
-        subscriber = null;
+    if (globalThis.subscriber) {
+        await globalThis.subscriber.quit();
+        globalThis.subscriber = undefined;
     }
 }
 
@@ -61,7 +63,7 @@ export const REDIS_KEYS = {
     ANIME_BROWSE_COUNT: "anime:browse:count",
     ANIME_SEASON: (year: number, season: string) => `anime:season:${year}:${season}`,
     ANIME_SEASON_COUNT: (year: number, season: string) => `anime:season:${year}:${season}:count`,
-    ANIME_SITEMAP: "anime:sitemap",
+    ANIME_SITEMAP: (id: number) => `anime:sitemap:${id}`,
     ANIME_PEOPLE_IDS: "anime:peopleIds",
     ANIME_CHARACTER_IDS: "anime:characterIds",
     LAST_FETCH_TIME: "anime:lastFetchTime",

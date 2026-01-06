@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getAllAnimeFromRedis, getPeopleIds, getCharacterIds } from "@/services/animeData";
+import { getAllAnimeFromRedis, getCharacterIds, getPeopleIds } from "@/services/animeData";
 import { getRedis, REDIS_KEYS, REDIS_TTL } from "@/lib/redis";
 
 export const dynamic = "force-dynamic";
@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 async function saveSitemapToRedis(sitemap: MetadataRoute.Sitemap, id: number): Promise<void> {
     const redis = getRedis();
     try {
-        await redis.setex(`${REDIS_KEYS.ANIME_SITEMAP}:${id}`, REDIS_TTL.ANIME_SITEMAP, JSON.stringify(sitemap));
+        await redis.setex(`${REDIS_KEYS.ANIME_SITEMAP(id)}`, REDIS_TTL.ANIME_SITEMAP, JSON.stringify(sitemap));
     } catch (error) {
         console.error("[Redis] Failed to save sitemap:", error);
     }
@@ -24,7 +24,7 @@ export default async function sitemap(props: { id: string | Promise<string> }): 
     const id = Number(await props.id);
     try {
         const redis = getRedis();
-        const cachedSitemap = await redis.get(`${REDIS_KEYS.ANIME_SITEMAP}:${id}`);
+        const cachedSitemap = await redis.get(`${REDIS_KEYS.ANIME_SITEMAP(id)}`);
         if (cachedSitemap) {
             return JSON.parse(cachedSitemap) as MetadataRoute.Sitemap;
         }
