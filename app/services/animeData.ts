@@ -11,7 +11,6 @@ import {
     initializeFuseIndex,
     toFilterableItems,
 } from "./animeFilter";
-import type { MetadataRoute } from "next";
 
 export type { BrowseSortType };
 
