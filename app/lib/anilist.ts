@@ -113,10 +113,7 @@ type CharacterByIdResponse = {
     };
 };
 
-const fetchFromAniListInternal = async function <T>(
-    query: string,
-    variables: Record<string, unknown>,
-): Promise<T | null> {
+const fetchFromAniList = async function <T>(query: string, variables: Record<string, unknown>): Promise<T | null> {
     try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), ANILIST_TIMEOUT);
@@ -149,8 +146,6 @@ const fetchFromAniListInternal = async function <T>(
     }
 };
 
-const fetchFromAniList = cache(fetchFromAniListInternal);
-
 export interface SearchResult {
     characters: AniListCharacter[];
     hasNextPage: boolean;
@@ -178,8 +173,6 @@ const searchCharactersFromAniListInternal = async function (
         total: response.data.Page.pageInfo.total,
     };
 };
-
-export const searchCharactersFromAniList = cache(searchCharactersFromAniListInternal);
 
 const fetchCharacterByIdInternal = async function (id: number): Promise<AniListCharacter | null> {
     const response = await fetchFromAniList<CharacterByIdResponse>(CHARACTER_BY_ID_QUERY, { id });
@@ -224,3 +217,4 @@ const fetchCharactersByMalIdInternal = async function (
 
 export const fetchCharactersByMalId = cache(fetchCharactersByMalIdInternal);
 export const fetchCharacterById = cache(fetchCharacterByIdInternal);
+export const searchCharactersFromAniList = cache(searchCharactersFromAniListInternal);
