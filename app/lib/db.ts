@@ -581,6 +581,13 @@ export interface BookmarkedUser {
     last_activity: string | null;
 }
 
+export interface BookmarkRow {
+    id: number;
+    user_id: number;
+    bookmarked_user_id: number;
+    created_at: string;
+}
+
 export function addBookmark(userId: number, bookmarkedUserId: number): boolean {
     if (userId === bookmarkedUserId) {
         return false;
@@ -630,6 +637,34 @@ export function getBookmarkedUsers(userId: number): BookmarkedUser[] {
         ORDER BY b.created_at DESC
     `);
     return stmt.all(userId) as BookmarkedUser[];
+}
+
+export function getAllBookmarks(userId: number): BookmarkRow[] {
+    const stmt = db.prepare(`SELECT * FROM bookmarks WHERE user_id = ?`);
+    return stmt.all(userId) as BookmarkRow[];
+}
+
+export function restoreBookmarks(userId: number, rows: BookmarkRow[]) {
+    const stmt = db.prepare(`
+        INSERT INTO bookmarks (user_id, bookmarked_user_id, created_at) VALUES (?, ?, ?)
+        ON CONFLICT(user_id, bookmarked_user_id) DO UPDATE SET
+        created_at = excluded.created_at
+    `);
+    const restoreMany = db.transaction((bookmarks: BookmarkRow[]) => {
+        let count = 0;
+        for (const b of bookmarks) {
+            const result = stmt.run(userId, b.bookmarked_user_id, b.created_at);
+            if (result.changes > 0) {
+                count++;
+            }
+        }
+        return count;
+    });
+    try {
+        return restoreMany(rows);
+    } catch (error) {
+        throw new DatabaseError("Failed to restore bookmarks", "restoreBookmarks", error);
+    }
 }
 
 export interface TierListRow {
@@ -727,6 +762,44 @@ export function deleteTierList(id: number, userId: number): boolean {
     const stmt = db.prepare("DELETE FROM tier_lists WHERE id = ? AND user_id = ?");
     const result = stmt.run(id, userId);
     return result.changes > 0;
+}
+
+export function restoreTierLists(userId: number, rows: TierListRow[]) {
+    const stmt = db.prepare(`
+        INSERT INTO tier_lists (user_id, public_id, name, data, comments_enabled, created_at, updated_at, is_public)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(public_id) DO UPDATE SET
+        name = excluded.name,
+        data = excluded.data,
+        comments_enabled = excluded.comments_enabled,
+        created_at = excluded.created_at,
+        updated_at = excluded.updated_at,
+        is_public = excluded.is_public    
+    `);
+    const restoreMany = db.transaction((tiers: TierListRow[]) => {
+        let count = 0;
+        for (const t of tiers) {
+            const result = stmt.run(
+                userId,
+                t.public_id,
+                t.name,
+                t.data,
+                t.comments_enabled,
+                t.created_at,
+                t.updated_at,
+                t.is_public,
+            );
+            if (result.changes > 0) {
+                count++;
+            }
+        }
+        return count;
+    });
+    try {
+        return restoreMany(rows);
+    } catch (error) {
+        throw new DatabaseError("Failed to restore tier lists", "restoreTierLists", error);
+    }
 }
 
 export type PublicTierListSort = "newest" | "oldest" | "name";

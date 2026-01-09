@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth";
-import { getAllWatched } from "@/lib/db";
+import { getAllWatched, getAllBookmarks, getTierListsByUserId } from "@/lib/db";
+import { BackupData } from "@/types/backup";
 import { NextResponse } from "next/server";
 
 export async function POST(): Promise<Response> {
@@ -11,7 +12,12 @@ export async function POST(): Promise<Response> {
         });
     }
     try {
-        return NextResponse.json(getAllWatched(user.id));
+        const backupData: BackupData = {
+            Anime: getAllWatched(user.id),
+            Bookmarks: getAllBookmarks(user.id),
+            TierLists: getTierListsByUserId(user.id),
+        };
+        return NextResponse.json(backupData);
     } catch (error) {
         console.error("Export error:", error);
         return new Response(JSON.stringify({ error: "Failed to export file" }), {

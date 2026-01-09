@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { restoreWatchList, WatchedAnimeRow } from "@/lib/db";
+import { BackupData } from "@/types/backup";
+import { restoreBookmarks, restoreTierLists, restoreWatchList } from "@/lib/db";
 
 export async function POST(request: NextRequest): Promise<Response> {
     const user = await getCurrentUser();
@@ -18,8 +19,16 @@ export async function POST(request: NextRequest): Promise<Response> {
                 headers: { "Content-Type": "application/json" },
             });
         }
-        const rows: WatchedAnimeRow[] = JSON.parse(body.content);
-        restoreWatchList(user.id, rows);
+        const rows: BackupData = JSON.parse(body.content);
+        if (rows.Anime && rows.Anime.length > 0) {
+            restoreWatchList(user.id, rows.Anime);
+        }
+        if (rows.Bookmarks && rows.Bookmarks.length > 0) {
+            restoreBookmarks(user.id, rows.Bookmarks);
+        }
+        if (rows.TierLists && rows.TierLists.length > 0) {
+            restoreTierLists(user.id, rows.TierLists);
+        }
         return NextResponse.json({ completed: true });
     } catch (error) {
         console.error("Restore error:", error);

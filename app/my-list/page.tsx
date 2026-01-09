@@ -557,7 +557,7 @@ export default function MyListPage() {
                                     fontSize: "0.875rem",
                                 }}
                             >
-                                All restored anime will be added to / update your watchlist.
+                                All restored anime, bookmarks and tier lists will be added to / update your account.
                             </p>
 
                             <div className={styles.modalFooter}>
