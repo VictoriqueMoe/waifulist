@@ -2,8 +2,8 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Anime } from "@/types/anime";
 import { getAllSeasons, getCurrentSeason, Season, SeasonYear } from "@/lib/seasonUtils";
+import { useSeasonalAnime } from "@/hooks/useSeasonalAnime";
 import { SeasonSelector } from "@/components/SeasonSelector/SeasonSelector";
 import { AnimeCard } from "@/components/AnimeCard/AnimeCard";
 import { Pagination } from "@/components/Pagination/Pagination";
@@ -38,7 +38,7 @@ export function SeasonalPageClient() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { ensureLoaded } = useWatchList();
-    const { allGenres, selectedGenres, genresLoading, handleGenreChange } = useGenreFilter();
+    const { allGenres, selectedGenres, genresLoading, handleGenreChange: baseHandleGenreChange } = useGenreFilter();
 
     const seasonParam = parseSeasonParam(searchParams.get("season"));
     const yearParam = parseYearParam(searchParams.get("year"));
@@ -51,11 +51,15 @@ export function SeasonalPageClient() {
     };
 
     const [seasonYear, setSeasonYear] = useState<SeasonYear>(initialSeason);
-    const [anime, setAnime] = useState<Anime[]>([]);
-    const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(pageParam);
-    const [totalCount, setTotalCount] = useState(0);
-    const [filteredCount, setFilteredCount] = useState(0);
+
+    const { anime, totalCount, filteredCount, loading } = useSeasonalAnime({
+        year: seasonYear.year,
+        season: seasonYear.season,
+        page,
+        pageSize: PAGE_SIZE,
+        genres: selectedGenres,
+    });
 
     const totalPages = Math.ceil(filteredCount / PAGE_SIZE);
 
@@ -63,49 +67,13 @@ export function SeasonalPageClient() {
         ensureLoaded();
     }, [ensureLoaded]);
 
-    const fetchSeasonalAnime = useCallback(
-        async (seasonYear: SeasonYear, pageNum: number) => {
-            setLoading(true);
-            try {
-                const offset = (pageNum - 1) * PAGE_SIZE;
-                const params = new URLSearchParams({
-                    year: seasonYear.year.toString(),
-                    season: seasonYear.season,
-                    limit: PAGE_SIZE.toString(),
-                    offset: offset.toString(),
-                });
-                if (selectedGenres.length > 0) {
-                    params.set("genres", selectedGenres.join(","));
-                }
-                const response = await fetch(`/api/anime/seasonal?${params.toString()}`);
-
-                if (!response.ok) {
-                    throw new Error("Failed to fetch seasonal anime");
-                }
-
-                const data = await response.json();
-                setAnime(data.anime);
-                setTotalCount(data.total);
-                setFilteredCount(data.filtered);
-            } catch (error) {
-                console.error("Failed to fetch seasonal anime:", error);
-                setAnime([]);
-                setTotalCount(0);
-                setFilteredCount(0);
-            } finally {
-                setLoading(false);
-            }
+    const handleGenreChange = useCallback(
+        (genres: string[]) => {
+            baseHandleGenreChange(genres);
+            setPage(1);
         },
-        [selectedGenres],
+        [baseHandleGenreChange],
     );
-
-    useEffect(() => {
-        fetchSeasonalAnime(seasonYear, page);
-    }, [seasonYear, page, fetchSeasonalAnime]);
-
-    useEffect(() => {
-        setPage(1);
-    }, [selectedGenres]);
 
     const updateUrl = useCallback(
         (newSeasonYear: SeasonYear, newPage: number) => {

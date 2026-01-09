@@ -4,8 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { TierListData, TierListWithCharacters } from "@/types/tierlist";
 import {
+    CharacterPreview,
     createTierListApi,
     deleteTierListApi,
+    fetchCharacterPreviews,
     fetchPublicTierLists,
     fetchTierList,
     fetchUserTierLists,
@@ -234,4 +236,34 @@ export function usePublicTierLists(options: PublicTierListsOptions = {}) {
         totalPages,
         refresh: load,
     };
+}
+
+export function useCharacterPreviews(characterIds: number[]) {
+    const [previews, setPreviews] = useState<CharacterPreview[]>([]);
+    const [loading, setLoading] = useState(characterIds.length > 0);
+
+    useEffect(() => {
+        if (characterIds.length === 0) {
+            return;
+        }
+
+        let cancelled = false;
+
+        const load = async () => {
+            setLoading(true);
+            const data = await fetchCharacterPreviews(characterIds);
+            if (!cancelled) {
+                setPreviews(data);
+                setLoading(false);
+            }
+        };
+
+        load();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [characterIds]);
+
+    return { previews, loading };
 }

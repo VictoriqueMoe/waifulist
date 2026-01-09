@@ -9,7 +9,6 @@ import {
     Anime,
     AnimeCharacter,
     AnimeEpisode,
-    AnimeEpisodeDetail,
     AnimePicture,
     AnimeRecommendation,
     AnimeRelation,
@@ -17,7 +16,7 @@ import {
     StreamingLink,
     WatchStatus,
 } from "@/types/anime";
-import { getEpisodeDetail, getEpisodes } from "@/services/animeService";
+import { useEpisodes } from "@/hooks/useEpisodes";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWatchList } from "@/contexts/WatchListContext";
 import { Button } from "@/components/Button/Button";
@@ -290,56 +289,29 @@ interface EpisodesContentProps {
     initialEpisodes: AnimeEpisode[];
     totalPages: number;
     animeId: number;
-    episodeDetailsCache: Record<number, AnimeEpisodeDetail>;
-    onEpisodeDetailFetched: (episodeId: number, detail: AnimeEpisodeDetail) => void;
 }
 
-function EpisodesContent({
-    initialEpisodes,
-    totalPages,
-    animeId,
-    episodeDetailsCache,
-    onEpisodeDetailFetched,
-}: EpisodesContentProps) {
-    const [episodes, setEpisodes] = useState<AnimeEpisode[]>(initialEpisodes);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [loadingPage, setLoadingPage] = useState(false);
+function EpisodesContent({ initialEpisodes, totalPages, animeId }: EpisodesContentProps) {
+    const {
+        episodes,
+        currentPage,
+        loadingPage,
+        loadPage: loadPageBase,
+        fetchEpisodeDetail,
+        isLoadingEpisode,
+        getEpisodeDetail: getEpisodeDetailFromCache,
+    } = useEpisodes(animeId, initialEpisodes);
     const [expandedEpisodes, setExpandedEpisodes] = useState<Set<number>>(new Set());
-    const [loadingEpisodes, setLoadingEpisodes] = useState<Set<number>>(new Set());
 
     if (initialEpisodes.length === 0) {
         return null;
     }
 
     const loadPage = async (page: number) => {
-        if (loadingPage || page === currentPage) {
-            return;
+        const result = await loadPageBase(page);
+        if (result) {
+            setExpandedEpisodes(new Set());
         }
-        setLoadingPage(true);
-        const data = await getEpisodes(animeId, page);
-        setEpisodes(data.episodes);
-        setCurrentPage(page);
-        setExpandedEpisodes(new Set());
-        setLoadingPage(false);
-    };
-
-    const fetchEpisodeDetails = async (episodeId: number) => {
-        if (episodeDetailsCache[episodeId] || loadingEpisodes.has(episodeId)) {
-            return;
-        }
-
-        setLoadingEpisodes(prev => new Set(prev).add(episodeId));
-
-        const detail = await getEpisodeDetail(animeId, episodeId);
-        if (detail) {
-            onEpisodeDetailFetched(episodeId, detail);
-        }
-
-        setLoadingEpisodes(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(episodeId);
-            return newSet;
-        });
     };
 
     const toggleExpand = (episodeId: number) => {
@@ -348,7 +320,7 @@ function EpisodesContent({
             newExpanded.delete(episodeId);
         } else {
             newExpanded.add(episodeId);
-            fetchEpisodeDetails(episodeId);
+            fetchEpisodeDetail(episodeId);
         }
         setExpandedEpisodes(newExpanded);
     };
@@ -425,8 +397,8 @@ function EpisodesContent({
                 <div className={styles.episodesList}>
                     {episodes.map(episode => {
                         const isExpanded = expandedEpisodes.has(episode.mal_id);
-                        const isLoading = loadingEpisodes.has(episode.mal_id);
-                        const detail = episodeDetailsCache[episode.mal_id];
+                        const isLoading = isLoadingEpisode(episode.mal_id);
+                        const detail = getEpisodeDetailFromCache(episode.mal_id);
                         return (
                             <div key={episode.mal_id} className={styles.episodeItem}>
                                 <div className={styles.episodeMain} onClick={() => toggleExpand(episode.mal_id)}>
@@ -803,12 +775,6 @@ function ContentTabs({
     statistics,
     streaming,
 }: ContentTabsProps) {
-    const [episodeDetailsCache, setEpisodeDetailsCache] = useState<Record<number, AnimeEpisodeDetail>>({});
-
-    const handleEpisodeDetailFetched = useCallback((episodeId: number, detail: AnimeEpisodeDetail) => {
-        setEpisodeDetailsCache(prev => ({ ...prev, [episodeId]: detail }));
-    }, []);
-
     const hasMedia = anime.trailer?.youtube_id || (pictures && pictures.length > 0);
     const hasRelated = anime.relations && anime.relations.some(r => r.entry.some(e => e.type === "anime"));
     const hasRecommendations = recommendations && recommendations.length > 0;
@@ -841,8 +807,6 @@ function ContentTabs({
                     initialEpisodes={initialEpisodes}
                     totalPages={totalEpisodePages || 1}
                     animeId={anime.mal_id}
-                    episodeDetailsCache={episodeDetailsCache}
-                    onEpisodeDetailFetched={handleEpisodeDetailFetched}
                 />
             ),
         });

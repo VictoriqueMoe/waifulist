@@ -3,6 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "./AuthContext";
 import type { BrowseSettings, MyListSettings, UserSettings } from "@/types/settings";
+import { fetchUserSettings, updateBrowseSettingsApi, updateMyListSettingsApi } from "@/services/settingsClientService";
 
 export type { BrowseSettings, MyListSettings, UserSettings };
 
@@ -72,12 +73,11 @@ export function SettingsProvider({ children }: React.PropsWithChildren) {
         (async () => {
             setLoading(true);
             try {
-                const res = await fetch("/api/settings");
-                const data = await res.json();
-                if (effectVersion.current === version && data.settings) {
+                const userSettings = await fetchUserSettings();
+                if (effectVersion.current === version && userSettings) {
                     setSettings({
-                        browse: { ...DEFAULT_SETTINGS.browse, ...data.settings.browse },
-                        myList: { ...DEFAULT_SETTINGS.myList, ...data.settings.myList },
+                        browse: { ...DEFAULT_SETTINGS.browse, ...userSettings.browse },
+                        myList: { ...DEFAULT_SETTINGS.myList, ...userSettings.myList },
                     });
                 }
             } catch (error) {
@@ -100,11 +100,7 @@ export function SettingsProvider({ children }: React.PropsWithChildren) {
             }
 
             try {
-                await fetch("/api/settings", {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ browse: updates }),
-                });
+                await updateBrowseSettingsApi(updates);
             } catch (error) {
                 console.error("Failed to save browse settings:", error);
             }
@@ -122,11 +118,7 @@ export function SettingsProvider({ children }: React.PropsWithChildren) {
             }
 
             try {
-                await fetch("/api/settings", {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ myList: updates }),
-                });
+                await updateMyListSettingsApi(updates);
             } catch (error) {
                 console.error("Failed to save myList settings:", error);
             }

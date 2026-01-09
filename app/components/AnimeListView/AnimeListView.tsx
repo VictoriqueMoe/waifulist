@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import React, { useCallback, useImperativeHandle, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Anime, SortType, WatchStatus, watchStatusLabels } from "@/types/anime";
+import { UnifiedSortType } from "@/types/filter";
+import { useFilteredList } from "@/hooks/useFilteredList";
 import { AnimeCard, AnimeCardWatchData } from "@/components/AnimeCard/AnimeCard";
 import { ContextMenu, type ContextMenuItem } from "@/components/ContextMenu";
 import { useContextMenu } from "@/hooks/useContextMenu";
@@ -11,28 +13,6 @@ import { Pagination } from "@/components/Pagination/Pagination";
 import { useWatchList } from "@/contexts/WatchListContext";
 import { Spinner } from "@/components/Spinner/Spinner";
 import styles from "./AnimeListView.module.scss";
-
-interface FilteredItem {
-    anime: Anime;
-    watchData: {
-        status?: WatchStatus;
-        rating: number | null;
-        dateAdded?: string;
-        notes?: string | null;
-        episodesWatched?: number;
-    };
-}
-
-interface FilterResponse {
-    items: FilteredItem[];
-    total: number;
-    filtered: number;
-    page: number;
-    totalPages: number;
-    counts: Record<string, number>;
-    username?: string;
-    availableGenres?: string[];
-}
 
 export interface AnimeListViewHandle {
     reload: () => void;
@@ -55,7 +35,7 @@ interface AnimeListViewProps {
     ref?: React.Ref<AnimeListViewHandle>;
 }
 
-function mapSortToApi(sort: SortType): string {
+function mapSortToApi(sort: SortType): UnifiedSortType {
     if (sort === "rating (personal)") {
         return "rating_personal";
     }
@@ -91,77 +71,25 @@ export function AnimeListView({
     const [sortBy, setSortBy] = useState<SortType>(initialSort);
     const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-    const [items, setItems] = useState<FilteredItem[]>([]);
-    const [counts, setCounts] = useState<Record<string, number>>({ all: 0 });
-    const [filtered, setFiltered] = useState(0);
-    const [totalPages, setTotalPages] = useState(0);
-    const [loading, setLoading] = useState(true);
+    const { items, counts, filtered, totalPages, loading, reload } = useFilteredList({
+        apiEndpoint,
+        searchQuery,
+        sort: mapSortToApi(sortBy),
+        status: activeTab,
+        page,
+        genres,
+        onAvailableGenresChange,
+    });
+
     const { contextMenu, showContextMenu, hideContextMenu } = useContextMenu();
     const { removeFromWatchList } = useWatchList();
-
-    useEffect(() => {
-        setSortBy(initialSort);
-    }, [initialSort]);
-
-    useEffect(() => {
-        return () => {
-            if (debounceRef.current) {
-                clearTimeout(debounceRef.current);
-            }
-        };
-    }, []);
-
-    const onAvailableGenresChangeRef = useRef(onAvailableGenresChange);
-    onAvailableGenresChangeRef.current = onAvailableGenresChange;
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const params = new URLSearchParams();
-            if (searchQuery.trim()) {
-                params.set("q", searchQuery.trim());
-            }
-            params.set("sort", mapSortToApi(sortBy));
-            if (activeTab !== "all") {
-                params.set("status", activeTab);
-            }
-            params.set("page", String(page));
-            if (genres.length > 0) {
-                params.set("genres", genres.join(","));
-            }
-
-            const url = `${apiEndpoint}?${params.toString()}`;
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error("Failed to fetch");
-            }
-
-            const data: FilterResponse = await response.json();
-            setItems(data.items);
-            setCounts(data.counts);
-            setFiltered(data.filtered);
-            setTotalPages(data.totalPages);
-            if (data.availableGenres) {
-                onAvailableGenresChangeRef.current?.(data.availableGenres);
-            }
-        } catch (error) {
-            console.error("Failed to fetch list:", error);
-            setItems([]);
-        } finally {
-            setLoading(false);
-        }
-    }, [apiEndpoint, searchQuery, sortBy, activeTab, page, genres]);
-
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
 
     useImperativeHandle(
         ref,
         () => ({
-            reload: fetchData,
+            reload,
         }),
-        [fetchData],
+        [reload],
     );
 
     const updatePageUrl = useCallback((newPage: number) => {
@@ -232,14 +160,14 @@ export function AnimeListView({
                     icon: <i className="bi bi-trash"></i>,
                     onClick: () => {
                         removeFromWatchList(animeId).then(() => {
-                            fetchData();
+                            reload();
                         });
                     },
                 });
                 showContextMenu(event.nativeEvent, contextMenuItems);
             }
         },
-        [showContextMenu, removeFromWatchList, fetchData],
+        [showContextMenu, removeFromWatchList, reload],
     );
 
     const pagedItems: { anime: Anime; watchData: AnimeCardWatchData }[] = items

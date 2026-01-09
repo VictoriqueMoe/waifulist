@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React from "react";
 import {
     ArcElement,
     BarElement,
@@ -14,8 +14,8 @@ import {
     Tooltip,
 } from "chart.js";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
-import { StatsApiResponse, UserStats } from "@/types/stats";
 import { watchStatusLabels } from "@/types/anime";
+import { useStats } from "@/hooks/useStats";
 import { BookmarkedUsersSection } from "@/components/BookmarkedUsersSection/BookmarkedUsersSection";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { Spinner } from "@/components/Spinner/Spinner";
@@ -53,35 +53,8 @@ function formatMonthLabel(monthKey: string): string {
 }
 
 export function ProfilePageClient() {
-    const [stats, setStats] = useState<UserStats | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { stats, loading, error } = useStats();
     const { bookmarks, removeBookmark } = useBookmarks();
-
-    const fetchStats = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            const response = await fetch("/api/stats");
-            const result: StatsApiResponse = await response.json();
-
-            if (!result.success) {
-                setError(result.error || "Failed to load stats");
-                return;
-            }
-
-            setStats(result.data || null);
-        } catch {
-            setError("Failed to load statistics");
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchStats();
-    }, [fetchStats]);
 
     if (loading) {
         return (

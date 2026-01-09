@@ -2,11 +2,12 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Anime, SortType, WatchStatus, watchStatusLabels } from "@/types/anime";
+import { SortType, WatchStatus, watchStatusLabels } from "@/types/anime";
 import { useAuth } from "@/contexts/AuthContext";
 import { ImportEntry, useWatchList } from "@/contexts/WatchListContext";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useBackup, useRestore } from "@/hooks";
+import { useImport } from "@/hooks/useImport";
 import { AnimeListView, AnimeListViewHandle } from "@/components/AnimeListView/AnimeListView";
 import { GenreFilter } from "@/components/GenreFilter/GenreFilter";
 import { Button } from "@/components/Button/Button";
@@ -27,21 +28,6 @@ const IMPORT_TYPE_CONFIG: Record<ImportType, { label: string; description: strin
         accept: ".xml",
     },
 };
-
-interface ImportResult {
-    matched: {
-        title: string;
-        anime: Anime;
-        watchData: {
-            status: WatchStatus;
-            episodesWatched: number;
-            rating: number | null;
-            notes: string | null;
-        };
-    }[];
-    unmatched: string[];
-    total: number;
-}
 
 export default function MyListPage() {
     const router = useRouter();
@@ -78,19 +64,21 @@ export default function MyListPage() {
 
     const [showImportModal, setShowImportModal] = useState(false);
     const [showRestoreModal, setShowRestoreModal] = useState(false);
-    const [importing, setImporting] = useState(false);
-    const [importResult, setImportResult] = useState<ImportResult | null>(null);
-    const [importError, setImportError] = useState<string | null>(null);
     const [importType, setImportType] = useState<ImportType>("txt");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [importProgress, setImportProgress] = useState<{
-        current: number;
-        total: number;
-        matchedCount: number;
-    } | null>(null);
     const [copied, setCopied] = useState(false);
     const [restoreLoading, setRestoreLoading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const listRef = useRef<AnimeListViewHandle>(null);
+
+    const {
+        importing,
+        progress: importProgress,
+        result: importResult,
+        error: importError,
+        startImport,
+        reset: resetImport,
+    } = useImport();
 
     const importStatusBreakdown = useMemo(() => {
         if (!importResult) {
@@ -110,7 +98,6 @@ export default function MyListPage() {
         }
         return { counts, withRatings, withNotes };
     }, [importResult]);
-    const listRef = useRef<AnimeListViewHandle>(null);
 
     const [isDragging, setIsDragging] = useState(false);
 
@@ -179,93 +166,32 @@ export default function MyListPage() {
             return;
         }
 
-        setImporting(true);
-        setImportError(null);
-        setImportResult(null);
-        setImportProgress(null);
+        const content = await selectedFile.text();
+        const result = await startImport(content, importType);
 
-        try {
-            const content = await selectedFile.text();
-
-            const response = await fetch("/api/import", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ content, type: importType }),
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || "Import failed");
-            }
-
-            const reader = response.body?.getReader();
-            if (!reader) {
-                throw new Error("No response body");
-            }
-
-            const decoder = new TextDecoder();
-            let buffer = "";
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) {
-                    break;
-                }
-
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split("\n\n");
-                buffer = lines.pop() || "";
-
-                for (const line of lines) {
-                    if (line.startsWith("data: ")) {
-                        const data = JSON.parse(line.slice(6));
-
-                        if (data.type === "progress") {
-                            setImportProgress({
-                                current: data.current,
-                                total: data.total,
-                                matchedCount: data.matchedCount,
-                            });
-                        } else if (data.type === "complete") {
-                            const result: ImportResult = {
-                                matched: data.matched,
-                                unmatched: data.unmatched,
-                                total: data.total,
-                            };
-                            setImportResult(result);
-
-                            const entries: ImportEntry[] = result.matched.map(m => ({
-                                animeId: m.anime.mal_id,
-                                status: m.watchData.status,
-                                episodesWatched: m.watchData.episodesWatched,
-                                rating: m.watchData.rating,
-                                notes: m.watchData.notes,
-                            }));
-                            await bulkImportToWatchList(entries);
-                            listRef.current?.reload();
-                        }
-                    }
-                }
-            }
-        } catch (error) {
-            setImportError(error instanceof Error ? error.message : "Import failed");
-        } finally {
-            setImporting(false);
-            setImportProgress(null);
+        if (result) {
+            const entries: ImportEntry[] = result.matched.map(m => ({
+                animeId: m.anime.mal_id,
+                status: m.watchData.status,
+                episodesWatched: m.watchData.episodesWatched,
+                rating: m.watchData.rating,
+                notes: m.watchData.notes,
+            }));
+            await bulkImportToWatchList(entries);
+            listRef.current?.reload();
         }
-    }, [selectedFile, importType, bulkImportToWatchList]);
+    }, [selectedFile, importType, startImport, bulkImportToWatchList]);
 
     const closeModal = useCallback(() => {
         setShowImportModal(false);
-        setImportResult(null);
-        setImportError(null);
+        resetImport();
         setImportType("txt");
         setSelectedFile(null);
         setIsDragging(false);
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
-    }, []);
+    }, [resetImport]);
 
     const closeRestoreModal = useCallback(() => {
         setShowRestoreModal(false);
