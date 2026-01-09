@@ -3,6 +3,7 @@
 import React, { useCallback, useImperativeHandle, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Anime, SortType, WatchStatus, watchStatusLabels } from "@/types/anime";
+import { UnifiedSortType } from "@/types/filter";
 import { useFilteredList } from "@/hooks/useFilteredList";
 import { AnimeCard, AnimeCardWatchData } from "@/components/AnimeCard/AnimeCard";
 import { ContextMenu, type ContextMenuItem } from "@/components/ContextMenu";
@@ -34,7 +35,7 @@ interface AnimeListViewProps {
     ref?: React.Ref<AnimeListViewHandle>;
 }
 
-function mapSortToApi(sort: SortType): string {
+function mapSortToApi(sort: SortType): UnifiedSortType {
     if (sort === "rating (personal)") {
         return "rating_personal";
     }
