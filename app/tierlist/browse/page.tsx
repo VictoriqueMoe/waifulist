@@ -4,17 +4,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { usePublicTierLists } from "@/hooks/useTierList";
+import { useCharacterPreviews, usePublicTierLists } from "@/hooks/useTierList";
 import { TierListSummaryPublic } from "@/services/tierListClientService";
 import { Spinner } from "@/components/Spinner/Spinner";
 import { Button } from "@/components/Button/Button";
 import styles from "./page.module.scss";
-
-interface CharacterPreview {
-    id: number;
-    name: string;
-    image: string;
-}
 
 export default function BrowseTierListsPage() {
     const router = useRouter();
@@ -141,32 +135,7 @@ export default function BrowseTierListsPage() {
 }
 
 function TierListCard({ tierList }: { tierList: TierListSummaryPublic }) {
-    const [previews, setPreviews] = useState<CharacterPreview[]>([]);
-    const [loadingPreviews, setLoadingPreviews] = useState(true);
-
-    useEffect(() => {
-        if (tierList.previewCharacterIds.length === 0) {
-            setLoadingPreviews(false);
-            return;
-        }
-
-        const fetchPreviews = async () => {
-            try {
-                const ids = tierList.previewCharacterIds.slice(0, 5).join(",");
-                const response = await fetch(`/api/characters/preview?ids=${ids}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    setPreviews(data.characters);
-                }
-            } catch {
-                // Silently fail - preview is optional
-            } finally {
-                setLoadingPreviews(false);
-            }
-        };
-
-        fetchPreviews();
-    }, [tierList.previewCharacterIds]);
+    const { previews, loading: loadingPreviews } = useCharacterPreviews(tierList.previewCharacterIds);
 
     return (
         <Link href={`/tierlist/${tierList.publicId}`} className={styles.card}>

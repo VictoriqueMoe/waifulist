@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { TIER_COLORS, TIER_RANKS, TierListCharacter, TierListWithCharacters, TierRank } from "@/types/tierlist";
-import { resolveCharacterUrl } from "@/services/characterLookupClientService";
+import { useCharacterUrl } from "@/hooks/useCharacterUrl";
 import styles from "./TierListView.module.scss";
 
 interface TierListViewProps {
@@ -71,18 +71,16 @@ interface CharacterCardProps {
 }
 
 function CharacterCard({ character }: CharacterCardProps) {
-    const [isLoading, setIsLoading] = useState(false);
+    const { getCharacterUrl, loading: isLoading } = useCharacterUrl();
 
     const handleClick = async () => {
         if (isLoading) {
             return;
         }
 
-        setIsLoading(true);
         const animeWithMalId = character.anime.find(a => a.malId !== null);
-        const url = await resolveCharacterUrl(character.name, animeWithMalId?.malId ?? null, character.anilistId);
+        const url = await getCharacterUrl(character.name, animeWithMalId?.malId ?? null, character.anilistId);
         window.open(url, "_blank", "noopener,noreferrer");
-        setIsLoading(false);
     };
 
     return (

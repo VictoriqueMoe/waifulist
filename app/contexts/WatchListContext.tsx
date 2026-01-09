@@ -3,14 +3,17 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { WatchedAnime, WatchStatus } from "@/types/anime";
 import { useAuth } from "./AuthContext";
+import {
+    addToWatchlistApi,
+    bulkAddToWatchlistApi,
+    bulkImportToWatchlistApi,
+    fetchWatchlist,
+    ImportEntry,
+    removeFromWatchlistApi,
+    updateWatchlistItemApi,
+} from "@/services/watchlistClientService";
 
-export type ImportEntry = {
-    animeId: number;
-    status: WatchStatus;
-    episodesWatched: number;
-    rating: number | null;
-    notes: string | null;
-};
+export type { ImportEntry };
 
 interface WatchListContextType {
     watchedList: Map<number, WatchedAnime>;
@@ -58,24 +61,9 @@ export function WatchListProvider({ children }: React.PropsWithChildren) {
         setLoading(true);
 
         try {
-            const response = await fetch("/api/watchlist");
-            if (response.ok) {
-                const data = await response.json();
-                const map = new Map<number, WatchedAnime>();
-                for (const item of data.items) {
-                    map.set(item.anime_id, {
-                        animeId: item.anime_id,
-                        status: item.status as WatchStatus,
-                        episodesWatched: item.episodes_watched,
-                        rating: item.rating ?? undefined,
-                        notes: item.notes ?? undefined,
-                        dateAdded: item.date_added,
-                        dateUpdated: item.date_updated,
-                    });
-                }
-                setWatchedList(map);
-                setLoaded(true);
-            }
+            const map = await fetchWatchlist();
+            setWatchedList(map);
+            setLoaded(true);
         } catch (error) {
             console.error("Failed to fetch watch list:", error);
         } finally {
@@ -108,28 +96,12 @@ export function WatchListProvider({ children }: React.PropsWithChildren) {
             }
 
             try {
-                const response = await fetch("/api/watchlist", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ animeId, status }),
+                const item = await addToWatchlistApi(animeId, status);
+                setWatchedList(prev => {
+                    const updated = new Map(prev);
+                    updated.set(animeId, item);
+                    return updated;
                 });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    setWatchedList(prev => {
-                        const updated = new Map(prev);
-                        updated.set(animeId, {
-                            animeId: data.item.anime_id,
-                            status: data.item.status as WatchStatus,
-                            episodesWatched: data.item.episodes_watched,
-                            rating: data.item.rating ?? undefined,
-                            notes: data.item.notes ?? undefined,
-                            dateAdded: data.item.date_added,
-                            dateUpdated: data.item.date_updated,
-                        });
-                        return updated;
-                    });
-                }
             } catch (error) {
                 console.error("Failed to add to watch list:", error);
             }
@@ -144,17 +116,9 @@ export function WatchListProvider({ children }: React.PropsWithChildren) {
             }
 
             try {
-                const response = await fetch("/api/watchlist", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ animeIds, status }),
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    await refreshList();
-                    return data.added;
-                }
+                const added = await bulkAddToWatchlistApi(animeIds, status);
+                await refreshList();
+                return added;
             } catch (error) {
                 console.error("Failed to bulk add:", error);
             }
@@ -170,17 +134,9 @@ export function WatchListProvider({ children }: React.PropsWithChildren) {
             }
 
             try {
-                const response = await fetch("/api/watchlist", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ importEntries: entries }),
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    await refreshList();
-                    return data.added;
-                }
+                const added = await bulkImportToWatchlistApi(entries);
+                await refreshList();
+                return added;
             } catch (error) {
                 console.error("Failed to bulk import:", error);
             }
@@ -192,42 +148,13 @@ export function WatchListProvider({ children }: React.PropsWithChildren) {
     const sendUpdate = useCallback(
         async (animeId: number, updates: Partial<WatchedAnime>, previousData: WatchedAnime | undefined) => {
             try {
-                const response = await fetch(`/api/watchlist/${animeId}`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        status: updates.status,
-                        episodesWatched: updates.episodesWatched,
-                        rating: updates.rating,
-                        notes: updates.notes,
-                    }),
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.item) {
-                        setWatchedList(prev => {
-                            const updated = new Map(prev);
-                            updated.set(animeId, {
-                                animeId: data.item.anime_id,
-                                status: data.item.status as WatchStatus,
-                                episodesWatched: data.item.episodes_watched,
-                                rating: data.item.rating ?? undefined,
-                                notes: data.item.notes ?? undefined,
-                                dateAdded: data.item.date_added,
-                                dateUpdated: data.item.date_updated,
-                            });
-                            return updated;
-                        });
-                    }
-                } else {
-                    if (previousData) {
-                        setWatchedList(prev => {
-                            const updated = new Map(prev);
-                            updated.set(animeId, previousData);
-                            return updated;
-                        });
-                    }
+                const item = await updateWatchlistItemApi(animeId, updates);
+                if (item) {
+                    setWatchedList(prev => {
+                        const updated = new Map(prev);
+                        updated.set(animeId, item);
+                        return updated;
+                    });
                 }
             } catch (error) {
                 console.error("Failed to update watch status:", error);
@@ -290,17 +217,12 @@ export function WatchListProvider({ children }: React.PropsWithChildren) {
             }
 
             try {
-                const response = await fetch(`/api/watchlist/${animeId}`, {
-                    method: "DELETE",
+                await removeFromWatchlistApi(animeId);
+                setWatchedList(prev => {
+                    const updated = new Map(prev);
+                    updated.delete(animeId);
+                    return updated;
                 });
-
-                if (response.ok) {
-                    setWatchedList(prev => {
-                        const updated = new Map(prev);
-                        updated.delete(animeId);
-                        return updated;
-                    });
-                }
             } catch (error) {
                 console.error("Failed to remove from watch list:", error);
             }

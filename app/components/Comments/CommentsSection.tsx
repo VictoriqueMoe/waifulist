@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import { useComments } from "@/hooks/useComments";
 import { Turnstile } from "@/components/Turnstile/Turnstile";
-import { REACTION_EMOJIS, TierListComment } from "@/types/tierlist";
-import { deleteCommentApi, fetchComments, postComment, toggleReactionApi } from "@/services/tierListClientService";
+import { REACTION_EMOJIS } from "@/types/tierlist";
 import styles from "./CommentsSection.module.scss";
 
 interface CommentsSectionProps {
@@ -15,10 +15,9 @@ interface CommentsSectionProps {
 
 export function CommentsSection({ publicId, isOwner }: CommentsSectionProps) {
     const { user, loading: authLoading } = useAuth();
-    const [comments, setComments] = useState<TierListComment[]>([]);
-    const [commentsEnabled, setCommentsEnabled] = useState(true);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { comments, commentsEnabled, loading, error, setError, addComment, deleteComment, toggleReaction } =
+        useComments(publicId);
+
     const [content, setContent] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
@@ -26,24 +25,6 @@ export function CommentsSection({ publicId, isOwner }: CommentsSectionProps) {
     const [showTurnstile, setShowTurnstile] = useState(false);
     const formRef = useRef<HTMLFormElement>(null);
     const isSubmittingRef = useRef(false);
-
-    const loadComments = useCallback(async () => {
-        try {
-            setLoading(true);
-            setError(null);
-            const data = await fetchComments(publicId);
-            setComments(data.comments);
-            setCommentsEnabled(data.commentsEnabled);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to load comments");
-        } finally {
-            setLoading(false);
-        }
-    }, [publicId]);
-
-    useEffect(() => {
-        loadComments();
-    }, [loadComments]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -64,8 +45,7 @@ export function CommentsSection({ publicId, isOwner }: CommentsSectionProps) {
         setSubmitError(null);
 
         try {
-            const comment = await postComment(publicId, content.trim(), turnstileToken);
-            setComments(prev => [...prev, comment]);
+            await addComment(content, turnstileToken);
             setContent("");
             setTurnstileToken(null);
             setShowTurnstile(false);
@@ -80,12 +60,7 @@ export function CommentsSection({ publicId, isOwner }: CommentsSectionProps) {
     };
 
     const handleDelete = async (commentId: number) => {
-        try {
-            await deleteCommentApi(publicId, commentId);
-            setComments(prev => prev.filter(c => c.id !== commentId));
-        } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to delete comment");
-        }
+        await deleteComment(commentId);
     };
 
     const [openPicker, setOpenPicker] = useState<number | null>(null);
@@ -98,51 +73,9 @@ export function CommentsSection({ publicId, isOwner }: CommentsSectionProps) {
         setOpenPicker(null);
 
         try {
-            const result = await toggleReactionApi(publicId, commentId, emoji);
-            setComments(prev =>
-                prev.map(comment => {
-                    if (comment.id !== commentId) {
-                        return comment;
-                    }
-
-                    const existingIndex = comment.reactions.findIndex(r => r.emoji === emoji);
-                    let newReactions = [...comment.reactions];
-                    const username = user.username;
-
-                    if (result.added) {
-                        if (existingIndex >= 0) {
-                            const existing = newReactions[existingIndex];
-                            newReactions[existingIndex] = {
-                                ...existing,
-                                count: existing.count + 1,
-                                userReacted: true,
-                                users: [...existing.users, username].slice(0, 10),
-                            };
-                        } else {
-                            newReactions.push({ emoji, count: 1, userReacted: true, users: [username] });
-                        }
-                    } else {
-                        if (existingIndex >= 0) {
-                            const existing = newReactions[existingIndex];
-                            const newCount = existing.count - 1;
-                            if (newCount <= 0) {
-                                newReactions = newReactions.filter(r => r.emoji !== emoji);
-                            } else {
-                                newReactions[existingIndex] = {
-                                    ...existing,
-                                    count: newCount,
-                                    userReacted: false,
-                                    users: existing.users.filter(u => u !== username),
-                                };
-                            }
-                        }
-                    }
-
-                    return { ...comment, reactions: newReactions };
-                }),
-            );
-        } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to toggle reaction");
+            await toggleReaction(commentId, emoji, user.username);
+        } catch {
+            setError("Failed to toggle reaction");
         }
     };
 

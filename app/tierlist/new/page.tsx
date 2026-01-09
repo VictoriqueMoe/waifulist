@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { TierListBuilder } from "@/components/TierList";
 import { TierListCharacter, TierListData, TierRank } from "@/types/tierlist";
-import { createAnonymousTierListApi } from "@/services/tierListClientService";
+import { useAnonymousTierList } from "@/hooks/useAnonymousTierList";
 import styles from "./page.module.scss";
 
 const emptyTiers: Record<TierRank, TierListCharacter[]> = {
@@ -19,23 +19,16 @@ const emptyTiers: Record<TierRank, TierListCharacter[]> = {
 
 export default function NewTierListPage() {
     const router = useRouter();
-    const [status, setStatus] = useState<"idle" | "sharing" | "error">("idle");
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const { status, error: errorMessage, createAnonymousTierList } = useAnonymousTierList();
 
     const handleShare = useCallback(
         async (name: string, data: TierListData) => {
-            setStatus("sharing");
-            setErrorMessage(null);
-
-            try {
-                const result = await createAnonymousTierListApi(name, data);
+            const result = await createAnonymousTierList(name, data);
+            if (result) {
                 router.push(`/tierlist/${result.publicId}`);
-            } catch (error) {
-                setStatus("error");
-                setErrorMessage(error instanceof Error ? error.message : "Failed to share tier list");
             }
         },
-        [router],
+        [router, createAnonymousTierList],
     );
 
     return (

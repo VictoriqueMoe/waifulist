@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { CompareAnimeItem, CompareApiResponse, ComparisonData } from "@/types/compare";
+import { CompareAnimeItem } from "@/types/compare";
+import { useComparison } from "@/hooks/useComparison";
 import { Spinner } from "@/components/Spinner/Spinner";
 import styles from "./page.module.scss";
 
@@ -172,34 +173,7 @@ function VennSection({
 }
 
 export function ComparePageClient({ targetUuid }: ComparePageClientProps) {
-    const [data, setData] = useState<ComparisonData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    const fetchComparison = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            const response = await fetch(`/api/compare/${targetUuid}`);
-            const result: CompareApiResponse = await response.json();
-
-            if (!result.success) {
-                setError(result.error || "Failed to load comparison");
-                return;
-            }
-
-            setData(result.data || null);
-        } catch {
-            setError("Failed to load comparison data");
-        } finally {
-            setLoading(false);
-        }
-    }, [targetUuid]);
-
-    useEffect(() => {
-        fetchComparison();
-    }, [fetchComparison]);
+    const { data, loading, error } = useComparison(targetUuid);
 
     if (loading) {
         return (

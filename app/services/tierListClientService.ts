@@ -1,5 +1,11 @@
 import { TierListComment, TierListData, TierListWithCharacters } from "@/types/tierlist";
 
+export interface CharacterPreview {
+    id: number;
+    name: string;
+    image: string;
+}
+
 export interface TierListSummary {
     id: number;
     publicId: string;
@@ -206,4 +212,17 @@ export async function toggleReactionApi(
         throw new Error(data.error || "Failed to toggle reaction");
     }
     return response.json();
+}
+
+export async function fetchCharacterPreviews(ids: number[]): Promise<CharacterPreview[]> {
+    if (ids.length === 0) {
+        return [];
+    }
+    const idsParam = ids.slice(0, 5).join(",");
+    const response = await fetch(`/api/characters/preview?ids=${idsParam}`);
+    if (!response.ok) {
+        return [];
+    }
+    const data = await response.json();
+    return data.characters;
 }

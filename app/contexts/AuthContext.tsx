@@ -1,12 +1,14 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
-
-interface User {
-    id: number;
-    username: string;
-    publicId: string;
-}
+import {
+    fetchCurrentUser,
+    loginUser,
+    logoutUser,
+    registerUser,
+    updateUserUsername,
+    User,
+} from "@/services/authClientService";
 
 interface AuthContextType {
     user: User | null;
@@ -25,15 +27,9 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
 
     useEffect(() => {
         async function checkSession() {
-            try {
-                const response = await fetch("/api/auth/me");
-                const data = await response.json();
-                setUser(data.user || null);
-            } catch {
-                setUser(null);
-            } finally {
-                setLoading(false);
-            }
+            const currentUser = await fetchCurrentUser();
+            setUser(currentUser);
+            setLoading(false);
         }
 
         checkSession();
@@ -41,76 +37,40 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
 
     const login = useCallback(
         async (username: string, password: string, turnstileToken: string): Promise<{ error?: string }> => {
-            try {
-                const response = await fetch("/api/auth/login", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ username, password, turnstileToken }),
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    return { error: data.error || "Login failed" };
-                }
-
-                setUser(data.user);
+            const result = await loginUser(username, password, turnstileToken);
+            if (result.user) {
+                setUser(result.user);
                 return {};
-            } catch {
-                return { error: "Login failed" };
             }
+            return { error: result.error };
         },
         [],
     );
 
     const register = useCallback(
         async (username: string, password: string, turnstileToken: string): Promise<{ error?: string }> => {
-            try {
-                const response = await fetch("/api/auth/register", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ username, password, turnstileToken }),
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    return { error: data.error || "Registration failed" };
-                }
-
-                setUser(data.user);
+            const result = await registerUser(username, password, turnstileToken);
+            if (result.user) {
+                setUser(result.user);
                 return {};
-            } catch {
-                return { error: "Registration failed" };
             }
+            return { error: result.error };
         },
         [],
     );
 
     const logout = useCallback(async () => {
-        await fetch("/api/auth/logout", { method: "POST" });
+        await logoutUser();
         setUser(null);
     }, []);
 
     const updateUsername = useCallback(async (newUsername: string, password: string): Promise<{ error?: string }> => {
-        try {
-            const response = await fetch("/api/auth/username", {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username: newUsername, password }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                return { error: data.error || "Failed to update username" };
-            }
-
-            setUser(data.user);
+        const result = await updateUserUsername(newUsername, password);
+        if (result.user) {
+            setUser(result.user);
             return {};
-        } catch {
-            return { error: "Failed to update username" };
         }
+        return { error: result.error };
     }, []);
 
     return (

@@ -29,7 +29,7 @@ export interface TierListSummaryPublic extends TierListSummary {
     previewCharacterIds: number[];
 }
 
-function parseTierListData(dataString: string): TierListData {
+export function parseTierListData(dataString: string): TierListData {
     try {
         return JSON.parse(dataString) as TierListData;
     } catch {
@@ -37,7 +37,7 @@ function parseTierListData(dataString: string): TierListData {
     }
 }
 
-function countCharacters(data: TierListData): number {
+export function countCharacters(data: TierListData): number {
     let count = 0;
     for (const rank of TIER_RANKS) {
         count += data[rank].length;
@@ -59,7 +59,7 @@ function toSummary(row: TierListRow): TierListSummary {
     };
 }
 
-function getPreviewCharacterIds(data: TierListData, limit: number = 5): number[] {
+export function getPreviewCharacterIds(data: TierListData, limit: number = 5): number[] {
     const ids: number[] = [];
     for (const rank of TIER_RANKS) {
         for (const id of data[rank]) {
