@@ -72,6 +72,9 @@ export const REDIS_KEYS = {
     REFRESH_CHANNEL: "anime:refresh",
     OG_IMAGE: (uuid: string, hash: string) => `og:${uuid}:${hash}`,
     RATE_LIMIT: (ip: string, type: RateLimitType) => `ratelimit:${ip}:${type}`,
+    ANILIST_CHARACTER: (id: number) => `anilist:character:${id}`,
+    ANILIST_SEARCH: (query: string, page: number) => `anilist:search:${query.toLowerCase()}:${page}`,
+    ANILIST_ANIME_CHARACTERS: (malId: number, page: number) => `anilist:anime:${malId}:characters:${page}`,
 } as const;
 
 export const REDIS_TTL = {
@@ -81,6 +84,9 @@ export const REDIS_TTL = {
     ANIME_SITEMAP: 60 * 60 * 24, // 24 hours
     ANIME_PEOPLE_IDS: 60 * 60 * 24 * 7, // 7 days
     ANIME_CHARACTER_IDS: 60 * 60 * 24 * 7, // 7 days
+    ANILIST_CHARACTER: 60 * 60 * 24 * 30, // 30 days
+    ANILIST_SEARCH: 60 * 60, // 1 hour
+    ANILIST_ANIME_CHARACTERS: 60 * 60 * 24, // 24 hours
 } as const;
 
 export async function invalidateOgImageCache(uuid: string): Promise<number> {

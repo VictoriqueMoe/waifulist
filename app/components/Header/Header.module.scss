@@ -75,8 +75,13 @@
     border-radius: $radius-md;
     transition: all $transition-fast;
     text-decoration: none;
+    white-space: nowrap;
 
     @include sm {
+        padding: $spacing-sm;
+    }
+
+    @include lg {
         padding: $spacing-sm $spacing-md;
     }
 
@@ -95,8 +100,18 @@
     }
 
     span {
-        @media (max-width: $breakpoint-md) {
-            display: none;
+        display: none;
+
+        @include lg {
+            display: inline;
+        }
+    }
+
+    &.hideMobile {
+        display: none;
+
+        @include md {
+            display: flex;
         }
     }
 }

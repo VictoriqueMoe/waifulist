@@ -48,6 +48,78 @@
     justify-content: center;
 }
 
+.features {
+    padding: $spacing-xl $spacing-lg;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-primary);
+}
+
+.featuresGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $spacing-lg;
+
+    @include md {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    @include lg {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.featureCard {
+    padding: $spacing-lg;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: $radius-lg;
+    text-align: center;
+    transition: all $transition-fast;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+
+    &:hover {
+        border-color: var(--accent-primary);
+        transform: translateY(-2px);
+    }
+
+    h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: $spacing-xs;
+    }
+
+    p {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin: 0;
+        flex-grow: 1;
+    }
+}
+
+.featureIcon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto $spacing-md;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent-gradient);
+    border-radius: $radius-md;
+
+    i {
+        font-size: 1.5rem;
+        color: white;
+    }
+}
+
+.featureLink {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
 .section {
     padding: $spacing-xl $spacing-lg;
 }

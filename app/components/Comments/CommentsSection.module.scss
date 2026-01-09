@@ -1,0 +1,275 @@
+@use "../../styles/variables" as *;
+
+.section {
+    margin-top: $spacing-xl;
+    padding: $spacing-lg;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: $radius-lg;
+}
+
+.title {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin: 0 0 $spacing-lg;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+
+    i {
+        font-size: 1rem;
+    }
+}
+
+.loading,
+.disabled,
+.empty {
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+}
+
+.error {
+    padding: $spacing-sm $spacing-md;
+    margin-bottom: $spacing-md;
+    background: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    border-radius: $radius-md;
+    color: #dc3545;
+    font-size: 0.875rem;
+}
+
+.form {
+    margin-bottom: $spacing-lg;
+}
+
+.textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: $spacing-md;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: $radius-md;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.9375rem;
+    resize: vertical;
+    transition: border-color $transition-fast;
+
+    &::placeholder {
+        color: var(--text-muted);
+    }
+
+    &:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+    }
+}
+
+.submitError {
+    margin-top: $spacing-sm;
+    color: #dc3545;
+    font-size: 0.875rem;
+}
+
+.turnstileContainer {
+    margin-top: $spacing-md;
+}
+
+.submitBtn {
+    margin-top: $spacing-md;
+    padding: $spacing-sm $spacing-lg;
+    background: var(--accent-primary);
+    border: none;
+    border-radius: $radius-md;
+    color: white;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity $transition-fast;
+
+    &:hover:not(:disabled) {
+        opacity: 0.9;
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+}
+
+.signInPrompt {
+    margin-bottom: $spacing-lg;
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+
+    a {
+        color: var(--accent-primary);
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+.commentsList {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+}
+
+.comment {
+    padding: $spacing-md;
+    background: var(--bg-tertiary);
+    border-radius: $radius-md;
+}
+
+.commentHeader {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    margin-bottom: $spacing-sm;
+}
+
+.username {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9375rem;
+}
+
+.date {
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+}
+
+.deleteBtn {
+    margin-left: auto;
+    padding: $spacing-xs;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color $transition-fast;
+
+    &:hover {
+        color: #dc3545;
+    }
+
+    i {
+        font-size: 0.875rem;
+    }
+}
+
+.commentContent {
+    margin: 0 0 $spacing-sm;
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.reactions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: $spacing-xs;
+}
+
+.reactionBtn {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px $spacing-sm;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: $radius-full;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all $transition-fast;
+
+    &:hover:not(:disabled) {
+        background: var(--bg-primary);
+        border-color: var(--text-muted);
+    }
+
+    &:disabled {
+        cursor: default;
+    }
+
+    &.reacted {
+        background: rgba(var(--accent-primary-rgb), 0.15);
+        border-color: var(--accent-primary);
+    }
+}
+
+.reactionCount {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.addReaction {
+    position: relative;
+}
+
+.addReactionBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: 1px dashed var(--border-primary);
+    border-radius: $radius-full;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+        background: var(--bg-secondary);
+        border-style: solid;
+        color: var(--text-primary);
+    }
+
+    i {
+        font-size: 0.875rem;
+    }
+}
+
+.emojiPicker {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    display: flex;
+    gap: 2px;
+    padding: $spacing-xs;
+    margin-bottom: $spacing-xs;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: $radius-md;
+    box-shadow: var(--shadow-primary);
+    z-index: $z-dropdown;
+}
+
+.emojiOption {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    border-radius: $radius-sm;
+    font-size: 1.125rem;
+    cursor: pointer;
+    transition: background $transition-fast;
+
+    &:hover {
+        background: var(--bg-tertiary);
+    }
+}

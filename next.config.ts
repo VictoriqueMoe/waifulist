@@ -16,6 +16,10 @@ const nextConfig: NextConfig = {
                 protocol: "https",
                 hostname: "api.trace.moe",
             },
+            {
+                protocol: "https",
+                hostname: "s4.anilist.co",
+            },
             // Streaming platform favicons
             {
                 protocol: "https",

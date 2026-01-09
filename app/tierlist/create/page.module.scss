@@ -1,0 +1,38 @@
+@use "../../styles/variables" as *;
+
+.page {
+    @include flex-center;
+    min-height: 50vh;
+    padding: $spacing-xl;
+}
+
+.error {
+    text-align: center;
+    padding: $spacing-xl;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: $radius-lg;
+
+    h2 {
+        margin: 0 0 $spacing-md;
+        color: #ef4444;
+    }
+
+    p {
+        margin: 0 0 $spacing-lg;
+        color: var(--text-secondary);
+    }
+}
+
+.retryButton {
+    padding: $spacing-sm $spacing-lg;
+    background: var(--accent-primary);
+    color: white;
+    border-radius: $radius-md;
+    font-weight: 600;
+    transition: all $transition-fast;
+
+    &:hover {
+        background: var(--accent-secondary);
+    }
+}

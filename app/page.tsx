@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Anime, TopReviewWithAnime } from "@/types/anime";
 import { useAnime } from "@/hooks";
 import { useWatchList } from "@/contexts/WatchListContext";
@@ -9,6 +10,54 @@ import { SearchBar } from "@/components/SearchBar/SearchBar";
 import { AnimeCard } from "@/components/AnimeCard/AnimeCard";
 import { ReviewCard } from "@/components/ReviewCard/ReviewCard";
 import styles from "./page.module.scss";
+
+const FEATURES = [
+    {
+        icon: "bi-list-check",
+        title: "Track Your Anime",
+        description:
+            "Organize your anime with status tracking, ratings from dogshit to masterpiece, and personal notes others can see",
+    },
+    {
+        icon: "bi-share",
+        title: "Share Your List",
+        description: "Get a unique public URL to share your anime list with friends",
+    },
+    {
+        icon: "bi-bar-chart-line",
+        title: "View Your Stats",
+        description: "See total anime watched, episodes, rating distribution, top genres, and activity timeline",
+        link: "/profile",
+    },
+    {
+        icon: "bi-bookmark-heart",
+        title: "Bookmark Friends",
+        description: "Save your friends' lists for quick access from your profile",
+    },
+    {
+        icon: "bi-people",
+        title: "Compare Lists",
+        description: "See what you have in common with friends and get a compatibility score",
+    },
+    {
+        icon: "bi-search",
+        title: "Discover Anime",
+        description: "Browse anime, characters, voice actors, and detailed stats on any title",
+        link: "/browse",
+    },
+    {
+        icon: "bi-trophy",
+        title: "Create Tier Lists",
+        description: "Build and share character tier lists, browse community lists and leave comments",
+        link: "/tierlist/browse",
+    },
+    {
+        icon: "bi-camera",
+        title: "Find Any Anime",
+        description: "Upload a screenshot to instantly identify the anime, episode, and timestamp",
+        link: "/trace",
+    },
+];
 
 export default function Home() {
     const router = useRouter();
@@ -50,6 +99,37 @@ export default function Home() {
                     </p>
                     <div className={styles.searchWrapper}>
                         <SearchBar onLiveSearch={handleLiveSearch} placeholder="Search for anime..." />
+                    </div>
+                </div>
+            </section>
+
+            <section className={styles.features}>
+                <div className={styles.container}>
+                    <div className={styles.sectionHeader}>
+                        <h2>Everything You Need</h2>
+                    </div>
+                    <div className={styles.featuresGrid}>
+                        {FEATURES.map(feature => {
+                            const card = (
+                                <div className={styles.featureCard}>
+                                    <div className={styles.featureIcon}>
+                                        <i className={`bi ${feature.icon}`} />
+                                    </div>
+                                    <h3>{feature.title}</h3>
+                                    <p>{feature.description}</p>
+                                </div>
+                            );
+
+                            if (feature.link) {
+                                return (
+                                    <Link key={feature.title} href={feature.link} className={styles.featureLink}>
+                                        {card}
+                                    </Link>
+                                );
+                            }
+
+                            return <div key={feature.title}>{card}</div>;
+                        })}
                     </div>
                 </div>
             </section>

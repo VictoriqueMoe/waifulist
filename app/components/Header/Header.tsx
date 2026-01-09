@@ -16,6 +16,12 @@ export function Header() {
         if (path === "/") {
             return pathname === "/";
         }
+        if (path === "/tierlist") {
+            return (
+                pathname === "/tierlist" ||
+                (pathname.startsWith("/tierlist/") && !pathname.startsWith("/tierlist/browse"))
+            );
+        }
         return pathname.startsWith(path);
     };
 
@@ -75,14 +81,30 @@ export function Header() {
                             <i className="bi bi-search-heart" />
                             <span>Trace</span>
                         </Link>
+                        <Link
+                            href="/tierlist/browse"
+                            className={`${styles.navLink} ${styles.hideMobile} ${isActive("/tierlist/browse") ? styles.active : ""}`}
+                        >
+                            <i className="bi bi-trophy" />
+                            <span>Tier Lists</span>
+                        </Link>
                         {user && (
-                            <Link
-                                href="/my-list"
-                                className={`${styles.navLink} ${isActive("/my-list") ? styles.active : ""}`}
-                            >
-                                <i className="bi bi-bookmark" />
-                                <span>My List</span>
-                            </Link>
+                            <>
+                                <Link
+                                    href="/tierlist"
+                                    className={`${styles.navLink} ${styles.hideMobile} ${isActive("/tierlist") ? styles.active : ""}`}
+                                >
+                                    <i className="bi bi-list-ol" />
+                                    <span>My Tier List</span>
+                                </Link>
+                                <Link
+                                    href="/my-list"
+                                    className={`${styles.navLink} ${isActive("/my-list") ? styles.active : ""}`}
+                                >
+                                    <i className="bi bi-bookmark" />
+                                    <span>My List</span>
+                                </Link>
+                            </>
                         )}
                     </nav>
 
@@ -152,6 +174,14 @@ export function Header() {
                             <span>{user.username}</span>
                         </Link>
                         <nav className={styles.mobileNav}>
+                            <Link href="/tierlist/browse" className={styles.mobileNavLink} onClick={closeMenu}>
+                                <i className="bi bi-trophy" />
+                                <span>Browse Tier Lists</span>
+                            </Link>
+                            <Link href="/tierlist" className={styles.mobileNavLink} onClick={closeMenu}>
+                                <i className="bi bi-list-ol" />
+                                <span>My Tier Lists</span>
+                            </Link>
                             <Link href="/settings" className={styles.mobileNavLink} onClick={closeMenu}>
                                 <i className="bi bi-gear" />
                                 <span>Settings</span>
@@ -164,6 +194,10 @@ export function Header() {
                     </>
                 ) : (
                     <nav className={styles.mobileNav}>
+                        <Link href="/tierlist/browse" className={styles.mobileNavLink} onClick={closeMenu}>
+                            <i className="bi bi-trophy" />
+                            <span>Tier Lists</span>
+                        </Link>
                         <Link href="/login" className={styles.mobileNavLink} onClick={closeMenu}>
                             <i className="bi bi-person" />
                             <span>Sign In</span>

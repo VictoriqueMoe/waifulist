@@ -1,0 +1,76 @@
+@use "../../../styles/variables" as *;
+
+.page {
+    padding: $spacing-lg;
+    min-height: calc(100vh - 60px);
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.error {
+    text-align: center;
+    padding: $spacing-xl;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: $radius-lg;
+
+    h2 {
+        margin: 0 0 $spacing-md;
+        color: #ef4444;
+    }
+
+    p {
+        margin: 0 0 $spacing-lg;
+        color: var(--text-secondary);
+    }
+}
+
+.backButton {
+    padding: $spacing-sm $spacing-lg;
+    background: var(--accent-primary);
+    color: white;
+    border-radius: $radius-md;
+    font-weight: 600;
+    transition: all $transition-fast;
+
+    &:hover {
+        background: var(--accent-secondary);
+    }
+}
+
+.saveNotification,
+.saveNotificationError {
+    position: fixed;
+    top: 80px;
+    right: $spacing-lg;
+    padding: $spacing-sm $spacing-lg;
+    border-radius: $radius-md;
+    font-weight: 600;
+    z-index: $z-toast;
+    animation: slideIn 0.3s ease;
+}
+
+.saveNotification {
+    background: #22c55e;
+    color: white;
+}
+
+.saveNotificationError {
+    background: #ef4444;
+    color: white;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}

@@ -1,0 +1,11 @@
+@use "../../styles/variables" as *;
+
+.page {
+    padding: $spacing-lg;
+    min-height: calc(100vh - 60px);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}

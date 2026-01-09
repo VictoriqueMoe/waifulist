@@ -5,6 +5,7 @@ export { useGenreFilter } from "./useGenreFilter";
 export { useRestore } from "./useRestore";
 export { usePublicList } from "./usePublicList";
 export { useSpinner } from "./useSpinner";
+export { useTierLists, useTierList, useCreateTierList } from "./useTierList";
 export { useTrace } from "./useTrace";
 export type { BrowseSortType } from "./useAnime";
 export type { PublicListItem, PublicListData } from "./usePublicList";

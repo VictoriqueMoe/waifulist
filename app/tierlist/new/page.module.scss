@@ -1,0 +1,64 @@
+@use "../../styles/variables" as *;
+
+.page {
+    padding: $spacing-lg;
+    min-height: calc(100vh - 60px);
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.notice {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-md $spacing-lg;
+    margin-bottom: $spacing-lg;
+    background: rgba(var(--accent-primary-rgb), 0.1);
+    border: 1px solid var(--accent-primary);
+    border-radius: $radius-md;
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+
+    i {
+        color: var(--accent-primary);
+        font-size: 1.25rem;
+    }
+
+    a {
+        color: var(--accent-primary);
+        font-weight: 600;
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+.errorNotification {
+    position: fixed;
+    top: 80px;
+    right: $spacing-lg;
+    padding: $spacing-sm $spacing-lg;
+    border-radius: $radius-md;
+    font-weight: 600;
+    z-index: $z-toast;
+    background: #ef4444;
+    color: white;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
