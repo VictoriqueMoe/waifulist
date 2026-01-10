@@ -297,3 +297,8 @@ export const watchStatusColors: Record<WatchStatus, string> = {
 export interface IdList {
     ids: number[];
 }
+
+export interface MangaIdList {
+    sfw: number[];
+    nsfw: number[];
+}

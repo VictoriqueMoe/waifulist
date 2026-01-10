@@ -1,4 +1,4 @@
-import { Anime, IdList, TopReviewWithAnime } from "@/types/anime";
+import { Anime, IdList, MangaIdList, TopReviewWithAnime } from "@/types/anime";
 import { getRedis, getSubscriber, REDIS_KEYS, REDIS_TTL } from "@/lib/redis";
 import { fetchAnimeFromCdn, fetchTopReviews } from "@/lib/jikanApi";
 import { enrichAnime, needsEnrichment } from "./animeEnrichmentPipeline";
@@ -20,6 +20,7 @@ const CSV_URL =
 const PEOPLE_URL = "https://raw.githubusercontent.com/purarue/mal-id-cache/master/cache/people_cache.json";
 const CHARACTER_URL =
     "https://raw.githubusercontent.com/purarue/mal-id-cache/refs/heads/master/cache/character_cache.json";
+const MANGA_URL = "https://raw.githubusercontent.com/purarue/mal-id-cache/refs/heads/master/cache/manga_cache.json";
 
 let dataLoadingPromise: Promise<void> | null = null;
 let subscriberInitialised = false;
@@ -201,6 +202,31 @@ async function fetchCharacterIds(): Promise<IdList | null> {
             console.error("Fetch character ids timed out after 30s");
         } else {
             console.error("Failed to fetch character ids:", error);
+        }
+        return null;
+    }
+}
+
+async function fetchMangaIds(): Promise<IdList | null> {
+    try {
+        console.log("Fetching manga ids from remote JSON...");
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000);
+        const response = await fetch(MANGA_URL, {
+            cache: "no-store",
+            signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch: ${response.status}`);
+        }
+        const mangaIds = (await response.json()) as MangaIdList;
+        return { ids: [...mangaIds.sfw, ...mangaIds.nsfw] };
+    } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+            console.error("Fetch manga ids timed out after 30s");
+        } else {
+            console.error("Failed to fetch manga ids:", error);
         }
         return null;
     }
@@ -821,6 +847,29 @@ export async function getCharacterIds(): Promise<IdList> {
         console.log(`[Redis] Saved ${ids?.ids.length} character ids`);
     } catch (error) {
         console.error("[Redis] Failed to save character ids:", error);
+    }
+    return ids ?? { ids: [] };
+}
+
+export async function getMangaIds(): Promise<IdList> {
+    try {
+        const redis = getRedis();
+        const cachedIds = await redis.get(REDIS_KEYS.ANIME_MANGA_IDS);
+        if (cachedIds) {
+            return JSON.parse(cachedIds) as IdList;
+        }
+    } catch (error) {
+        console.error(`Failed to retrieve manga ids from redis: ${error}`);
+    }
+
+    const ids = await fetchMangaIds();
+
+    try {
+        const redis = getRedis();
+        await redis.setex(REDIS_KEYS.ANIME_MANGA_IDS, REDIS_TTL.ANIME_MANGA_IDS, JSON.stringify(ids));
+        console.log(`[Redis] Saved ${ids?.ids.length} manga ids`);
+    } catch (error) {
+        console.error("[Redis] Failed to save manga ids:", error);
     }
     return ids ?? { ids: [] };
 }

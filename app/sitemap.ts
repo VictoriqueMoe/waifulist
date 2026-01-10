@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getAllAnimeFromRedis, getCharacterIds, getPeopleIds } from "@/services/animeData";
+import { getAllAnimeFromRedis, getCharacterIds, getPeopleIds, getMangaIds } from "@/services/animeData";
 import { getRedis, REDIS_KEYS, REDIS_TTL } from "@/lib/redis";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +16,12 @@ async function saveSitemapToRedis(sitemap: MetadataRoute.Sitemap, id: number): P
 export async function generateSitemaps() {
     const peopleIds = await getPeopleIds();
     const characterIds = await getCharacterIds();
-    const sitemapCount = Math.ceil(characterIds.ids.length / 50000) + Math.ceil(peopleIds.ids.length / 50000) + 1; //+1 for id=0 (anime+static)
+    const mangaIds = await getMangaIds();
+    const sitemapCount =
+        Math.ceil(characterIds.ids.length / 50000) +
+        Math.ceil(peopleIds.ids.length / 50000) +
+        Math.ceil(mangaIds.ids.length / 50000) +
+        1; //+1 for id=0 (anime+static)
     return Array.from({ length: sitemapCount }, (_, id) => ({ id }));
 }
 
@@ -34,6 +39,8 @@ export default async function sitemap(props: { id: string | Promise<string> }): 
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost";
     const peopleIds = await getPeopleIds();
+    const characterIds = await getCharacterIds();
+    const mangaIds = await getMangaIds();
 
     if (id === 0) {
         // Statics + Anime
@@ -83,9 +90,8 @@ export default async function sitemap(props: { id: string | Promise<string> }): 
         }));
         await saveSitemapToRedis(peopleLinks, id);
         return peopleLinks;
-    } else {
+    } else if (id < Math.ceil(characterIds.ids.length / 50000) + Math.ceil(peopleIds.ids.length / 50000) + 1) {
         // Characters
-        const characterIds = await getCharacterIds();
         const start = (id - Math.ceil(peopleIds.ids.length / 50000) - 1) * 50000;
         const end = Math.min(start + 50000, characterIds.ids.length);
         const characterLinks: MetadataRoute.Sitemap = characterIds.ids.slice(start, end).map(c => ({
@@ -94,5 +100,16 @@ export default async function sitemap(props: { id: string | Promise<string> }): 
         }));
         await saveSitemapToRedis(characterLinks, id);
         return characterLinks;
+    } else {
+        // Manga
+        const start =
+            (id - Math.ceil(characterIds.ids.length / 50000) - Math.ceil(peopleIds.ids.length / 50000) - 1) * 50000;
+        const end = Math.min(start + 50000, mangaIds.ids.length);
+        const mangaLinks: MetadataRoute.Sitemap = mangaIds.ids.slice(start, end).map(m => ({
+            url: `${baseUrl}/manga/${m}`,
+            lastModified: new Date(),
+        }));
+        await saveSitemapToRedis(mangaLinks, id);
+        return mangaLinks;
     }
 }
