@@ -146,6 +146,7 @@ Redis is used as the primary cache and data store for anime data, enabling horiz
 | `anime:sitemap:{id}`                      | Sitemap entry data           | 24h     | Sitemap generation               |
 | `anime:peopleIds`                         | JSON array of IDs            | 7 days  | Valid people IDs for sitemap     |
 | `anime:characterIds`                      | JSON array of IDs            | 7 days  | Valid character IDs for sitemap  |
+| `anime:mangaIds`                          | JSON array of IDs            | 7 days  | Valid manga IDs for sitemap      |
 | `anime:lastFetchTime`                     | ISO timestamp                | -       | Track last refresh               |
 | `anime:refresh`                           | Pub/sub channel              | -       | Notify instances to rebuild Fuse |
 | `og:{uuid}:{hash}`                        | PNG binary                   | 1 hour  | Cached OpenGraph images          |

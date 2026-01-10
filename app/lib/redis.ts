@@ -68,7 +68,7 @@ export const REDIS_KEYS = {
     ANIME_SITEMAP: (id: number) => `anime:sitemap:${id}`,
     ANIME_PEOPLE_IDS: "anime:peopleIds",
     ANIME_CHARACTER_IDS: "anime:characterIds",
-    ANIME_MANGA_IDS: "anime:managerIds",
+    ANIME_MANGA_IDS: "anime:mangaIds",
     LAST_FETCH_TIME: "anime:lastFetchTime",
     REFRESH_CHANNEL: "anime:refresh",
     OG_IMAGE: (uuid: string, hash: string) => `og:${uuid}:${hash}`,
