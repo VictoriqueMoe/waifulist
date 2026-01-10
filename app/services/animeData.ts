@@ -218,7 +218,7 @@ async function fetchMangaIds(): Promise<IdList | null> {
         });
         clearTimeout(timeout);
         if (!response.ok) {
-            throw new Error(`Failed to fetch: ${response.status}`);
+            throw new Error(`Failed to fetch manga: ${response.status}`);
         }
         const mangaIds = (await response.json()) as MangaIdList;
         return { ids: [...mangaIds.sfw, ...mangaIds.nsfw] };
