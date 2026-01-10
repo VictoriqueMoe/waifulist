@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { fetchCharacterById } from "@/lib/cdn";
+import { fetchCharacterById } from "@/lib/jikanApi";
 import { CharacterPageClient } from "./CharacterPageClient";
 
 interface PageProps {

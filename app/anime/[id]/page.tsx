@@ -7,7 +7,7 @@ import {
     fetchAnimePictures,
     fetchAnimeRecommendations,
     fetchAnimeStatistics,
-} from "@/lib/cdn";
+} from "@/lib/jikanApi";
 import { AnimePageClient } from "./AnimePageClient";
 import { Anime } from "@/types/anime";
 

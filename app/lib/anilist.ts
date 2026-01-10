@@ -32,6 +32,7 @@ query ($search: String!, $page: Int, $perPage: Int) {
                 nodes {
                     id
                     idMal
+                    type
                     title {
                         romaji
                         english
@@ -44,8 +45,8 @@ query ($search: String!, $page: Int, $perPage: Int) {
 `;
 
 const MEDIA_CHARACTERS_QUERY = `
-query ($idMal: Int!, $page: Int, $perPage: Int) {
-    Media(idMal: $idMal, type: ANIME) {
+query ($idMal: Int!, $type: MediaType!, $page: Int, $perPage: Int) {
+    Media(idMal: $idMal, type: $type) {
         id
         idMal
         title {
@@ -77,6 +78,21 @@ query ($idMal: Int!, $page: Int, $perPage: Int) {
 }
 `;
 
+const MANGA_SEARCH_QUERY = `
+query ($search: String!, $perPage: Int) {
+    Page(perPage: $perPage) {
+        media(search: $search, type: MANGA, sort: POPULARITY_DESC) {
+            id
+            idMal
+            title {
+                romaji
+                english
+            }
+        }
+    }
+}
+`;
+
 const CHARACTER_BY_ID_QUERY = `
 query ($id: Int!) {
     Character(id: $id) {
@@ -97,6 +113,7 @@ query ($id: Int!) {
             nodes {
                 id
                 idMal
+                type
                 title {
                     romaji
                     english
@@ -179,13 +196,17 @@ const fetchCharacterByIdInternal = async function (id: number): Promise<AniListC
     return response?.data?.Character ?? null;
 };
 
-const fetchCharactersByMalIdInternal = async function (
+type MediaType = "ANIME" | "MANGA";
+
+const fetchCharactersByMediaMalIdInternal = async function (
     malId: number,
+    mediaType: MediaType,
     page: number = 1,
     perPage: number = 20,
 ): Promise<SearchResult> {
     const response = await fetchFromAniList<AniListMediaCharactersResponse>(MEDIA_CHARACTERS_QUERY, {
         idMal: malId,
+        type: mediaType,
         page,
         perPage,
     });
@@ -198,6 +219,7 @@ const fetchCharactersByMalIdInternal = async function (
     const mediaInfo = {
         id: media.id,
         idMal: media.idMal,
+        type: mediaType,
         title: media.title,
     };
 
@@ -215,6 +237,57 @@ const fetchCharactersByMalIdInternal = async function (
     };
 };
 
+const fetchCharactersByMalIdInternal = (malId: number, page?: number, perPage?: number) =>
+    fetchCharactersByMediaMalIdInternal(malId, "ANIME", page, perPage);
+
+const fetchMangaCharactersByMalIdInternal = (malId: number, page?: number, perPage?: number) =>
+    fetchCharactersByMediaMalIdInternal(malId, "MANGA", page, perPage);
+
+export interface MangaSearchResult {
+    id: number;
+    idMal: number | null;
+    title: string;
+}
+
+interface AniListMangaSearchResponse {
+    data: {
+        Page: {
+            media: Array<{
+                id: number;
+                idMal: number | null;
+                title: {
+                    romaji: string;
+                    english: string | null;
+                };
+            }>;
+        };
+    };
+}
+
+const searchMangaFromAniListInternal = async function (
+    query: string,
+    perPage: number = 10,
+): Promise<MangaSearchResult[]> {
+    const response = await fetchFromAniList<AniListMangaSearchResponse>(MANGA_SEARCH_QUERY, {
+        search: query,
+        perPage,
+    });
+
+    if (!response?.data?.Page?.media) {
+        return [];
+    }
+
+    return response.data.Page.media
+        .filter(m => m.idMal !== null)
+        .map(m => ({
+            id: m.id,
+            idMal: m.idMal,
+            title: m.title.english || m.title.romaji,
+        }));
+};
+
 export const fetchCharactersByMalId = cache(fetchCharactersByMalIdInternal);
+export const fetchMangaCharactersByMalId = cache(fetchMangaCharactersByMalIdInternal);
 export const fetchCharacterById = cache(fetchCharacterByIdInternal);
 export const searchCharactersFromAniList = cache(searchCharactersFromAniListInternal);
+export const searchMangaFromAniList = cache(searchMangaFromAniListInternal);

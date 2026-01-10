@@ -1,10 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { CharacterAnimeAppearance, CharacterFull, CharacterVoiceActor } from "@/types/character";
 import { formatLongText } from "@/lib/textUtils";
+import {
+    ContentTabsWrapper,
+    EntityPageLayout,
+    PageHeader,
+    SidebarItem,
+    SidebarLink,
+    TagList,
+    TextSection,
+} from "@/components/EntityPageLayout/EntityPageLayout";
 import { Pill } from "@/components/Pill/Pill";
 import { PillTab, PillTabs } from "@/components/PillTabs/PillTabs";
 import { RoleTabs } from "@/components/RoleTabs/RoleTabs";
@@ -130,43 +139,39 @@ function AnimeAppearancesContent({ anime }: { anime: CharacterFull["anime"] }) {
 }
 
 function MangaAppearancesContent({ manga }: { manga: CharacterFull["manga"] }) {
-    const [showAll, setShowAll] = useState(false);
-
-    const displayManga = showAll ? manga : manga.slice(0, 6);
-    const hasMore = manga.length > 6;
+    const renderAppearances = (items: typeof manga) => (
+        <div className={styles.appearancesGrid}>
+            {items.map(appearance => {
+                const imageUrl =
+                    appearance.manga.images?.jpg?.large_image_url || appearance.manga.images?.jpg?.image_url;
+                return (
+                    <Link
+                        key={appearance.manga.mal_id}
+                        href={`/manga/${appearance.manga.mal_id}`}
+                        className={styles.appearanceCard}
+                    >
+                        <div className={styles.appearanceImage}>
+                            {imageUrl ? (
+                                <Image src={imageUrl} alt={appearance.manga.title} fill sizes="140px" />
+                            ) : (
+                                <div className={styles.noImage} />
+                            )}
+                        </div>
+                        <span className={styles.appearanceTitle}>{appearance.manga.title}</span>
+                    </Link>
+                );
+            })}
+        </div>
+    );
 
     return (
         <div className={styles.tabContentSection}>
-            <div className={styles.appearancesGrid}>
-                {displayManga.map(appearance => {
-                    const imageUrl =
-                        appearance.manga.images?.jpg?.large_image_url || appearance.manga.images?.jpg?.image_url;
-                    return (
-                        <a
-                            key={appearance.manga.mal_id}
-                            href={appearance.manga.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={styles.appearanceCard}
-                        >
-                            <div className={styles.appearanceImage}>
-                                {imageUrl ? (
-                                    <Image src={imageUrl} alt={appearance.manga.title} fill sizes="140px" />
-                                ) : (
-                                    <div className={styles.noImage} />
-                                )}
-                            </div>
-                            <span className={styles.appearanceTitle}>{appearance.manga.title}</span>
-                            <span className={styles.appearanceRole}>{appearance.role}</span>
-                        </a>
-                    );
-                })}
-            </div>
-            {hasMore && (
-                <button className={styles.showMoreButton} onClick={() => setShowAll(!showAll)}>
-                    {showAll ? "Show Less" : `Show ${manga.length - 6} More`}
-                </button>
-            )}
+            <RoleTabs
+                items={manga}
+                getRole={item => item.role}
+                renderItems={renderAppearances}
+                emptyMessage={role => `No ${role.toLowerCase()} appearances`}
+            />
         </div>
     );
 }
@@ -201,65 +206,36 @@ export function CharacterPageClient({ character }: CharacterPageClientProps) {
         });
     }
 
+    const sidebarContent = (
+        <>
+            <SidebarItem icon="heart-fill" iconColor="#ec4899">
+                {character.favorites.toLocaleString()} favorites
+            </SidebarItem>
+            <SidebarLink href={character.url} icon="box-arrow-up-right" external>
+                View on MyAnimeList
+            </SidebarLink>
+        </>
+    );
+
     return (
-        <div className={styles.page}>
-            <div className={styles.backdrop}>
-                {imageUrl && <Image src={imageUrl} alt="" fill className={styles.backdropImage} />}
-                <div className={styles.backdropOverlay} />
-            </div>
+        <EntityPageLayout imageUrl={imageUrl} imageAlt={character.name} sidebarContent={sidebarContent}>
+            <PageHeader title={character.name} subtitle={character.name_kanji} />
 
-            <div className={styles.container}>
-                <div className={styles.content}>
-                    <div className={styles.imageSection}>
-                        <div className={styles.characterImage}>
-                            {imageUrl ? (
-                                <Image src={imageUrl} alt={character.name} fill sizes="280px" />
-                            ) : (
-                                <div className={styles.noImage} />
-                            )}
-                        </div>
-                        <div className={styles.favorites}>
-                            <i className="bi bi-heart-fill" />
-                            <span>{character.favorites.toLocaleString()} favorites</span>
-                        </div>
-                        <a href={character.url} target="_blank" rel="noopener noreferrer" className={styles.malLink}>
-                            <i className="bi bi-box-arrow-up-right" />
-                            View on MyAnimeList
-                        </a>
-                    </div>
+            {character.nicknames.length > 0 && (
+                <TagList>
+                    {character.nicknames.map((nickname, i) => (
+                        <Pill key={i}>{nickname}</Pill>
+                    ))}
+                </TagList>
+            )}
 
-                    <div className={styles.infoSection}>
-                        <div className={styles.header}>
-                            <h1 className={styles.name}>{character.name}</h1>
-                            {character.name_kanji && <p className={styles.nameKanji}>{character.name_kanji}</p>}
-                        </div>
+            <TextSection paragraphs={aboutParagraphs} />
 
-                        {character.nicknames.length > 0 && (
-                            <div className={styles.nicknames}>
-                                {character.nicknames.map((nickname, i) => (
-                                    <Pill key={i}>{nickname}</Pill>
-                                ))}
-                            </div>
-                        )}
-
-                        {aboutParagraphs.length > 0 && (
-                            <div className={styles.about}>
-                                {aboutParagraphs.map((paragraph, i) => (
-                                    <p key={i} className={paragraph.isAttribution ? styles.attribution : undefined}>
-                                        {paragraph.text}
-                                    </p>
-                                ))}
-                            </div>
-                        )}
-
-                        {tabs.length > 0 && (
-                            <div className={styles.contentTabs}>
-                                <Tabs tabs={tabs} />
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </div>
+            {tabs.length > 0 && (
+                <ContentTabsWrapper>
+                    <Tabs tabs={tabs} />
+                </ContentTabsWrapper>
+            )}
+        </EntityPageLayout>
     );
 }

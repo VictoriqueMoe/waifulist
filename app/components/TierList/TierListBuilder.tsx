@@ -38,48 +38,73 @@ export function TierListBuilder({
     } | null>(null);
     const [dropTarget, setDropTarget] = useState<{ tier: TierRank; index: number } | null>(null);
 
-    const { query, setQuery, results, isLoading, error, hasMore, loadMore, clear, animeFilter, setAnimeFilter } =
-        useCharacterSearch();
+    const {
+        query,
+        setQuery,
+        results,
+        isLoading,
+        error,
+        hasMore,
+        loadMore,
+        clear,
+        animeFilter,
+        setAnimeFilter,
+        mediaFilter,
+        setMediaFilter,
+    } = useCharacterSearch();
 
     const { searchAnimeSilent } = useAnime();
-    const [animeSearchQuery, setAnimeSearchQuery] = useState("");
+    const [filterType, setFilterType] = useState<"anime" | "manga">("anime");
+    const [mediaSearchQuery, setMediaSearchQuery] = useState("");
     const [animeResults, setAnimeResults] = useState<Anime[]>([]);
-    const [isAnimeSearching, setIsAnimeSearching] = useState(false);
-    const [showAnimeDropdown, setShowAnimeDropdown] = useState(false);
-    const animeSearchTimer = useRef<NodeJS.Timeout | null>(null);
-    const animeDropdownRef = useRef<HTMLDivElement>(null);
+    const [mangaResults, setMangaResults] = useState<{ mal_id: number; title: string }[]>([]);
+    const [isMediaSearching, setIsMediaSearching] = useState(false);
+    const [showMediaDropdown, setShowMediaDropdown] = useState(false);
+    const mediaSearchTimer = useRef<NodeJS.Timeout | null>(null);
+    const mediaDropdownRef = useRef<HTMLDivElement>(null);
+
+    const activeMediaFilter = mediaFilter || (animeFilter ? { ...animeFilter, type: "anime" as const } : null);
 
     useEffect(() => {
-        if (animeSearchTimer.current) {
-            clearTimeout(animeSearchTimer.current);
+        if (mediaSearchTimer.current) {
+            clearTimeout(mediaSearchTimer.current);
         }
 
-        if (animeSearchQuery.length < 2) {
+        if (mediaSearchQuery.length < 2) {
             setAnimeResults([]);
+            setMangaResults([]);
             return;
         }
 
-        animeSearchTimer.current = setTimeout(async () => {
-            setIsAnimeSearching(true);
+        mediaSearchTimer.current = setTimeout(async () => {
+            setIsMediaSearching(true);
             try {
-                const results = await searchAnimeSilent(animeSearchQuery, 10);
-                setAnimeResults(results);
+                if (filterType === "anime") {
+                    const results = await searchAnimeSilent(mediaSearchQuery, 10);
+                    setAnimeResults(results);
+                } else {
+                    const response = await fetch(`/api/manga?q=${encodeURIComponent(mediaSearchQuery)}&limit=10`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        setMangaResults(data.results || []);
+                    }
+                }
             } finally {
-                setIsAnimeSearching(false);
+                setIsMediaSearching(false);
             }
         }, 300);
 
         return () => {
-            if (animeSearchTimer.current) {
-                clearTimeout(animeSearchTimer.current);
+            if (mediaSearchTimer.current) {
+                clearTimeout(mediaSearchTimer.current);
             }
         };
-    }, [animeSearchQuery, searchAnimeSilent]);
+    }, [mediaSearchQuery, filterType, searchAnimeSilent]);
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
-            if (animeDropdownRef.current && !animeDropdownRef.current.contains(e.target as Node)) {
-                setShowAnimeDropdown(false);
+            if (mediaDropdownRef.current && !mediaDropdownRef.current.contains(e.target as Node)) {
+                setShowMediaDropdown(false);
             }
         };
 
@@ -87,16 +112,26 @@ export function TierListBuilder({
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const handleSelectAnime = (anime: Anime) => {
-        setAnimeFilter({ malId: anime.mal_id, title: anime.title });
-        setAnimeSearchQuery("");
+    const handleSelectMedia = (malId: number, title: string) => {
+        setMediaFilter({ malId, title, type: filterType });
+        setMediaSearchQuery("");
         setAnimeResults([]);
-        setShowAnimeDropdown(false);
+        setMangaResults([]);
+        setShowMediaDropdown(false);
     };
 
-    const handleClearAnimeFilter = () => {
+    const handleClearMediaFilter = () => {
+        setMediaFilter(null);
         setAnimeFilter(null);
         clear();
+    };
+
+    const handleFilterTypeChange = (type: "anime" | "manga") => {
+        setFilterType(type);
+        setMediaSearchQuery("");
+        setAnimeResults([]);
+        setMangaResults([]);
+        handleClearMediaFilter();
     };
 
     const handleAddCharacter = useCallback(
@@ -343,45 +378,73 @@ export function TierListBuilder({
                         <h3>Add Characters</h3>
                     </div>
 
-                    <div className={styles.animeFilter} ref={animeDropdownRef}>
-                        {animeFilter ? (
+                    <div className={styles.mediaFilter} ref={mediaDropdownRef}>
+                        {activeMediaFilter ? (
                             <div className={styles.selectedAnime}>
-                                <i className="bi bi-film" />
-                                <span className={styles.selectedAnimeTitle}>{animeFilter.title}</span>
-                                <button onClick={handleClearAnimeFilter} className={styles.clearFilterButton}>
+                                <i className={`bi bi-${activeMediaFilter.type === "manga" ? "book" : "film"}`} />
+                                <span className={styles.selectedAnimeTitle}>{activeMediaFilter.title}</span>
+                                <button onClick={handleClearMediaFilter} className={styles.clearFilterButton}>
                                     <i className="bi bi-x" />
                                 </button>
                             </div>
                         ) : (
                             <>
-                                <div className={styles.animeSearchBar}>
-                                    <i className="bi bi-filter" />
+                                <div className={styles.mediaSearchBar}>
+                                    <div className={styles.mediaTypeToggle}>
+                                        <button
+                                            className={`${styles.mediaTypeButton} ${filterType === "anime" ? styles.active : ""}`}
+                                            onClick={() => handleFilterTypeChange("anime")}
+                                            title="Filter by anime"
+                                        >
+                                            <i className="bi bi-film" />
+                                        </button>
+                                        <button
+                                            className={`${styles.mediaTypeButton} ${filterType === "manga" ? styles.active : ""}`}
+                                            onClick={() => handleFilterTypeChange("manga")}
+                                            title="Filter by manga"
+                                        >
+                                            <i className="bi bi-book" />
+                                        </button>
+                                    </div>
                                     <input
                                         type="text"
-                                        value={animeSearchQuery}
+                                        value={mediaSearchQuery}
                                         onChange={e => {
-                                            setAnimeSearchQuery(e.target.value);
-                                            setShowAnimeDropdown(true);
+                                            setMediaSearchQuery(e.target.value);
+                                            setShowMediaDropdown(true);
                                         }}
-                                        onFocus={() => setShowAnimeDropdown(true)}
-                                        placeholder="Filter by anime (optional)..."
-                                        className={styles.animeSearchInput}
+                                        onFocus={() => setShowMediaDropdown(true)}
+                                        placeholder={`Filter by ${filterType} (optional)...`}
+                                        className={styles.mediaSearchInput}
                                     />
-                                    {isAnimeSearching && <i className="bi bi-arrow-repeat spinning" />}
+                                    {isMediaSearching && <i className="bi bi-arrow-repeat spinning" />}
                                 </div>
-                                {showAnimeDropdown && animeResults.length > 0 && (
-                                    <div className={styles.animeDropdown}>
-                                        {animeResults.map(anime => (
-                                            <button
-                                                key={anime.mal_id}
-                                                className={styles.animeOption}
-                                                onClick={() => handleSelectAnime(anime)}
-                                            >
-                                                <span className={styles.animeOptionTitle}>{anime.title}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
+                                {showMediaDropdown &&
+                                    (filterType === "anime" ? animeResults.length > 0 : mangaResults.length > 0) && (
+                                        <div className={styles.mediaDropdown}>
+                                            {filterType === "anime"
+                                                ? animeResults.map(anime => (
+                                                      <button
+                                                          key={anime.mal_id}
+                                                          className={styles.animeOption}
+                                                          onClick={() => handleSelectMedia(anime.mal_id, anime.title)}
+                                                          title={anime.title}
+                                                      >
+                                                          <span className={styles.animeOptionTitle}>{anime.title}</span>
+                                                      </button>
+                                                  ))
+                                                : mangaResults.map(manga => (
+                                                      <button
+                                                          key={manga.mal_id}
+                                                          className={styles.animeOption}
+                                                          onClick={() => handleSelectMedia(manga.mal_id, manga.title)}
+                                                          title={manga.title}
+                                                      >
+                                                          <span className={styles.animeOptionTitle}>{manga.title}</span>
+                                                      </button>
+                                                  ))}
+                                        </div>
+                                    )}
                             </>
                         )}
                     </div>
@@ -392,7 +455,7 @@ export function TierListBuilder({
                             type="text"
                             value={query}
                             onChange={e => setQuery(e.target.value)}
-                            placeholder={animeFilter ? "Filter characters by name..." : "Search characters..."}
+                            placeholder={activeMediaFilter ? "Filter characters by name..." : "Search characters..."}
                             className={styles.searchInput}
                         />
                         {query && (
@@ -464,7 +527,7 @@ export function TierListBuilder({
                         {isLoading && (
                             <div className={styles.loading}>
                                 <i className="bi bi-arrow-repeat" />
-                                {animeFilter ? "Loading characters..." : "Searching..."}
+                                {activeMediaFilter ? "Loading characters..." : "Searching..."}
                             </div>
                         )}
 
@@ -474,15 +537,15 @@ export function TierListBuilder({
                             </Button>
                         )}
 
-                        {!isLoading && !animeFilter && query.length >= 2 && results.length === 0 && (
+                        {!isLoading && !activeMediaFilter && query.length >= 2 && results.length === 0 && (
                             <div className={styles.noResults}>No characters found</div>
                         )}
 
-                        {!isLoading && animeFilter && results.length === 0 && (
+                        {!isLoading && activeMediaFilter && results.length === 0 && (
                             <div className={styles.noResults}>
                                 {query.length >= 2
                                     ? "No matching characters found"
-                                    : "No characters found for this anime"}
+                                    : `No characters found for this ${activeMediaFilter.type}`}
                             </div>
                         )}
                     </div>

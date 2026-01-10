@@ -3,8 +3,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Bar, Doughnut } from "react-chartjs-2";
-import { ArcElement, BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, Tooltip } from "chart.js";
 import {
     Anime,
     AnimeCharacter,
@@ -20,16 +18,28 @@ import { useEpisodes } from "@/hooks/useEpisodes";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWatchList } from "@/contexts/WatchListContext";
 import { Button } from "@/components/Button/Button";
+import {
+    ContentTabsWrapper,
+    EntityPageLayout,
+    MetaRow,
+    PageHeader,
+    SidebarItem,
+    SidebarLink,
+    SidebarStatRow,
+    SidebarStats,
+    TagList,
+    TextSection,
+} from "@/components/EntityPageLayout/EntityPageLayout";
 import { Pill } from "@/components/Pill/Pill";
 import { PictureGallery } from "@/components/PictureGallery/PictureGallery";
+import { RecommendationsSection } from "@/components/RecommendationsSection/RecommendationsSection";
 import { RoleTabs } from "@/components/RoleTabs/RoleTabs";
+import { StatisticsSection } from "@/components/StatisticsSection/StatisticsSection";
 import { StatusBadge } from "@/components/StatusBadge/StatusBadge";
 import { Spinner } from "@/components/Spinner/Spinner";
 import { Tab, Tabs } from "@/components/Tabs/Tabs";
 import { formatLongText } from "@/lib/textUtils";
 import styles from "./page.module.scss";
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, ArcElement, Legend);
 
 interface AnimePageClientProps {
     anime: Anime;
@@ -58,7 +68,6 @@ interface ContentTabsProps {
     totalEpisodePages?: number;
     totalEpisodeCount?: number;
     characters?: AnimeCharacter[];
-    statistics?: AnimeStatistics | null;
     streaming?: StreamingLink[];
 }
 
@@ -136,38 +145,6 @@ function RelatedAnimeSection({ relations, relatedAnime }: RelatedAnimeSectionPro
                                 )}
                             </div>
                             <span className={styles.relatedTitle}>{entry.name}</span>
-                        </Link>
-                    );
-                })}
-            </div>
-        </div>
-    );
-}
-
-function RecommendationsSection({ recommendations }: { recommendations: AnimeRecommendation[] }) {
-    if (recommendations.length === 0) {
-        return null;
-    }
-
-    return (
-        <div className={styles.recommendationsSection}>
-            <div className={styles.recommendationsGrid}>
-                {recommendations.map(rec => {
-                    const imageUrl = rec.entry.images?.jpg?.large_image_url;
-                    if (!imageUrl) {
-                        return null;
-                    }
-                    return (
-                        <Link
-                            key={rec.entry.mal_id}
-                            href={`/anime/${rec.entry.mal_id}`}
-                            className={styles.recommendationItem}
-                        >
-                            <div className={styles.recommendationThumb}>
-                                <Image src={imageUrl} alt={rec.entry.title} fill sizes="150px" />
-                            </div>
-                            <span className={styles.recommendationTitle}>{rec.entry.title}</span>
-                            <span className={styles.recommendationVotes}>{rec.votes} votes</span>
                         </Link>
                     );
                 })}
@@ -504,220 +481,6 @@ function EpisodesContent({ initialEpisodes, totalPages, animeId }: EpisodesConte
     );
 }
 
-function getChartColors() {
-    if (typeof window === "undefined") {
-        return { textColor: "#a1a1aa", gridColor: "rgba(161, 161, 170, 0.2)" };
-    }
-    const computedStyle = getComputedStyle(document.documentElement);
-    return {
-        textColor: computedStyle.getPropertyValue("--text-muted").trim() || "#a1a1aa",
-        gridColor: computedStyle.getPropertyValue("--border-primary").trim() || "rgba(161, 161, 170, 0.2)",
-    };
-}
-
-function StatisticsSection({ statistics }: { statistics: AnimeStatistics }) {
-    const { textColor, gridColor } = getChartColors();
-
-    const statusChartData = {
-        labels: ["Watching", "Completed", "On Hold", "Dropped", "Plan to Watch"],
-        datasets: [
-            {
-                data: [
-                    statistics.watching,
-                    statistics.completed,
-                    statistics.on_hold,
-                    statistics.dropped,
-                    statistics.plan_to_watch,
-                ],
-                backgroundColor: [
-                    "rgba(59, 130, 246, 0.8)",
-                    "rgba(34, 197, 94, 0.8)",
-                    "rgba(234, 179, 8, 0.8)",
-                    "rgba(239, 68, 68, 0.8)",
-                    "rgba(168, 85, 247, 0.8)",
-                ],
-                borderWidth: 0,
-            },
-        ],
-    };
-
-    const statusChartOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: {
-            animateRotate: true,
-            animateScale: true,
-            duration: 800,
-            easing: "easeOutQuart" as const,
-        },
-        plugins: {
-            legend: {
-                position: "right" as const,
-                labels: {
-                    color: textColor,
-                    padding: 12,
-                    usePointStyle: true,
-                    pointStyle: "circle",
-                    font: { size: 11 },
-                },
-            },
-            tooltip: {
-                callbacks: {
-                    label: (context: { dataIndex: number; parsed: number }) => {
-                        const value = context.parsed;
-                        const percentage = ((value / statistics.total) * 100).toFixed(1);
-                        return ` ${value.toLocaleString()} (${percentage}%)`;
-                    },
-                },
-            },
-        },
-    };
-
-    const scoreChartData = {
-        labels: statistics.scores.map(s => s.score.toString()),
-        datasets: [
-            {
-                data: statistics.scores.map(s => s.percentage),
-                backgroundColor: statistics.scores.map(s => {
-                    if (s.score <= 3) {
-                        return "rgba(239, 68, 68, 0.8)";
-                    }
-                    if (s.score <= 5) {
-                        return "rgba(249, 115, 22, 0.8)";
-                    }
-                    if (s.score <= 7) {
-                        return "rgba(234, 179, 8, 0.8)";
-                    }
-                    if (s.score <= 9) {
-                        return "rgba(34, 197, 94, 0.8)";
-                    }
-                    return "rgba(59, 130, 246, 0.8)";
-                }),
-                borderRadius: 4,
-            },
-        ],
-    };
-
-    const scoreChartOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: {
-            duration: 800,
-            easing: "easeOutQuart" as const,
-            delay: (context: { dataIndex: number }) => context.dataIndex * 50,
-        },
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                callbacks: {
-                    label: (context: { dataIndex: number }) => {
-                        const score = statistics.scores[context.dataIndex];
-                        return `${score.percentage}% (${score.votes.toLocaleString()} votes)`;
-                    },
-                },
-            },
-        },
-        scales: {
-            x: {
-                grid: { display: false },
-                ticks: { color: textColor },
-            },
-            y: {
-                grid: { color: gridColor },
-                ticks: {
-                    color: textColor,
-                    callback: (value: number | string) => `${value}%`,
-                },
-            },
-        },
-    };
-
-    return (
-        <div className={styles.statisticsSection}>
-            <h3 className={styles.statisticsTitle}>Statistics from MAL</h3>
-            <div className={styles.chartsRow}>
-                <div className={styles.statusChart}>
-                    <h4 className={styles.chartTitle}>
-                        Watch Status{" "}
-                        <span className={styles.totalCount}>{statistics.total.toLocaleString()} users</span>
-                    </h4>
-                    <div className={styles.doughnutContainer}>
-                        <Doughnut data={statusChartData} options={statusChartOptions} />
-                    </div>
-                </div>
-                <div className={styles.scoreChart}>
-                    <h4 className={styles.chartTitle}>Score Distribution</h4>
-                    <div className={styles.chartContainer}>
-                        <Bar data={scoreChartData} options={scoreChartOptions} />
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-interface OverviewContentProps {
-    anime: Anime;
-    statistics?: AnimeStatistics | null;
-}
-
-function OverviewContent({ anime, statistics }: OverviewContentProps) {
-    const synopsisParagraphs = anime.synopsis ? formatLongText(anime.synopsis) : [];
-
-    return (
-        <div className={styles.overviewTab}>
-            {synopsisParagraphs.length > 0 && (
-                <div className={styles.synopsis}>
-                    {synopsisParagraphs.map((paragraph, index) => (
-                        <p key={index} className={paragraph.isAttribution ? styles.synopsisAttribution : undefined}>
-                            {paragraph.text}
-                        </p>
-                    ))}
-                </div>
-            )}
-            <div className={styles.infoGrid}>
-                {anime.studios && anime.studios.length > 0 && (
-                    <div className={styles.infoItem}>
-                        <span className={styles.infoLabel}>Studios</span>
-                        <span className={styles.infoValue}>{anime.studios.map(s => s.name).join(", ")}</span>
-                    </div>
-                )}
-                {anime.aired?.from && (
-                    <div className={styles.infoItem}>
-                        <span className={styles.infoLabel}>Aired</span>
-                        <span className={styles.infoValue}>{anime.aired.string || anime.aired.from}</span>
-                    </div>
-                )}
-                {anime.source && (
-                    <div className={styles.infoItem}>
-                        <span className={styles.infoLabel}>Source</span>
-                        <span className={styles.infoValue}>{anime.source}</span>
-                    </div>
-                )}
-                {anime.rank && (
-                    <div className={styles.infoItem}>
-                        <span className={styles.infoLabel}>Rank</span>
-                        <span className={styles.infoValue}>#{anime.rank}</span>
-                    </div>
-                )}
-                {anime.popularity && (
-                    <div className={styles.infoItem}>
-                        <span className={styles.infoLabel}>Popularity</span>
-                        <span className={styles.infoValue}>#{anime.popularity}</span>
-                    </div>
-                )}
-                {anime.duration && (
-                    <div className={styles.infoItem}>
-                        <span className={styles.infoLabel}>Duration</span>
-                        <span className={styles.infoValue}>{anime.duration}</span>
-                    </div>
-                )}
-            </div>
-            {statistics && <StatisticsSection statistics={statistics} />}
-        </div>
-    );
-}
-
 function TrailerContent({ trailerId, title }: { trailerId: string; title: string }) {
     return (
         <div className={styles.trailerContent}>
@@ -772,7 +535,6 @@ function ContentTabs({
     totalEpisodePages,
     totalEpisodeCount,
     characters,
-    statistics,
     streaming,
 }: ContentTabsProps) {
     const hasMedia = anime.trailer?.youtube_id || (pictures && pictures.length > 0);
@@ -782,13 +544,7 @@ function ContentTabs({
     const hasCharacters = characters && characters.length > 0;
     const hasStreaming = streaming && streaming.length > 0;
 
-    const tabs: Tab[] = [
-        {
-            id: "overview",
-            label: "Overview",
-            content: <OverviewContent anime={anime} statistics={statistics} />,
-        },
-    ];
+    const tabs: Tab[] = [];
 
     if (hasCharacters) {
         tabs.push({
@@ -840,8 +596,12 @@ function ContentTabs({
         tabs.push({
             id: "recommendations",
             label: "Recommendations",
-            content: <RecommendationsSection recommendations={recommendations} />,
+            content: <RecommendationsSection recommendations={recommendations} type="anime" />,
         });
+    }
+
+    if (tabs.length === 0) {
+        return null;
     }
 
     return <Tabs tabs={tabs} />;
@@ -962,226 +722,258 @@ export function AnimePageClient({
     };
 
     const imageUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || "/placeholder.png";
+    const displayTitle = anime.title_english || anime.title;
+    const synopsisParagraphs = anime.synopsis ? formatLongText(anime.synopsis) : [];
+
+    const sidebarContent = (
+        <>
+            {anime.score && (
+                <SidebarItem icon="star-fill" iconColor="#fbbf24">
+                    {anime.score.toFixed(2)}
+                    {anime.scored_by && (
+                        <span className={styles.scoredBy}>({anime.scored_by.toLocaleString()} users)</span>
+                    )}
+                </SidebarItem>
+            )}
+            {anime.favorites && (
+                <SidebarItem icon="heart-fill" iconColor="#ec4899">
+                    {anime.favorites.toLocaleString()} favorites
+                </SidebarItem>
+            )}
+            <SidebarLink href={`https://myanimelist.net/anime/${anime.mal_id}`} icon="box-arrow-up-right" external>
+                View on MyAnimeList
+            </SidebarLink>
+            <SidebarStats>
+                {anime.type && <SidebarStatRow label="Type" value={anime.type} />}
+                {anime.status && <SidebarStatRow label="Status" value={anime.status} />}
+                {anime.episodes && <SidebarStatRow label="Episodes" value={anime.episodes} />}
+                {anime.duration && <SidebarStatRow label="Duration" value={anime.duration} />}
+                {anime.aired?.string && <SidebarStatRow label="Aired" value={anime.aired.string} />}
+                {anime.source && <SidebarStatRow label="Source" value={anime.source} />}
+                {anime.rating && <SidebarStatRow label="Rating" value={anime.rating} />}
+                {anime.rank && <SidebarStatRow label="Rank" value={`#${anime.rank}`} />}
+                {anime.popularity && <SidebarStatRow label="Popularity" value={`#${anime.popularity}`} />}
+                {anime.members && <SidebarStatRow label="Members" value={anime.members.toLocaleString()} />}
+            </SidebarStats>
+        </>
+    );
+
+    const hasContentTabs =
+        (characters && characters.length > 0) ||
+        (initialEpisodes && initialEpisodes.length > 0) ||
+        anime.trailer?.youtube_id ||
+        (pictures && pictures.length > 0) ||
+        (streaming && streaming.length > 0) ||
+        (anime.relations && anime.relations.some(r => r.entry.some(e => e.type === "anime"))) ||
+        (recommendations && recommendations.length > 0);
 
     return (
-        <div className={styles.page}>
-            <div className={styles.backdrop}>
-                <Image src={imageUrl} alt="" fill className={styles.backdropImage} />
-                <div className={styles.backdropOverlay} />
+        <EntityPageLayout imageUrl={imageUrl} imageAlt={displayTitle} sidebarContent={sidebarContent}>
+            <PageHeader
+                title={displayTitle}
+                subtitle={anime.title_japanese}
+                altTitle={anime.title !== displayTitle ? anime.title : null}
+            />
+
+            {anime.genres && anime.genres.length > 0 && (
+                <TagList>
+                    {anime.genres.map(genre => (
+                        <Link key={genre.mal_id} href={`/browse?genres=${encodeURIComponent(genre.name)}`}>
+                            <Pill variant="accent">{genre.name}</Pill>
+                        </Link>
+                    ))}
+                </TagList>
+            )}
+
+            {anime.studios && anime.studios.length > 0 && (
+                <MetaRow label="Studios:">{anime.studios.map(s => s.name).join(", ")}</MetaRow>
+            )}
+
+            <div className={styles.actions}>
+                {user ? (
+                    <div className={styles.statusDropdown}>
+                        <Button
+                            variant={watchData ? "secondary" : "primary"}
+                            onClick={() => setShowStatusMenu(!showStatusMenu)}
+                        >
+                            {watchData ? (
+                                <>
+                                    <StatusBadge status={watchData.status} />
+                                    <i className="bi bi-chevron-down" />
+                                </>
+                            ) : (
+                                <>
+                                    <i className="bi bi-plus" />
+                                    Add to List
+                                </>
+                            )}
+                        </Button>
+
+                        {showStatusMenu && (
+                            <div className={styles.statusMenu}>
+                                {statusOptions.map(status => (
+                                    <button
+                                        key={status}
+                                        className={`${styles.statusOption} ${watchData?.status === status ? styles.active : ""}`}
+                                        onClick={() => handleAddToList(status)}
+                                    >
+                                        <StatusBadge status={status} />
+                                    </button>
+                                ))}
+                                {watchData && (
+                                    <button
+                                        className={`${styles.statusOption} ${styles.remove}`}
+                                        onClick={handleRemoveFromList}
+                                    >
+                                        <i className="bi bi-trash" />
+                                        Remove from list
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <Link href="/login">
+                        <Button variant="primary">
+                            <i className="bi bi-person" />
+                            Sign in to add to list
+                        </Button>
+                    </Link>
+                )}
             </div>
 
-            <div className={styles.container}>
-                <div className={styles.content}>
-                    <div className={styles.poster}>
-                        <Image
-                            src={imageUrl}
-                            alt={anime.title}
-                            width={300}
-                            height={450}
-                            className={styles.posterImage}
-                        />
+            {watchData && (
+                <div className={styles.tracking}>
+                    {watchData.status !== "completed" && (
+                        <div className={styles.trackingItem}>
+                            <label>Episodes watched</label>
+                            <div className={styles.episodeInput}>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    max={anime.episodes || 9999}
+                                    value={watchData.episodesWatched}
+                                    onChange={handleEpisodeChange}
+                                />
+                                <span>/ {anime.episodes || "?"}</span>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className={styles.trackingItem}>
+                        <label>Your rating</label>
+                        <div className={styles.ratingInput}>
+                            <button
+                                className={`${styles.star} ${styles.dogshit} ${watchData.rating === -1 ? styles.active : ""}`}
+                                onClick={() => handleRatingChange(watchData.rating === -1 ? 0 : -1)}
+                                title="Dogshit"
+                            >
+                                💩
+                            </button>
+                            {[1, 2, 3, 4, 5].map(star => (
+                                <button
+                                    key={star}
+                                    className={`${styles.star} ${(watchData.rating || 0) >= star && watchData.rating !== -1 ? styles.active : ""}`}
+                                    onClick={() => handleRatingChange(watchData.rating === star ? 0 : star)}
+                                    title={`${star} star${star > 1 ? "s" : ""}`}
+                                >
+                                    <i
+                                        className={`bi bi-star${(watchData.rating || 0) >= star && watchData.rating !== -1 ? "-fill" : ""}`}
+                                    />
+                                </button>
+                            ))}
+                            <button
+                                className={`${styles.star} ${styles.masterpiece} ${watchData.rating === 6 ? styles.active : ""}`}
+                                onClick={() => handleRatingChange(watchData.rating === 6 ? 0 : 6)}
+                                title="Masterpiece"
+                            >
+                                <i className={`bi bi-star${watchData.rating === 6 ? "-fill" : ""}`} />
+                            </button>
+                            {watchData.rating != null && watchData.rating !== 0 && (
+                                <span className={styles.ratingValue}>
+                                    {watchData.rating === 6
+                                        ? "Masterpiece"
+                                        : watchData.rating === -1
+                                          ? "Dogshit"
+                                          : `${watchData.rating}/5`}
+                                </span>
+                            )}
+                        </div>
                     </div>
 
-                    <div className={styles.details}>
-                        <div className={styles.titleSection}>
-                            <h1 className={styles.title}>{anime.title}</h1>
-                            {anime.title_english && anime.title_english !== anime.title && (
-                                <p className={styles.altTitle}>{anime.title_english}</p>
-                            )}
-                        </div>
-
-                        <div className={styles.meta}>
-                            {anime.score && (
-                                <div className={styles.score}>
-                                    <i className="bi bi-star-fill" />
-                                    <span>{anime.score.toFixed(2)}</span>
-                                </div>
-                            )}
-                            {anime.type && <span className={styles.badge}>{anime.type.toUpperCase()}</span>}
-                            {anime.status && <span className={styles.badge}>{anime.status.replace(/_/g, " ")}</span>}
-                            <span className={styles.badge}>
-                                {anime.episodes ? `${anime.episodes} episodes` : "N/A"}
-                            </span>
-                            {anime.rating && <span className={styles.badge}>{anime.rating}</span>}
-                        </div>
-
-                        {anime.genres && anime.genres.length > 0 && (
-                            <div className={styles.genres}>
-                                {anime.genres.map(genre => (
-                                    <Link key={genre.mal_id} href={`/browse?genres=${encodeURIComponent(genre.name)}`}>
-                                        <Pill variant="accent" className={styles.genreLink}>
-                                            {genre.name}
-                                        </Pill>
-                                    </Link>
-                                ))}
-                            </div>
-                        )}
-
-                        <div className={styles.actions}>
-                            {user ? (
-                                <div className={styles.statusDropdown}>
-                                    <Button
-                                        variant={watchData ? "secondary" : "primary"}
-                                        onClick={() => setShowStatusMenu(!showStatusMenu)}
+                    <div className={styles.trackingItem}>
+                        <div className={styles.notesHeader}>
+                            <label>Notes</label>
+                            <div className={styles.notesActions}>
+                                {noteSaved && <span className={styles.savedIndicator}>Saved</span>}
+                                {noteText.trim().length > 0 && (
+                                    <button
+                                        type="button"
+                                        className={styles.clearNoteButton}
+                                        onClick={handleClearNote}
+                                        title="Clear note"
                                     >
-                                        {watchData ? (
-                                            <>
-                                                <StatusBadge status={watchData.status} />
-                                                <i className="bi bi-chevron-down" />
-                                            </>
-                                        ) : (
-                                            <>
-                                                <i className="bi bi-plus" />
-                                                Add to List
-                                            </>
-                                        )}
-                                    </Button>
-
-                                    {showStatusMenu && (
-                                        <div className={styles.statusMenu}>
-                                            {statusOptions.map(status => (
-                                                <button
-                                                    key={status}
-                                                    className={`${styles.statusOption} ${watchData?.status === status ? styles.active : ""}`}
-                                                    onClick={() => handleAddToList(status)}
-                                                >
-                                                    <StatusBadge status={status} />
-                                                </button>
-                                            ))}
-                                            {watchData && (
-                                                <button
-                                                    className={`${styles.statusOption} ${styles.remove}`}
-                                                    onClick={handleRemoveFromList}
-                                                >
-                                                    <i className="bi bi-trash" />
-                                                    Remove from list
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <Link href="/login">
-                                    <Button variant="primary">
-                                        <i className="bi bi-person" />
-                                        Sign in to add to list
-                                    </Button>
-                                </Link>
-                            )}
-                        </div>
-
-                        {watchData && (
-                            <div className={styles.tracking}>
-                                {watchData.status !== "completed" && (
-                                    <div className={styles.trackingItem}>
-                                        <label>Episodes watched</label>
-                                        <div className={styles.episodeInput}>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max={anime.episodes || 9999}
-                                                value={watchData.episodesWatched}
-                                                onChange={handleEpisodeChange}
-                                            />
-                                            <span>/ {anime.episodes || "?"}</span>
-                                        </div>
-                                    </div>
+                                        <i className="bi bi-x-lg" />
+                                    </button>
                                 )}
-
-                                <div className={styles.trackingItem}>
-                                    <label>Your rating</label>
-                                    <div className={styles.ratingInput}>
-                                        <button
-                                            className={`${styles.star} ${styles.dogshit} ${watchData.rating === -1 ? styles.active : ""}`}
-                                            onClick={() => handleRatingChange(watchData.rating === -1 ? 0 : -1)}
-                                            title="Dogshit"
-                                        >
-                                            💩
-                                        </button>
-                                        {[1, 2, 3, 4, 5].map(star => (
-                                            <button
-                                                key={star}
-                                                className={`${styles.star} ${(watchData.rating || 0) >= star && watchData.rating !== -1 ? styles.active : ""}`}
-                                                onClick={() => handleRatingChange(watchData.rating === star ? 0 : star)}
-                                                title={`${star} star${star > 1 ? "s" : ""}`}
-                                            >
-                                                <i
-                                                    className={`bi bi-star${(watchData.rating || 0) >= star && watchData.rating !== -1 ? "-fill" : ""}`}
-                                                />
-                                            </button>
-                                        ))}
-                                        <button
-                                            className={`${styles.star} ${styles.masterpiece} ${watchData.rating === 6 ? styles.active : ""}`}
-                                            onClick={() => handleRatingChange(watchData.rating === 6 ? 0 : 6)}
-                                            title="Masterpiece"
-                                        >
-                                            <i className={`bi bi-star${watchData.rating === 6 ? "-fill" : ""}`} />
-                                        </button>
-                                        {watchData.rating != null && watchData.rating !== 0 && (
-                                            <span className={styles.ratingValue}>
-                                                {watchData.rating === 6
-                                                    ? "Masterpiece"
-                                                    : watchData.rating === -1
-                                                      ? "Dogshit"
-                                                      : `${watchData.rating}/5`}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className={styles.trackingItem}>
-                                    <div className={styles.notesHeader}>
-                                        <label>Notes</label>
-                                        <div className={styles.notesActions}>
-                                            {noteSaved && <span className={styles.savedIndicator}>Saved</span>}
-                                            {noteText.trim().length > 0 && (
-                                                <button
-                                                    type="button"
-                                                    className={styles.clearNoteButton}
-                                                    onClick={handleClearNote}
-                                                    title="Clear note"
-                                                >
-                                                    <i className="bi bi-x-lg" />
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <textarea
-                                        className={styles.notesTextarea}
-                                        placeholder="Add a personal note about this anime..."
-                                        value={noteText}
-                                        onChange={handleNoteChange}
-                                        onBlur={handleNoteBlur}
-                                        maxLength={MAX_NOTE_LENGTH}
-                                        rows={3}
-                                    />
-                                    <div className={styles.notesFooter}>
-                                        <span className={styles.notesHint}>
-                                            <i className="bi bi-globe2" /> Visible on your public list
-                                        </span>
-                                        <span className={styles.charCount}>
-                                            {noteText.length}/{MAX_NOTE_LENGTH}
-                                        </span>
-                                    </div>
-                                </div>
                             </div>
-                        )}
-
-                        <ContentTabs
-                            anime={anime}
-                            pictures={pictures}
-                            relatedAnime={relatedAnime}
-                            recommendations={recommendations}
-                            initialEpisodes={initialEpisodes}
-                            totalEpisodePages={totalEpisodePages}
-                            totalEpisodeCount={totalEpisodeCount}
-                            characters={characters}
-                            statistics={statistics}
-                            streaming={streaming}
+                        </div>
+                        <textarea
+                            className={styles.notesTextarea}
+                            placeholder="Add a personal note about this anime..."
+                            value={noteText}
+                            onChange={handleNoteChange}
+                            onBlur={handleNoteBlur}
+                            maxLength={MAX_NOTE_LENGTH}
+                            rows={3}
                         />
+                        <div className={styles.notesFooter}>
+                            <span className={styles.notesHint}>
+                                <i className="bi bi-globe2" /> Visible on your public list
+                            </span>
+                            <span className={styles.charCount}>
+                                {noteText.length}/{MAX_NOTE_LENGTH}
+                            </span>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
+            )}
+
+            {statistics && (
+                <StatisticsSection
+                    data={{
+                        statusLabels: ["Watching", "Completed", "On Hold", "Dropped", "Plan to Watch"],
+                        statusValues: [
+                            statistics.watching,
+                            statistics.completed,
+                            statistics.on_hold,
+                            statistics.dropped,
+                            statistics.plan_to_watch,
+                        ],
+                        statusTitle: "Watch Status",
+                        total: statistics.total,
+                        scores: statistics.scores,
+                    }}
+                />
+            )}
+
+            <TextSection title="Synopsis" paragraphs={synopsisParagraphs} />
+
+            {hasContentTabs && (
+                <ContentTabsWrapper>
+                    <ContentTabs
+                        anime={anime}
+                        pictures={pictures}
+                        relatedAnime={relatedAnime}
+                        recommendations={recommendations}
+                        initialEpisodes={initialEpisodes}
+                        totalEpisodePages={totalEpisodePages}
+                        totalEpisodeCount={totalEpisodeCount}
+                        characters={characters}
+                        streaming={streaming}
+                    />
+                </ContentTabsWrapper>
+            )}
+        </EntityPageLayout>
     );
 }

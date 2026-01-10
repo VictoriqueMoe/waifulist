@@ -1,18 +1,34 @@
 import Fuse from "fuse.js";
-import { fetchAnimeCharacters } from "@/lib/cdn";
+import { fetchAnimeCharacters, fetchMangaCharacters } from "@/lib/jikanApi";
+
+type MediaType = "anime" | "manga";
+
+interface CharacterEntry {
+    character: {
+        mal_id: number;
+        name: string;
+    };
+}
 
 export interface CharacterLookupResult {
     found: boolean;
     malCharacterId: number | null;
-    animeId: number;
+    mediaId: number;
 }
 
-export async function resolveCharacterMalId(characterName: string, animeId: number): Promise<CharacterLookupResult> {
-    debugger;
-    const characters = await fetchAnimeCharacters(animeId);
+export async function resolveCharacterMalId(
+    characterName: string,
+    mediaId: number,
+    type: MediaType = "anime",
+): Promise<CharacterLookupResult> {
+    const rawCharacters = type === "manga" ? await fetchMangaCharacters(mediaId) : await fetchAnimeCharacters(mediaId);
+
+    const characters: CharacterEntry[] = rawCharacters.map(c => ({
+        character: { mal_id: c.character.mal_id, name: c.character.name },
+    }));
 
     if (characters.length === 0) {
-        return { found: false, malCharacterId: null, animeId };
+        return { found: false, malCharacterId: null, mediaId };
     }
 
     const fuse = new Fuse(characters, {
@@ -41,9 +57,9 @@ export async function resolveCharacterMalId(characterName: string, animeId: numb
         return {
             found: true,
             malCharacterId: results[0].item.character.mal_id,
-            animeId,
+            mediaId,
         };
     }
 
-    return { found: false, malCharacterId: null, animeId };
+    return { found: false, malCharacterId: null, mediaId };
 }

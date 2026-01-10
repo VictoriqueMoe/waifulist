@@ -19,6 +19,16 @@ import {
 } from "@/types/anime";
 import { CharacterFull, CharacterFullResponse } from "@/types/character";
 import { PersonFull, PersonFullResponse } from "@/types/person";
+import {
+    MangaCharacter,
+    MangaCharactersResponse,
+    MangaFull,
+    MangaFullResponse,
+    MangaRecommendation,
+    MangaRecommendationsResponse,
+    MangaStatistics,
+    MangaStatisticsResponse,
+} from "@/types/manga";
 import { getRequestContext } from "@/lib/requestContext";
 
 const JIKAN_API_URL = process.env.JIKAN_API_URL || "http://jikan:8080/v4";
@@ -203,4 +213,40 @@ export async function fetchCharacterById(id: number): Promise<CharacterFull | nu
 export async function fetchPersonById(id: number): Promise<PersonFull | null> {
     const response = await fetchFromJikan<PersonFullResponse | null>(`/people/${id}/full`, null);
     return response?.data || null;
+}
+
+export async function fetchMangaById(id: number): Promise<MangaFull | null> {
+    const response = await fetchFromJikan<MangaFullResponse | null>(`/manga/${id}/full`, null);
+    return response?.data || null;
+}
+
+export async function fetchMangaCharacters(id: number): Promise<MangaCharacter[]> {
+    const response = await fetchFromJikan<MangaCharactersResponse | null>(`/manga/${id}/characters`, null);
+    if (!response?.data) {
+        return [];
+    }
+    return response.data.sort((a, b) => {
+        if (a.role === "Main" && b.role !== "Main") {
+            return -1;
+        }
+        if (a.role !== "Main" && b.role === "Main") {
+            return 1;
+        }
+        return 0;
+    });
+}
+
+export async function fetchMangaPictures(id: number): Promise<AnimePicture[]> {
+    const response = await fetchFromJikan<PicturesResponse | null>(`/manga/${id}/pictures`, null);
+    return response?.data || [];
+}
+
+export async function fetchMangaStatistics(id: number): Promise<MangaStatistics | null> {
+    const response = await fetchFromJikan<MangaStatisticsResponse | null>(`/manga/${id}/statistics`, null);
+    return response?.data || null;
+}
+
+export async function fetchMangaRecommendations(id: number): Promise<MangaRecommendation[]> {
+    const response = await fetchFromJikan<MangaRecommendationsResponse | null>(`/manga/${id}/recommendations`, null);
+    return response?.data || [];
 }

@@ -1,0 +1,62 @@
+@use "../../styles/variables" as *;
+
+.statisticsSection {
+    background: var(--bg-secondary);
+    border-radius: $radius-lg;
+    padding: $spacing-lg;
+}
+
+.statisticsTitle {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: $spacing-lg;
+    color: var(--text-primary);
+}
+
+.chartsRow {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+
+    @include md {
+        flex-direction: row;
+    }
+}
+
+.statusChart,
+.scoreChart {
+    flex: 1;
+    min-width: 0;
+}
+
+.chartTitle {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: $spacing-md;
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+}
+
+.totalCount {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.doughnutContainer {
+    height: 200px;
+
+    @include md {
+        height: 220px;
+    }
+}
+
+.chartContainer {
+    height: 200px;
+
+    @include md {
+        height: 220px;
+    }
+}

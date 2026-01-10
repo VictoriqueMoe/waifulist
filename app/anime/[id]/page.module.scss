@@ -1,84 +1,10 @@
 @use "../../styles/variables" as *;
 
-.page {
-    min-height: calc(100vh - 80px);
-    position: relative;
-    overflow-x: hidden;
-}
-
-.backdrop {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 400px;
-    overflow: hidden;
-    z-index: 0;
-}
-
-.backdropImage {
-    object-fit: cover;
-    filter: blur(20px);
-    transform: scale(1.1);
-    opacity: 0.3;
-}
-
-.backdropOverlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, transparent 0%, var(--bg-primary) 100%);
-}
-
-.container {
-    position: relative;
-    z-index: 1;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: $spacing-lg $spacing-sm;
-    overflow-x: hidden;
-
-    @include md {
-        padding: $spacing-xl $spacing-lg;
-    }
-}
-
-.content {
-    display: grid;
-    gap: $spacing-xl;
-
-    @include md {
-        grid-template-columns: 280px 1fr;
-    }
-
-    @include lg {
-        grid-template-columns: 320px 1fr;
-    }
-}
-
-.poster {
-    @include flex-center;
-
-    @include md {
-        display: block;
-    }
-}
-
-.posterImage {
-    border-radius: $radius-lg;
-    box-shadow: var(--shadow-primary);
-    width: 200px;
-    height: auto;
-
-    @include md {
-        width: 100%;
-    }
-}
-
-.details {
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-lg;
-    min-width: 0;
+.scoredBy {
+    font-weight: 400;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin-left: $spacing-xs;
 }
 
 .titleSection {
@@ -445,55 +371,10 @@
     color: var(--text-muted);
 }
 
-// Content Tabs
 .contentTabs {
     background: var(--bg-secondary);
     border-radius: $radius-lg;
     overflow: hidden;
-}
-
-.tabBar {
-    display: flex;
-    gap: 0;
-    background: var(--bg-tertiary);
-    border-bottom: 1px solid var(--border-color);
-}
-
-.tabButton {
-    flex: 1;
-    padding: $spacing-md $spacing-lg;
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all $transition-fast;
-    position: relative;
-
-    &:hover {
-        color: var(--text-primary);
-        background: rgba(var(--accent-primary-rgb), 0.05);
-    }
-
-    &.active {
-        color: var(--accent-primary);
-        background: var(--bg-secondary);
-
-        &::after {
-            content: "";
-            position: absolute;
-            bottom: -1px;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: var(--accent-primary);
-        }
-    }
-}
-
-.tabContent {
-    padding: $spacing-lg;
 }
 
 .overviewTab {
@@ -569,211 +450,6 @@
     }
 }
 
-.gallery {
-    h3 {
-        font-size: 1.25rem;
-        margin-bottom: $spacing-sm;
-    }
-}
-
-.galleryCarousel {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-    margin-bottom: $spacing-sm;
-}
-
-.carouselBtn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border: none;
-    border-radius: 50%;
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: all $transition-fast;
-
-    &:hover {
-        background: var(--accent-primary);
-        color: white;
-    }
-
-    i {
-        font-size: 1.25rem;
-    }
-}
-
-.carouselMain {
-    position: relative;
-    flex: 1;
-    max-width: 400px;
-    aspect-ratio: 2 / 3;
-    border-radius: $radius-md;
-    overflow: hidden;
-    background: var(--bg-tertiary);
-    cursor: pointer;
-    transition: transform $transition-fast;
-
-    &:hover {
-        transform: scale(1.02);
-    }
-}
-
-.carouselImage {
-    object-fit: cover;
-}
-
-.carouselCount {
-    position: absolute;
-    bottom: $spacing-sm;
-    right: $spacing-sm;
-    padding: 4px 8px;
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    font-size: 0.75rem;
-    border-radius: $radius-sm;
-}
-
-.galleryThumbs {
-    display: flex;
-    gap: $spacing-xs;
-    overflow-x: auto;
-    padding-bottom: $spacing-xs;
-    scrollbar-width: thin;
-
-    &::-webkit-scrollbar {
-        height: 4px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-        background: var(--border-color);
-        border-radius: 2px;
-    }
-}
-
-.galleryThumb {
-    position: relative;
-    flex: 0 0 50px;
-    aspect-ratio: 2 / 3;
-    border: 2px solid transparent;
-    border-radius: $radius-sm;
-    overflow: hidden;
-    cursor: pointer;
-    transition: border-color $transition-fast;
-    padding: 0;
-    background: var(--bg-tertiary);
-
-    &:hover,
-    &.active {
-        border-color: var(--accent-primary);
-    }
-
-    img {
-        object-fit: cover;
-    }
-}
-
-.lightbox {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.95);
-}
-
-.lightboxClose {
-    position: absolute;
-    top: $spacing-md;
-    right: $spacing-md;
-    width: 48px;
-    height: 48px;
-    border: none;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    font-size: 1.5rem;
-    cursor: pointer;
-    transition: background $transition-fast;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    &:hover {
-        background: rgba(255, 255, 255, 0.2);
-    }
-}
-
-.lightboxNav {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 56px;
-    height: 56px;
-    border: none;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    font-size: 1.5rem;
-    cursor: pointer;
-    transition: background $transition-fast;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    &:hover {
-        background: rgba(255, 255, 255, 0.2);
-    }
-
-    &.prev {
-        left: $spacing-md;
-    }
-
-    &.next {
-        right: $spacing-md;
-    }
-}
-
-.lightboxContent {
-    position: relative;
-    max-width: 90vw;
-    max-height: 90vh;
-    width: auto;
-    height: 90vh;
-    aspect-ratio: 2 / 3;
-}
-
-.lightboxImage {
-    object-fit: contain;
-}
-
-.lightboxCount {
-    position: absolute;
-    bottom: $spacing-md;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 8px 16px;
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    font-size: 0.875rem;
-    border-radius: $radius-md;
-}
-
-.info {
-    display: grid;
-    gap: $spacing-sm;
-    padding: $spacing-lg;
-    background: var(--bg-secondary);
-    border-radius: $radius-lg;
-}
-
 .infoItem {
     display: flex;
     gap: $spacing-md;
@@ -789,40 +465,10 @@
     color: var(--text-primary);
 }
 
-.loading,
-.error {
-    @include flex-center;
-    flex-direction: column;
-    gap: $spacing-md;
-    padding: $spacing-2xl;
-    min-height: 50vh;
-    color: var(--text-secondary);
-}
-
-.spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--border-primary);
-    border-top-color: var(--accent-primary);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-.error {
-    i {
-        font-size: 3rem;
-        color: var(--warning);
-    }
-
-    h2 {
-        color: var(--text-primary);
-    }
+.noImage {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-tertiary);
 }
 
 .relatedSection {
@@ -940,75 +586,6 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-}
-
-.noImage {
-    width: 100%;
-    height: 100%;
-    background: var(--bg-tertiary);
-}
-
-.recommendationsSection {
-    width: 100%;
-}
-
-.recommendationsGrid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: $spacing-lg;
-}
-
-.recommendationItem {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: $spacing-xs;
-    text-decoration: none;
-    transition: transform $transition-fast;
-    width: 140px;
-
-    @include md {
-        width: 160px;
-    }
-
-    &:hover {
-        transform: translateY(-4px);
-
-        .recommendationThumb {
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-        }
-    }
-}
-
-.recommendationThumb {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 2 / 3;
-    border-radius: $radius-md;
-    overflow: hidden;
-    background: var(--bg-tertiary);
-    transition: box-shadow $transition-fast;
-
-    img {
-        object-fit: cover;
-    }
-}
-
-.recommendationTitle {
-    font-size: 0.875rem;
-    color: var(--text-primary);
-    line-height: 1.4;
-    text-align: center;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-.recommendationVotes {
-    font-size: 0.75rem;
-    color: var(--text-muted);
 }
 
 .episodesSection {
@@ -1185,6 +762,12 @@
 
     i {
         animation: spin 1s linear infinite;
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
     }
 }
 
@@ -1367,73 +950,6 @@
     }
 }
 
-.statisticsSection {
-    grid-column: 1 / -1;
-    background: var(--bg-tertiary);
-    border-radius: $radius-md;
-    padding: $spacing-md;
-}
-
-.statisticsTitle {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: $spacing-md;
-}
-
-.chartsRow {
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-lg;
-
-    @include md {
-        flex-direction: row;
-    }
-}
-
-.statusChart {
-    flex: 1;
-    min-width: 0;
-}
-
-.scoreChart {
-    flex: 1.5;
-    min-width: 0;
-}
-
-.chartTitle {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-    margin-bottom: $spacing-sm;
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-}
-
-.totalCount {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    font-weight: 400;
-}
-
-.doughnutContainer {
-    height: 180px;
-
-    @include md {
-        height: 200px;
-    }
-}
-
-.chartContainer {
-    height: 180px;
-
-    @include md {
-        height: 200px;
-    }
-}
-
-// Streaming Section
 .streamingSection {
     width: 100%;
 }

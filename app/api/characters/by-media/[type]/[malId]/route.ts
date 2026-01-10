@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCharactersByAnime } from "@/services/anilistData";
+import { getCharactersByMedia } from "@/services/anilistData";
 
 interface RouteParams {
-    params: Promise<{ malId: string }>;
+    params: Promise<{ type: string; malId: string }>;
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams): Promise<NextResponse> {
-    const { malId: malIdStr } = await params;
-    const malId = parseInt(malIdStr, 10);
+    const { type, malId: malIdStr } = await params;
 
+    if (type !== "anime" && type !== "manga") {
+        return NextResponse.json({ error: "Invalid media type. Must be 'anime' or 'manga'" }, { status: 400 });
+    }
+
+    const malId = parseInt(malIdStr, 10);
     if (isNaN(malId) || malId <= 0) {
         return NextResponse.json({ error: "Invalid MAL ID" }, { status: 400 });
     }
@@ -18,10 +22,10 @@ export async function GET(request: NextRequest, { params }: RouteParams): Promis
     const perPage = Math.min(parseInt(searchParams.get("perPage") || "20", 10), 50);
 
     try {
-        const result = await getCharactersByAnime(malId, page, perPage);
+        const result = await getCharactersByMedia(malId, type, page, perPage);
         return NextResponse.json(result);
     } catch (error) {
-        console.error("[Characters by Anime] Error:", error);
+        console.error(`[Characters by ${type}] Error:`, error);
         const message = error instanceof Error ? error.message : "Failed to fetch characters";
         return NextResponse.json({ error: message }, { status: 500 });
     }

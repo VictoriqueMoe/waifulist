@@ -1,0 +1,201 @@
+@use "../../styles/variables" as *;
+
+.scoredBy {
+    font-weight: 400;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin-left: $spacing-xs;
+}
+
+.authorLink {
+    color: var(--accent-primary);
+    text-decoration: none;
+    transition: color $transition-fast;
+
+    &:hover {
+        color: var(--accent-hover);
+        text-decoration: underline;
+    }
+}
+
+.noImage {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    i {
+        font-size: 2rem;
+        color: var(--text-muted);
+    }
+}
+
+.charactersSection {
+    padding: $spacing-lg;
+}
+
+.charactersGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-md;
+}
+
+.characterCard {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+    width: 100px;
+    text-decoration: none;
+    transition: transform $transition-fast;
+
+    @include md {
+        width: 120px;
+    }
+
+    &:hover {
+        transform: translateY(-4px);
+
+        .characterImage {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+    }
+}
+
+.characterImage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    border-radius: $radius-md;
+    overflow: hidden;
+    background: var(--bg-tertiary);
+    transition: box-shadow $transition-fast;
+
+    img {
+        object-fit: cover;
+    }
+}
+
+.characterName {
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+
+    @include md {
+        font-size: 0.875rem;
+    }
+}
+
+.relatedSection {
+    padding: $spacing-lg;
+}
+
+.relationTabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-xs;
+    margin-bottom: $spacing-lg;
+}
+
+.relationTab {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-xs $spacing-md;
+    background: var(--bg-tertiary);
+    border: 1px solid transparent;
+    border-radius: $radius-md;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+        background: var(--bg-hover);
+    }
+
+    &.active {
+        background: var(--accent-primary);
+        color: white;
+    }
+}
+
+.tabCount {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+.relatedGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-md;
+    transition: opacity $transition-fast;
+
+    &.fadeOut {
+        opacity: 0;
+    }
+
+    &.fadeIn {
+        opacity: 1;
+    }
+}
+
+.relatedItem {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+    width: 100px;
+    text-decoration: none;
+    transition: transform $transition-fast;
+
+    @include md {
+        width: 120px;
+    }
+
+    &:hover {
+        transform: translateY(-4px);
+
+        .relatedThumb {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+    }
+}
+
+.relatedThumb {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    border-radius: $radius-md;
+    overflow: hidden;
+    background: var(--bg-tertiary);
+    transition: box-shadow $transition-fast;
+
+    img {
+        object-fit: cover;
+    }
+}
+
+.relatedTitle {
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+
+    @include md {
+        font-size: 0.875rem;
+    }
+}
+
+.relatedType {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}

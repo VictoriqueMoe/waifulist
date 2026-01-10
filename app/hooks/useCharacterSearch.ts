@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AniListCharacter } from "@/types/anilist";
 
+export interface MediaFilter {
+    malId: number;
+    title: string;
+    type: "anime" | "manga";
+}
+
 export interface AnimeFilter {
     malId: number;
     title: string;
@@ -18,6 +24,8 @@ interface UseCharacterSearchReturn {
     clear: () => void;
     animeFilter: AnimeFilter | null;
     setAnimeFilter: (filter: AnimeFilter | null) => void;
+    mediaFilter: MediaFilter | null;
+    setMediaFilter: (filter: MediaFilter | null) => void;
 }
 
 export function useCharacterSearch(debounceMs: number = 300): UseCharacterSearchReturn {
@@ -28,11 +36,17 @@ export function useCharacterSearch(debounceMs: number = 300): UseCharacterSearch
     const [hasMore, setHasMore] = useState(false);
     const [page, setPage] = useState(1);
     const [animeFilter, setAnimeFilterState] = useState<AnimeFilter | null>(null);
+    const [mediaFilter, setMediaFilterState] = useState<MediaFilter | null>(null);
     const debounceTimer = useRef<NodeJS.Timeout | null>(null);
     const currentQuery = useRef("");
 
+    const activeFilter = useMemo(
+        () => mediaFilter || (animeFilter ? { ...animeFilter, type: "anime" as const } : null),
+        [mediaFilter, animeFilter],
+    );
+
     const filteredResults = useMemo(() => {
-        if (!animeFilter || query.length < 2) {
+        if (!activeFilter || query.length < 2) {
             return allResults;
         }
         const lowerQuery = query.toLowerCase();
@@ -41,11 +55,11 @@ export function useCharacterSearch(debounceMs: number = 300): UseCharacterSearch
                 char.name.full.toLowerCase().includes(lowerQuery) ||
                 (char.name.native && char.name.native.toLowerCase().includes(lowerQuery)),
         );
-    }, [allResults, query, animeFilter]);
+    }, [allResults, query, activeFilter]);
 
     const fetchCharacters = useCallback(
         async (searchQuery: string, pageNum: number, append: boolean = false) => {
-            if (!animeFilter && searchQuery.length < 2) {
+            if (!activeFilter && searchQuery.length < 2) {
                 setAllResults([]);
                 setHasMore(false);
                 return;
@@ -56,8 +70,8 @@ export function useCharacterSearch(debounceMs: number = 300): UseCharacterSearch
 
             try {
                 let url: string;
-                if (animeFilter) {
-                    url = `/api/characters/by-anime/${animeFilter.malId}?page=${pageNum}&perPage=20`;
+                if (activeFilter) {
+                    url = `/api/characters/by-media/${activeFilter.type}/${activeFilter.malId}?page=${pageNum}&perPage=20`;
                 } else {
                     url = `/api/characters/search?q=${encodeURIComponent(searchQuery)}&page=${pageNum}&perPage=20`;
                 }
@@ -86,7 +100,7 @@ export function useCharacterSearch(debounceMs: number = 300): UseCharacterSearch
                 setIsLoading(false);
             }
         },
-        [animeFilter],
+        [activeFilter],
     );
 
     const search = useCallback(
@@ -116,6 +130,17 @@ export function useCharacterSearch(debounceMs: number = 300): UseCharacterSearch
 
     const setAnimeFilter = useCallback((filter: AnimeFilter | null) => {
         setAnimeFilterState(filter);
+        setMediaFilterState(null);
+        setAllResults([]);
+        setHasMore(false);
+        setPage(1);
+        setQuery("");
+        currentQuery.current = "";
+    }, []);
+
+    const setMediaFilter = useCallback((filter: MediaFilter | null) => {
+        setMediaFilterState(filter);
+        setAnimeFilterState(null);
         setAllResults([]);
         setHasMore(false);
         setPage(1);
@@ -124,13 +149,13 @@ export function useCharacterSearch(debounceMs: number = 300): UseCharacterSearch
     }, []);
 
     useEffect(() => {
-        if (animeFilter) {
+        if (activeFilter) {
             fetchCharacters("", 1, false);
         }
-    }, [animeFilter, fetchCharacters]);
+    }, [activeFilter, fetchCharacters]);
 
     useEffect(() => {
-        if (animeFilter) {
+        if (activeFilter) {
             return;
         }
 
@@ -153,12 +178,12 @@ export function useCharacterSearch(debounceMs: number = 300): UseCharacterSearch
                 clearTimeout(debounceTimer.current);
             }
         };
-    }, [query, debounceMs, search, animeFilter]);
+    }, [query, debounceMs, search, activeFilter]);
 
     return {
         query,
         setQuery,
-        results: animeFilter ? filteredResults : allResults,
+        results: activeFilter ? filteredResults : allResults,
         isLoading,
         error,
         hasMore,
@@ -167,5 +192,7 @@ export function useCharacterSearch(debounceMs: number = 300): UseCharacterSearch
         clear,
         animeFilter,
         setAnimeFilter,
+        mediaFilter,
+        setMediaFilter,
     };
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchAnimeEpisodeDetail } from "@/lib/cdn";
+import { fetchAnimeEpisodeDetail } from "@/lib/jikanApi";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string; episode: string }> }) {
     const { id, episode } = await params;

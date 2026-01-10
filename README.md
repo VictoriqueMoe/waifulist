@@ -132,24 +132,28 @@ Redis is used as the primary cache and data store for anime data, enabling horiz
 
 ### Data Storage
 
-| Redis Key                            | Data                         | TTL    | Purpose                          |
-|--------------------------------------|------------------------------|--------|----------------------------------|
-| `anime:list`                         | Full anime array (JSON)      | 7 days | Fuse index building              |
-| `anime:id:{id}`                      | Individual anime (JSON)      | 7d/24h | Single anime lookups             |
-| `anime:titles`                       | Hash (title → id)            | 7 days | Title-to-ID lookups              |
-| `anime:sorted:rating`                | Redis List (pre-sorted JSON) | 7 days | Browse by rating (LRANGE)        |
-| `anime:sorted:newest`                | Redis List (pre-sorted JSON) | 7 days | Browse by newest (LRANGE)        |
-| `anime:browse:count`                 | Integer string               | -      | Total count for pagination       |
-| `anime:genres`                       | JSON array of genre names    | 7 days | Genre filter options             |
-| `anime:season:{year}:{season}`       | Redis List (pre-sorted JSON) | 7 days | Seasonal anime listings          |
-| `anime:season:{year}:{season}:count` | Integer string               | 7 days | Seasonal count for pagination    |
-| `anime:sitemap:{id}`                 | Sitemap entry data           | 24h    | Sitemap generation               |
-| `anime:peopleIds`                    | JSON array of IDs            | 7 days | Valid people IDs for sitemap     |
-| `anime:characterIds`                 | JSON array of IDs            | 7 days | Valid character IDs for sitemap  |
-| `anime:lastFetchTime`                | ISO timestamp                | -      | Track last refresh               |
-| `anime:refresh`                      | Pub/sub channel              | -      | Notify instances to rebuild Fuse |
-| `og:{uuid}:{hash}`                   | PNG binary                   | 1 hour | Cached OpenGraph images          |
-| `ratelimit:{ip}:{type}`              | Integer (request count)      | 60s    | Rate limiting per IP (page/api)  |
+| Redis Key                                 | Data                         | TTL     | Purpose                          |
+|-------------------------------------------|------------------------------|---------|----------------------------------|
+| `anime:list`                              | Full anime array (JSON)      | 7 days  | Fuse index building              |
+| `anime:id:{id}`                           | Individual anime (JSON)      | 7d/24h  | Single anime lookups             |
+| `anime:titles`                            | Hash (title → id)            | 7 days  | Title-to-ID lookups              |
+| `anime:sorted:rating`                     | Redis List (pre-sorted JSON) | 7 days  | Browse by rating (LRANGE)        |
+| `anime:sorted:newest`                     | Redis List (pre-sorted JSON) | 7 days  | Browse by newest (LRANGE)        |
+| `anime:browse:count`                      | Integer string               | -       | Total count for pagination       |
+| `anime:genres`                            | JSON array of genre names    | 7 days  | Genre filter options             |
+| `anime:season:{year}:{season}`            | Redis List (pre-sorted JSON) | 7 days  | Seasonal anime listings          |
+| `anime:season:{year}:{season}:count`      | Integer string               | 7 days  | Seasonal count for pagination    |
+| `anime:sitemap:{id}`                      | Sitemap entry data           | 24h     | Sitemap generation               |
+| `anime:peopleIds`                         | JSON array of IDs            | 7 days  | Valid people IDs for sitemap     |
+| `anime:characterIds`                      | JSON array of IDs            | 7 days  | Valid character IDs for sitemap  |
+| `anime:lastFetchTime`                     | ISO timestamp                | -       | Track last refresh               |
+| `anime:refresh`                           | Pub/sub channel              | -       | Notify instances to rebuild Fuse |
+| `og:{uuid}:{hash}`                        | PNG binary                   | 1 hour  | Cached OpenGraph images          |
+| `ratelimit:{ip}:{type}`                   | Integer (request count)      | 60s     | Rate limiting per IP (page/api)  |
+| `anilist:character:{id}`                  | AniList character (JSON)     | 30 days | Tier list character data         |
+| `anilist:search:{query}:{page}`           | Search results (JSON)        | 1 hour  | Character search cache           |
+| `anilist:anime:{malId}:characters:{page}` | Characters array (JSON)      | 24h     | Anime characters for tier list   |
+| `anilist:manga:{malId}:characters:{page}` | Characters array (JSON)      | 24h     | Manga characters for tier list   |
 
 ### Data Flow
 

@@ -1,23 +1,24 @@
 export interface CharacterLookupResult {
     found: boolean;
     malCharacterId: number | null;
-    animeId: number;
+    mediaId: number;
 }
 
 export async function resolveCharacterUrl(
     characterName: string,
-    animeId: number | null,
+    mediaId: number | null,
     anilistId: number,
+    mediaType: "anime" | "manga" = "anime",
 ): Promise<string> {
     const anilistFallback = `https://anilist.co/character/${anilistId}`;
 
-    if (!animeId) {
+    if (!mediaId) {
         return anilistFallback;
     }
 
     try {
         const response = await fetch(
-            `/api/character/resolve?name=${encodeURIComponent(characterName)}&animeId=${animeId}`,
+            `/api/character/resolve?name=${encodeURIComponent(characterName)}&mediaId=${mediaId}&type=${mediaType}`,
         );
 
         if (!response.ok) {

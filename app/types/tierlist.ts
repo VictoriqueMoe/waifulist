@@ -14,6 +14,7 @@ export const TIER_COLORS: Record<TierRank, string> = {
 export interface CharacterAnime {
     malId: number | null;
     title: string;
+    type?: "anime" | "manga";
 }
 
 export interface TierListCharacter {

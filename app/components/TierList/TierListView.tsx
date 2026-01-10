@@ -78,8 +78,14 @@ function CharacterCard({ character }: CharacterCardProps) {
             return;
         }
 
-        const animeWithMalId = character.anime.find(a => a.malId !== null);
-        const url = await getCharacterUrl(character.name, animeWithMalId?.malId ?? null, character.anilistId);
+        const mediaWithMalId = character.anime.find(a => a.malId !== null);
+        const mediaType = mediaWithMalId?.type ?? "anime";
+        const url = await getCharacterUrl(
+            character.name,
+            mediaWithMalId?.malId ?? null,
+            character.anilistId,
+            mediaType,
+        );
         window.open(url, "_blank", "noopener,noreferrer");
     };
 
@@ -99,7 +105,7 @@ function CharacterCard({ character }: CharacterCardProps) {
                 <div className={styles.characterName}>{character.name}</div>
                 {character.anime.length > 0 && character.anime[0].malId && (
                     <Link
-                        href={`/anime/${character.anime[0].malId}`}
+                        href={`/${character.anime[0].type ?? "anime"}/${character.anime[0].malId}`}
                         className={styles.animeLink}
                         onClick={e => e.stopPropagation()}
                     >

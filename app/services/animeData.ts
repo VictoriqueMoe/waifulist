@@ -1,6 +1,6 @@
 import { Anime, IdList, TopReviewWithAnime } from "@/types/anime";
 import { getRedis, getSubscriber, REDIS_KEYS, REDIS_TTL } from "@/lib/redis";
-import { fetchAnimeFromCdn, fetchTopReviews } from "@/lib/cdn";
+import { fetchAnimeFromCdn, fetchTopReviews } from "@/lib/jikanApi";
 import { enrichAnime, needsEnrichment } from "./animeEnrichmentPipeline";
 import { getCurrentSeason, parseSeasonFromStartDate, Season } from "@/lib/seasonUtils";
 import {

@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { fetchPersonById } from "@/lib/cdn";
+import { fetchPersonById } from "@/lib/jikanApi";
 import { PersonPageClient } from "./PersonPageClient";
 
 interface PageProps {

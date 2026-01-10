@@ -1,5 +1,5 @@
 import { Anime } from "@/types/anime";
-import { fetchAnimeFromCdn } from "@/lib/cdn";
+import { fetchAnimeFromCdn } from "@/lib/jikanApi";
 import { getRedis, REDIS_KEYS, REDIS_TTL } from "@/lib/redis";
 import { isDeepLink } from "@/lib/urlUtils";
 import { scrapeStreaming } from "./scraper";

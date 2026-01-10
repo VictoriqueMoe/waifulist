@@ -202,15 +202,15 @@
     }
 }
 
-.animeFilter {
+.mediaFilter {
     position: relative;
 }
 
-.animeSearchBar {
+.mediaSearchBar {
     display: flex;
     align-items: center;
     gap: $spacing-sm;
-    padding: $spacing-sm $spacing-md;
+    padding: $spacing-xs $spacing-sm;
     background: var(--bg-tertiary);
     border: 1px solid var(--border-primary);
     border-radius: $radius-md;
@@ -219,21 +219,55 @@
         border-color: var(--accent-primary);
     }
 
-    i {
+    i.spinning {
         color: var(--text-muted);
-
-        &.spinning {
-            animation: spin 1s linear infinite;
-        }
+        animation: spin 1s linear infinite;
     }
 }
 
-.animeSearchInput {
+.mediaTypeToggle {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    background: var(--bg-secondary);
+    border-radius: $radius-sm;
+}
+
+.mediaTypeButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: none;
+    border-radius: $radius-sm;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+        color: var(--text-primary);
+        background: var(--bg-tertiary);
+    }
+
+    &.active {
+        background: var(--accent-primary);
+        color: white;
+    }
+
+    i {
+        font-size: 0.8rem;
+    }
+}
+
+.mediaSearchInput {
     flex: 1;
     border: none;
     background: transparent;
     font-size: 0.875rem;
     color: var(--text-primary);
+    padding: $spacing-xs 0;
 
     &:focus {
         outline: none;
@@ -244,7 +278,7 @@
     }
 }
 
-.animeDropdown {
+.mediaDropdown {
     position: absolute;
     top: 100%;
     left: 0;

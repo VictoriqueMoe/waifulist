@@ -7,10 +7,15 @@ export function useCharacterUrl() {
     const [loading, setLoading] = useState(false);
 
     const getCharacterUrl = useCallback(
-        async (characterName: string, malAnimeId: number | null, anilistId: number): Promise<string> => {
+        async (
+            characterName: string,
+            malMediaId: number | null,
+            anilistId: number,
+            mediaType: "anime" | "manga" = "anime",
+        ): Promise<string> => {
             setLoading(true);
             try {
-                return await resolveCharacterUrl(characterName, malAnimeId, anilistId);
+                return await resolveCharacterUrl(characterName, malMediaId, anilistId, mediaType);
             } finally {
                 setLoading(false);
             }

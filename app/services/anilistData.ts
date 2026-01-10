@@ -1,7 +1,15 @@
 import { getRedis, REDIS_KEYS, REDIS_TTL } from "@/lib/redis";
-import { fetchCharacterById, fetchCharactersByMalId, searchCharactersFromAniList, SearchResult } from "@/lib/anilist";
+import {
+    fetchCharacterById,
+    fetchCharactersByMalId,
+    fetchMangaCharactersByMalId,
+    searchCharactersFromAniList,
+    SearchResult,
+} from "@/lib/anilist";
 import { AniListCharacter } from "@/types/anilist";
 import { TierListCharacter } from "@/types/tierlist";
+
+type MediaType = "anime" | "manga";
 
 function toTierListCharacter(char: AniListCharacter): TierListCharacter {
     return {
@@ -12,6 +20,7 @@ function toTierListCharacter(char: AniListCharacter): TierListCharacter {
             char.media?.nodes?.map(m => ({
                 malId: m.idMal ?? null,
                 title: m.title?.english || m.title?.romaji || "Unknown",
+                type: m.type?.toLowerCase() as "anime" | "manga" | undefined,
             })) || [],
     };
 }
@@ -95,23 +104,29 @@ export async function getCharactersForTierList(anilistIds: number[]): Promise<Ti
     return characters;
 }
 
-export async function getCharactersByAnime(
+export async function getCharactersByMedia(
     malId: number,
+    type: MediaType,
     page: number = 1,
     perPage: number = 20,
 ): Promise<SearchResult> {
     const redis = getRedis();
-    const cacheKey = REDIS_KEYS.ANILIST_ANIME_CHARACTERS(malId, page);
+    const cacheKey =
+        type === "anime"
+            ? REDIS_KEYS.ANILIST_ANIME_CHARACTERS(malId, page)
+            : REDIS_KEYS.ANILIST_MANGA_CHARACTERS(malId, page);
+    const ttl = type === "anime" ? REDIS_TTL.ANILIST_ANIME_CHARACTERS : REDIS_TTL.ANILIST_MANGA_CHARACTERS;
 
     const cached = await redis.get(cacheKey);
     if (cached) {
         return JSON.parse(cached) as SearchResult;
     }
 
-    const result = await fetchCharactersByMalId(malId, page, perPage);
+    const fetchFn = type === "anime" ? fetchCharactersByMalId : fetchMangaCharactersByMalId;
+    const result = await fetchFn(malId, page, perPage);
 
     if (result.characters.length > 0) {
-        await redis.setex(cacheKey, REDIS_TTL.ANILIST_ANIME_CHARACTERS, JSON.stringify(result));
+        await redis.setex(cacheKey, ttl, JSON.stringify(result));
 
         const pipeline = redis.pipeline();
         for (const character of result.characters) {

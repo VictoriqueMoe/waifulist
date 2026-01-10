@@ -16,6 +16,7 @@ export interface AniListMediaTitle {
 export interface AniListMedia {
     id: number;
     idMal: number | null;
+    type?: "ANIME" | "MANGA";
     title: AniListMediaTitle;
 }
 

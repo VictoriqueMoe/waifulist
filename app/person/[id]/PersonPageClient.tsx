@@ -5,6 +5,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { PersonAnimePosition, PersonFull, PersonVoiceRole } from "@/types/person";
 import { formatLongText } from "@/lib/textUtils";
+import {
+    ContentTabsWrapper,
+    EntityPageLayout,
+    PageHeader,
+    SidebarItem,
+    SidebarLink,
+    TagList,
+    TextSection,
+} from "@/components/EntityPageLayout/EntityPageLayout";
 import { Pill } from "@/components/Pill/Pill";
 import { RoleTabs } from "@/components/RoleTabs/RoleTabs";
 import { Tab, Tabs } from "@/components/Tabs/Tabs";
@@ -237,89 +246,46 @@ export function PersonPageClient({ person }: PersonPageClientProps) {
         });
     }
 
+    const sidebarContent = (
+        <>
+            {person.birthday && (
+                <SidebarItem icon="cake2-fill" iconColor="var(--accent-primary)">
+                    {formatBirthday(person.birthday)}
+                </SidebarItem>
+            )}
+            <SidebarItem icon="heart-fill" iconColor="#ec4899">
+                {person.favorites.toLocaleString()} favorites
+            </SidebarItem>
+            {person.website_url && (
+                <SidebarLink href={person.website_url} icon="globe" external>
+                    Official Website
+                </SidebarLink>
+            )}
+            <SidebarLink href={person.url} icon="box-arrow-up-right" external>
+                View on MyAnimeList
+            </SidebarLink>
+        </>
+    );
+
     return (
-        <div className={styles.page}>
-            <div className={styles.backdrop}>
-                {imageUrl && <Image src={imageUrl} alt="" fill className={styles.backdropImage} />}
-                <div className={styles.backdropOverlay} />
-            </div>
+        <EntityPageLayout imageUrl={imageUrl} imageAlt={person.name} sidebarContent={sidebarContent}>
+            <PageHeader title={formatName(person.name)} subtitle={japaneseName} />
 
-            <div className={styles.container}>
-                <div className={styles.content}>
-                    <div className={styles.imageSection}>
-                        <div className={styles.personImage}>
-                            {imageUrl ? (
-                                <Image src={imageUrl} alt={person.name} fill sizes="280px" />
-                            ) : (
-                                <div className={styles.noImage} />
-                            )}
-                        </div>
-                        {person.birthday && (
-                            <div className={styles.birthday}>
-                                <i className="bi bi-cake2-fill" />
-                                <span>{formatBirthday(person.birthday)}</span>
-                            </div>
-                        )}
-                        <div className={styles.favorites}>
-                            <i className="bi bi-heart-fill" />
-                            <span>{person.favorites.toLocaleString()} favorites</span>
-                        </div>
-                        <div className={styles.externalLinks}>
-                            {person.website_url && (
-                                <a
-                                    href={person.website_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={styles.externalLink}
-                                >
-                                    <i className="bi bi-globe" />
-                                    Official Website
-                                </a>
-                            )}
-                            <a
-                                href={person.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={styles.externalLink}
-                            >
-                                <i className="bi bi-box-arrow-up-right" />
-                                View on MyAnimeList
-                            </a>
-                        </div>
-                    </div>
+            {person.alternate_names && person.alternate_names.length > 0 && (
+                <TagList>
+                    {person.alternate_names.map((name, i) => (
+                        <Pill key={i}>{name}</Pill>
+                    ))}
+                </TagList>
+            )}
 
-                    <div className={styles.infoSection}>
-                        <div className={styles.header}>
-                            <h1 className={styles.name}>{formatName(person.name)}</h1>
-                            {japaneseName && <p className={styles.japaneseName}>{japaneseName}</p>}
-                        </div>
+            <TextSection paragraphs={aboutParagraphs} />
 
-                        {person.alternate_names && person.alternate_names.length > 0 && (
-                            <div className={styles.alternateNames}>
-                                {person.alternate_names.map((name, i) => (
-                                    <Pill key={i}>{name}</Pill>
-                                ))}
-                            </div>
-                        )}
-
-                        {aboutParagraphs.length > 0 && (
-                            <div className={styles.about}>
-                                {aboutParagraphs.map((paragraph, i) => (
-                                    <p key={i} className={paragraph.isAttribution ? styles.attribution : undefined}>
-                                        {paragraph.text}
-                                    </p>
-                                ))}
-                            </div>
-                        )}
-
-                        {tabs.length > 0 && (
-                            <div className={styles.contentTabs}>
-                                <Tabs tabs={tabs} />
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </div>
+            {tabs.length > 0 && (
+                <ContentTabsWrapper>
+                    <Tabs tabs={tabs} />
+                </ContentTabsWrapper>
+            )}
+        </EntityPageLayout>
     );
 }
