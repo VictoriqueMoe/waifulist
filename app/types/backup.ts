@@ -5,3 +5,9 @@ export interface BackupData {
     Bookmarks: BookmarkRow[];
     TierLists: TierListRow[];
 }
+
+export interface BackupChoices {
+    Anime: boolean;
+    Bookmarks: boolean;
+    TierLists: boolean;
+}

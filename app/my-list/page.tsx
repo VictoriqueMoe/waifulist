@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SortType, WatchStatus, watchStatusLabels } from "@/types/anime";
+import { BackupChoices } from "@/types/backup";
 import { useAuth } from "@/contexts/AuthContext";
 import { ImportEntry, useWatchList } from "@/contexts/WatchListContext";
 import { useSettings } from "@/contexts/SettingsContext";
@@ -66,6 +67,11 @@ export default function MyListPage() {
     const [showRestoreModal, setShowRestoreModal] = useState(false);
     const [importType, setImportType] = useState<ImportType>("txt");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [backupChoices, setBackupChoices] = useState<BackupChoices>({
+        Anime: true,
+        Bookmarks: true,
+        TierLists: true,
+    });
     const [copied, setCopied] = useState(false);
     const [restoreLoading, setRestoreLoading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -144,12 +150,12 @@ export default function MyListPage() {
     }, [backupList]);
 
     const handleRestore = useCallback(async () => {
-        if (!selectedFile) {
+        if (!selectedFile || (!backupChoices.Anime && !backupChoices.Bookmarks && !backupChoices.TierLists)) {
             return;
         }
         try {
             setRestoreLoading(true);
-            await restoreList(selectedFile);
+            await restoreList(selectedFile, backupChoices);
             await refreshList();
             listRef.current?.reload();
         } catch (error) {
@@ -159,7 +165,7 @@ export default function MyListPage() {
             setShowRestoreModal(false);
             setSelectedFile(null);
         }
-    }, [refreshList, restoreList, selectedFile]);
+    }, [refreshList, restoreList, selectedFile, backupChoices]);
 
     const handleImport = useCallback(async () => {
         if (!selectedFile) {
@@ -211,6 +217,13 @@ export default function MyListPage() {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     }, [user?.publicId, settings.myList.sort]);
+
+    const handleSetBackupChoices = useCallback(
+        async (key: keyof BackupChoices, checked: boolean) => {
+            setBackupChoices(prev => ({ ...prev, [key]: checked }));
+        },
+        [setBackupChoices],
+    );
 
     if (authLoading || !user) {
         return null;
@@ -475,6 +488,19 @@ export default function MyListPage() {
                                     <i className="bi bi-file-earmark-text" />{" "}
                                     {selectedFile ? selectedFile.name : "Choose file..."}
                                 </label>
+                            </div>
+                            <div>
+                                Restore:
+                                {(Object.keys(backupChoices) as (keyof BackupChoices)[]).map(key => (
+                                    <label className={styles.checkbox} key={key}>
+                                        <input
+                                            type="checkbox"
+                                            checked={backupChoices[key]}
+                                            onChange={e => handleSetBackupChoices(key, e.target.checked)}
+                                        />
+                                        <span>{key}</span>
+                                    </label>
+                                ))}
                             </div>
                             <p
                                 style={{

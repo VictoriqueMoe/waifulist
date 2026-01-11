@@ -300,3 +300,23 @@
         border-style: solid;
     }
 }
+
+.checkbox {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+
+    input {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        accent-color: var(--accent-primary);
+    }
+
+    &:hover {
+        color: var(--text-primary);
+    }
+}

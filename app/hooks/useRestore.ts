@@ -3,10 +3,10 @@
 import { useCallback } from "react";
 import { dispatchRestore } from "@/services/backupService";
 import { WatchedAnimeRow } from "@/lib/db";
-import { BackupData } from "@/types/backup";
+import { BackupData, BackupChoices } from "@/types/backup";
 
 export function useRestore() {
-    const restoreList = useCallback(async (selectedFile: File): Promise<void> => {
+    const restoreList = useCallback(async (selectedFile: File, choices: BackupChoices): Promise<void> => {
         const checkBackupFile = (text: string): boolean => {
             const fields: string[] = [
                 "id",
@@ -45,14 +45,20 @@ export function useRestore() {
             case 1:
                 const anime = JSON.parse(content) as WatchedAnimeRow[];
                 const restoreData: BackupData = {
-                    Anime: anime,
+                    Anime: choices.Anime ? [...anime] : [],
                     Bookmarks: [],
                     TierLists: [],
                 };
                 response = await dispatchRestore(JSON.stringify(restoreData));
                 break;
             case 2:
-                response = await dispatchRestore(content);
+                const allData = JSON.parse(content) as BackupData;
+                const toRestore: BackupData = {
+                    Anime: choices.Anime ? [...allData.Anime] : [],
+                    Bookmarks: choices.Bookmarks ? [...allData.Bookmarks] : [],
+                    TierLists: choices.TierLists ? [...allData.TierLists] : [],
+                };
+                response = await dispatchRestore(JSON.stringify(toRestore));
                 break;
         }
         if (response === null) {
