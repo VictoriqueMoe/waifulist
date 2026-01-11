@@ -11,9 +11,3 @@ export interface BackupChoices {
     Bookmarks: boolean;
     TierLists: boolean;
 }
-
-export const BACKUP_CHOICE_LABELS: Record<keyof BackupChoices, string> = {
-    Anime: "Anime",
-    Bookmarks: "List Bookmarks",
-    TierLists: "Tier Lists",
-};
