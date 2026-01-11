@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SortType, WatchStatus, watchStatusLabels } from "@/types/anime";
-import { BackupChoices } from "@/types/backup";
+import { BACKUP_CHOICE_LABELS, BackupChoices } from "@/types/backup";
 import { useAuth } from "@/contexts/AuthContext";
 import { ImportEntry, useWatchList } from "@/contexts/WatchListContext";
 import { useSettings } from "@/contexts/SettingsContext";
@@ -489,7 +489,7 @@ export default function MyListPage() {
                                     {selectedFile ? selectedFile.name : "Choose file..."}
                                 </label>
                             </div>
-                            <div>
+                            <div className={styles.restoreChoices}>
                                 Restore:
                                 {(Object.keys(backupChoices) as (keyof BackupChoices)[]).map(key => (
                                     <label className={styles.checkbox} key={key}>
@@ -498,7 +498,7 @@ export default function MyListPage() {
                                             checked={backupChoices[key]}
                                             onChange={e => handleSetBackupChoices(key, e.target.checked)}
                                         />
-                                        <span>{key}</span>
+                                        <span>{BACKUP_CHOICE_LABELS[key]}</span>
                                     </label>
                                 ))}
                             </div>
