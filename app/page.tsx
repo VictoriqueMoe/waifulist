@@ -16,7 +16,7 @@ const FEATURES = [
         icon: "bi-list-check",
         title: "Track Your Anime",
         description:
-            "Organize your anime with status tracking, ratings from dogshit to masterpiece, and personal notes others can see",
+            "Organise your anime with status tracking, ratings from dogshit to masterpiece, and personal notes others can see",
     },
     {
         icon: "bi-share",

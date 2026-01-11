@@ -22,7 +22,7 @@ const SEASON_LABELS: Record<Season, string> = {
     winter: "Winter",
     spring: "Spring",
     summer: "Summer",
-    fall: "Fall",
+    fall: "Autumn",
 };
 
 export function SeasonSelector({ value, onChange }: SeasonSelectorProps) {
