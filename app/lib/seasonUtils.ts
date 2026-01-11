@@ -47,9 +47,15 @@ export function getSeasonMonthRange(season: Season): { startMonth: number; endMo
     };
 }
 
+const SEASON_DISPLAY_NAMES: Record<Season, string> = {
+    winter: "Winter",
+    spring: "Spring",
+    summer: "Summer",
+    fall: "Autumn",
+};
+
 export function getSeasonLabel(season: Season, year: number): string {
-    const capitalizedSeason = season.charAt(0).toUpperCase() + season.slice(1);
-    return `${capitalizedSeason} ${year}`;
+    return `${SEASON_DISPLAY_NAMES[season]} ${year}`;
 }
 
 export function getPreviousSeason(seasonYear: SeasonYear): SeasonYear {

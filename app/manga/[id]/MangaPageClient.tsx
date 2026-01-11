@@ -195,7 +195,7 @@ export function MangaPageClient({ manga, characters, pictures, statistics, recom
             )}
             {manga.favorites && (
                 <SidebarItem icon="heart-fill" iconColor="#ec4899">
-                    {manga.favorites.toLocaleString()} favorites
+                    {manga.favorites.toLocaleString()} favourites
                 </SidebarItem>
             )}
             <SidebarLink href={manga.url} icon="box-arrow-up-right" external>

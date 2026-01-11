@@ -1,10 +1,7 @@
-import { getRedis } from "@/lib/redis";
+import { getRedis, REDIS_KEYS, REDIS_TTL } from "@/lib/redis";
 import { fetchScheduleFromJikan } from "@/lib/jikanApi";
 import { DayFilter, DayOfWeek, DAYS_OF_WEEK, ScheduleAnime, ScheduleByDay, ScheduleResponse } from "@/types/schedule";
 import { scrapeSchedule } from "./scraper";
-
-const SCHEDULE_CACHE_KEY = "anime:schedule";
-const SCHEDULE_CACHE_TTL = 60 * 60;
 
 const WEEKDAYS: DayFilter[] = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
@@ -44,9 +41,9 @@ async function fetchFromJikan(): Promise<ScheduleByDay> {
 
 export async function getSchedule(): Promise<ScheduleResponse> {
     const redis = getRedis();
-
+    debugger;
     try {
-        const cached = await redis.get(SCHEDULE_CACHE_KEY);
+        const cached = await redis.get(REDIS_KEYS.SCHEDULE);
         if (cached) {
             console.log("[ScheduleService] Returning cached schedule");
             return JSON.parse(cached) as ScheduleResponse;
@@ -54,17 +51,16 @@ export async function getSchedule(): Promise<ScheduleResponse> {
     } catch (error) {
         console.error("[ScheduleService] Failed to get cached schedule:", error);
     }
+    debugger;
+    const scraped = await scrapeSchedule();
+    let schedule: ScheduleByDay;
 
-    let schedule = await fetchFromJikan();
-
-    if (!hasData(schedule)) {
-        console.log("[ScheduleService] Jikan returned empty, falling back to HTML scraping");
-        const scraped = await scrapeSchedule();
-        if (scraped) {
-            schedule = scraped;
-        }
+    if (scraped && hasData(scraped)) {
+        console.log("[ScheduleService] Using scraped MAL data");
+        schedule = scraped;
     } else {
-        console.log("[ScheduleService] Using Jikan data");
+        console.log("[ScheduleService] Scraper returned empty, falling back to Jikan");
+        schedule = await fetchFromJikan();
     }
 
     for (const day of DAYS_OF_WEEK) {
@@ -79,7 +75,7 @@ export async function getSchedule(): Promise<ScheduleResponse> {
     };
 
     try {
-        await redis.setex(SCHEDULE_CACHE_KEY, SCHEDULE_CACHE_TTL, JSON.stringify(response));
+        await redis.setex(REDIS_KEYS.SCHEDULE, REDIS_TTL.SCHEDULE, JSON.stringify(response));
         console.log("[ScheduleService] Cached schedule");
     } catch (error) {
         console.error("[ScheduleService] Failed to cache schedule:", error);
@@ -90,6 +86,6 @@ export async function getSchedule(): Promise<ScheduleResponse> {
 
 export async function refreshSchedule(): Promise<ScheduleResponse> {
     const redis = getRedis();
-    await redis.del(SCHEDULE_CACHE_KEY);
+    await redis.del(REDIS_KEYS.SCHEDULE);
     return getSchedule();
 }

@@ -738,7 +738,7 @@ export function AnimePageClient({
             )}
             {anime.favorites && (
                 <SidebarItem icon="heart-fill" iconColor="#ec4899">
-                    {anime.favorites.toLocaleString()} favorites
+                    {anime.favorites.toLocaleString()} favourites
                 </SidebarItem>
             )}
             <SidebarLink href={`https://myanimelist.net/anime/${anime.mal_id}`} icon="box-arrow-up-right" external>

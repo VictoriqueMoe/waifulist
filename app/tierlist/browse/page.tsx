@@ -4,11 +4,11 @@ import { BrowseTierListsClient } from "./BrowseTierListsClient";
 export const metadata: Metadata = {
     title: "Browse Tier Lists | WaifuList",
     description:
-        "Discover and explore waifu tier lists created by the community. Find rankings, compare favorites, and get inspired to create your own.",
+        "Discover and explore waifu tier lists created by the community. Find rankings, compare favourites, and get inspired to create your own.",
     openGraph: {
         title: "Browse Tier Lists | WaifuList",
         description:
-            "Discover and explore waifu tier lists created by the community. Find rankings, compare favorites, and get inspired to create your own.",
+            "Discover and explore waifu tier lists created by the community. Find rankings, compare favourites, and get inspired to create your own.",
         type: "website",
     },
     twitter: {

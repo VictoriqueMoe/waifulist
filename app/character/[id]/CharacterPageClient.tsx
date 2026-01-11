@@ -431,7 +431,7 @@ export function CharacterPageClient({ character }: CharacterPageClientProps) {
     const sidebarContent = (
         <>
             <SidebarItem icon="heart-fill" iconColor="#ec4899">
-                {character.favorites.toLocaleString()} favorites
+                {character.favorites.toLocaleString()} favourites
             </SidebarItem>
             <SidebarLink href={character.url} icon="box-arrow-up-right" external>
                 View on MyAnimeList

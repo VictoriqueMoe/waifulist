@@ -253,14 +253,15 @@ export async function fetchMangaRecommendations(id: number): Promise<MangaRecomm
     return response?.data || [];
 }
 
-export async function fetchScheduleFromJikan(day: DayFilter): Promise<Anime[]> {
-    const allAnime: Anime[] = [];
+async function fetchSchedulePages(day: DayFilter, includeKids: boolean): Promise<Anime[]> {
+    const anime: Anime[] = [];
     let page = 1;
     let hasNextPage = true;
+    const kidsParam = includeKids ? "&kids=true" : "";
 
     while (hasNextPage) {
         const response = await fetchFromJikan<JikanPaginatedResponse<Anime> | null>(
-            `/schedules?filter=${day}&page=${page}`,
+            `/schedules?filter=${day}&page=${page}${kidsParam}`,
             null,
         );
 
@@ -268,9 +269,32 @@ export async function fetchScheduleFromJikan(day: DayFilter): Promise<Anime[]> {
             break;
         }
 
-        allAnime.push(...response.data);
+        anime.push(...response.data);
         hasNextPage = response.pagination?.has_next_page ?? false;
         page++;
+    }
+
+    return anime;
+}
+
+export async function fetchScheduleFromJikan(day: DayFilter): Promise<Anime[]> {
+    const [regular, kids] = await Promise.all([fetchSchedulePages(day, false), fetchSchedulePages(day, true)]);
+
+    const seen = new Set<number>();
+    const allAnime: Anime[] = [];
+
+    for (const anime of regular) {
+        if (!seen.has(anime.mal_id)) {
+            seen.add(anime.mal_id);
+            allAnime.push(anime);
+        }
+    }
+
+    for (const anime of kids) {
+        if (!seen.has(anime.mal_id)) {
+            seen.add(anime.mal_id);
+            allAnime.push(anime);
+        }
     }
 
     return allAnime;

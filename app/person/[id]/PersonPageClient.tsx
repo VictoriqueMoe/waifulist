@@ -254,7 +254,7 @@ export function PersonPageClient({ person }: PersonPageClientProps) {
                 </SidebarItem>
             )}
             <SidebarItem icon="heart-fill" iconColor="#ec4899">
-                {person.favorites.toLocaleString()} favorites
+                {person.favorites.toLocaleString()} favourites
             </SidebarItem>
             {person.website_url && (
                 <SidebarLink href={person.website_url} icon="globe" external>
