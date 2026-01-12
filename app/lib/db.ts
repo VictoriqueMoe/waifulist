@@ -288,6 +288,16 @@ export interface WatchedAnimeRow {
     date_updated: string;
 }
 
+export interface WatchedAnimeDTO {
+    anime_id: number;
+    status: WatchStatus;
+    episodes_watched: number;
+    rating: number | null;
+    notes: string | null;
+    date_added: string;
+    date_updated: string;
+}
+
 export function addToWatchList(userId: number, animeId: number, status: string): WatchedAnimeRow {
     const addToListTransaction = db.transaction(() => {
         const stmt = db.prepare(`
@@ -315,7 +325,7 @@ export function addToWatchList(userId: number, animeId: number, status: string):
     }
 }
 
-export function restoreWatchList(userId: number, rows: WatchedAnimeRow[]): number {
+export function restoreWatchList(userId: number, rows: WatchedAnimeDTO[]): number {
     const stmt = db.prepare(`
         INSERT INTO watched_anime (user_id, anime_id, status, episodes_watched, rating, notes, date_added, date_updated)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -328,7 +338,7 @@ export function restoreWatchList(userId: number, rows: WatchedAnimeRow[]): numbe
         date_updated = excluded.date_updated
     `);
 
-    const restoreMany = db.transaction((watched: WatchedAnimeRow[]) => {
+    const restoreMany = db.transaction((watched: WatchedAnimeDTO[]) => {
         let count = 0;
         for (const w of watched) {
             const result = stmt.run(
@@ -625,6 +635,11 @@ export interface BookmarkRow {
     created_at: string;
 }
 
+export interface BookmarkDTO {
+    bookmarked_user_id: number;
+    created_at: string;
+}
+
 export function addBookmark(userId: number, bookmarkedUserId: number): boolean {
     if (userId === bookmarkedUserId) {
         return false;
@@ -681,13 +696,13 @@ export function getAllBookmarks(userId: number): BookmarkRow[] {
     return stmt.all(userId) as BookmarkRow[];
 }
 
-export function restoreBookmarks(userId: number, rows: BookmarkRow[]) {
+export function restoreBookmarks(userId: number, rows: BookmarkDTO[]) {
     const stmt = db.prepare(`
         INSERT INTO bookmarks (user_id, bookmarked_user_id, created_at) VALUES (?, ?, ?)
         ON CONFLICT(user_id, bookmarked_user_id) DO UPDATE SET
         created_at = excluded.created_at
     `);
-    const restoreMany = db.transaction((bookmarks: BookmarkRow[]) => {
+    const restoreMany = db.transaction((bookmarks: BookmarkDTO[]) => {
         let count = 0;
         for (const b of bookmarks) {
             const result = stmt.run(userId, b.bookmarked_user_id, b.created_at);
@@ -707,6 +722,16 @@ export function restoreBookmarks(userId: number, rows: BookmarkRow[]) {
 export interface TierListRow {
     id: number;
     user_id: number;
+    public_id: string;
+    name: string;
+    data: string;
+    is_public: number;
+    comments_enabled: number;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface TierListDTO {
     public_id: string;
     name: string;
     data: string;
@@ -801,7 +826,7 @@ export function deleteTierList(id: number, userId: number): boolean {
     return result.changes > 0;
 }
 
-export function restoreTierLists(userId: number, rows: TierListRow[]) {
+export function restoreTierLists(userId: number, rows: TierListDTO[]) {
     const stmt = db.prepare(`
         INSERT INTO tier_lists (user_id, public_id, name, data, comments_enabled, created_at, updated_at, is_public)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -811,9 +836,10 @@ export function restoreTierLists(userId: number, rows: TierListRow[]) {
         comments_enabled = excluded.comments_enabled,
         created_at = excluded.created_at,
         updated_at = excluded.updated_at,
-        is_public = excluded.is_public    
+        is_public = excluded.is_public
+        WHERE tier_lists.user_id = excluded.user_id
     `);
-    const restoreMany = db.transaction((tiers: TierListRow[]) => {
+    const restoreMany = db.transaction((tiers: TierListDTO[]) => {
         let count = 0;
         for (const t of tiers) {
             const result = stmt.run(
@@ -1088,7 +1114,13 @@ export interface AiringSubscriptionRow {
     created_at: string;
 }
 
-export function restoreAiringSubscriptions(userId: number, rows: AiringSubscriptionRow[]) {
+export interface AiringSubscriptionDTO {
+    mal_id: number;
+    title: string;
+    created_at: string;
+}
+
+export function restoreAiringSubscriptions(userId: number, rows: AiringSubscriptionDTO[]) {
     const stmt = db.prepare(`
         INSERT INTO airing_subscriptions (user_id, mal_id, title, created_at)
         VALUES (?, ?, ?, ?)
@@ -1096,7 +1128,7 @@ export function restoreAiringSubscriptions(userId: number, rows: AiringSubscript
         title = excluded.title,
         created_at = excluded.created_at  
     `);
-    const restoreMany = db.transaction((airings: AiringSubscriptionRow[]) => {
+    const restoreMany = db.transaction((airings: AiringSubscriptionDTO[]) => {
         let count = 0;
         for (const a of airings) {
             const result = stmt.run(userId, a.mal_id, a.title, a.created_at);

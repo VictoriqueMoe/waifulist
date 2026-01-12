@@ -8,16 +8,7 @@ import { BackupChoices, BackupData } from "@/types/backup";
 export function useRestore() {
     const restoreList = useCallback(async (selectedFile: File, choices: BackupChoices): Promise<void> => {
         const checkBackupFile = (text: string): boolean => {
-            const fields: string[] = [
-                "id",
-                "user_id",
-                "anime_id",
-                "status",
-                "episodes_watched",
-                "rating",
-                "date_added",
-                "date_updated",
-            ];
+            const fields: string[] = ["anime_id", "status", "episodes_watched", "rating", "date_added", "date_updated"];
             for (const field of fields) {
                 if (!text.includes(field)) {
                     return false;

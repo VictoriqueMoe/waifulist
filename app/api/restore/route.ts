@@ -31,7 +31,6 @@ export async function POST(request: NextRequest): Promise<Response> {
             restoreTierLists(user.id, rows.TierLists);
         }
         if (rows.AiringSubscriptions && rows.AiringSubscriptions.length > 0) {
-            console.log(rows.AiringSubscriptions);
             restoreAiringSubscriptions(user.id, rows.AiringSubscriptions);
             await cleanupEndedSubscriptions();
         }

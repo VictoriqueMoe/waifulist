@@ -1,10 +1,10 @@
-import { BookmarkRow, TierListRow, WatchedAnimeRow, AiringSubscriptionRow } from "@/lib/db";
+import { BookmarkDTO, TierListDTO, WatchedAnimeDTO, AiringSubscriptionDTO } from "@/lib/db";
 
 export interface BackupData {
-    Anime: WatchedAnimeRow[];
-    Bookmarks: BookmarkRow[];
-    TierLists: TierListRow[];
-    AiringSubscriptions: AiringSubscriptionRow[];
+    Anime: WatchedAnimeDTO[];
+    Bookmarks: BookmarkDTO[];
+    TierLists: TierListDTO[];
+    AiringSubscriptions: AiringSubscriptionDTO[];
 }
 
 export interface BackupChoices {

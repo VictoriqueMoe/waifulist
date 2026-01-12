@@ -13,10 +13,10 @@ export async function POST(): Promise<Response> {
     }
     try {
         const backupData: BackupData = {
-            Anime: getAllWatched(user.id),
-            Bookmarks: getAllBookmarks(user.id),
-            TierLists: getTierListsByUserId(user.id),
-            AiringSubscriptions: getAiringSubscriptions(user.id),
+            Anime: getAllWatched(user.id).map(({ id, user_id, ...dto }) => dto),
+            Bookmarks: getAllBookmarks(user.id).map(({ id, user_id, ...dto }) => dto),
+            TierLists: getTierListsByUserId(user.id).map(({ id, user_id, ...dto }) => dto),
+            AiringSubscriptions: getAiringSubscriptions(user.id).map(({ id, user_id, ...dto }) => dto),
         };
         return NextResponse.json(backupData);
     } catch (error) {
