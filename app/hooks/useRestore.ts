@@ -48,15 +48,20 @@ export function useRestore() {
                     Anime: choices.Anime ? [...anime] : [],
                     Bookmarks: [],
                     TierLists: [],
+                    AiringSubscriptions: [],
                 };
                 response = await dispatchRestore(JSON.stringify(restoreData));
                 break;
             case 2:
-                const allData = JSON.parse(content) as BackupData;
+                const allData = JSON.parse(content) as Partial<BackupData>;
                 const toRestore: BackupData = {
-                    Anime: choices.Anime ? [...allData.Anime] : [],
-                    Bookmarks: choices.Bookmarks ? [...allData.Bookmarks] : [],
-                    TierLists: choices.TierLists ? [...allData.TierLists] : [],
+                    Anime: choices.Anime && allData.Anime ? [...allData.Anime] : [],
+                    Bookmarks: choices.Bookmarks && allData.Bookmarks ? [...allData.Bookmarks] : [],
+                    TierLists: choices.TierLists && allData.TierLists ? [...allData.TierLists] : [],
+                    AiringSubscriptions:
+                        choices.AiringSubscriptions && allData.AiringSubscriptions
+                            ? [...allData.AiringSubscriptions]
+                            : [],
                 };
                 response = await dispatchRestore(JSON.stringify(toRestore));
                 break;

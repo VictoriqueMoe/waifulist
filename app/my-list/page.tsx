@@ -34,6 +34,7 @@ const BACKUP_CHOICE_LABELS: Record<keyof BackupChoices, string> = {
     Anime: "Anime",
     Bookmarks: "List Bookmarks",
     TierLists: "Tier Lists",
+    AiringSubscriptions: "Airing Subscriptions",
 };
 
 export default function MyListPage() {
@@ -77,6 +78,7 @@ export default function MyListPage() {
         Anime: true,
         Bookmarks: true,
         TierLists: true,
+        AiringSubscriptions: true,
     });
     const [copied, setCopied] = useState(false);
     const [restoreLoading, setRestoreLoading] = useState(false);
@@ -156,7 +158,13 @@ export default function MyListPage() {
     }, [backupList]);
 
     const handleRestore = useCallback(async () => {
-        if (!selectedFile || (!backupChoices.Anime && !backupChoices.Bookmarks && !backupChoices.TierLists)) {
+        if (
+            !selectedFile ||
+            (!backupChoices.Anime &&
+                !backupChoices.Bookmarks &&
+                !backupChoices.TierLists &&
+                !backupChoices.AiringSubscriptions)
+        ) {
             return;
         }
         try {

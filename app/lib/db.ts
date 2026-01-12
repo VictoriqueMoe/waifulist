@@ -1088,6 +1088,31 @@ export interface AiringSubscriptionRow {
     created_at: string;
 }
 
+export function restoreAiringSubscriptions(userId: number, rows: AiringSubscriptionRow[]) {
+    const stmt = db.prepare(`
+        INSERT INTO airing_subscriptions (user_id, mal_id, title, created_at)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(user_id, mal_id) DO UPDATE SET
+        title = excluded.title,
+        created_at = excluded.created_at  
+    `);
+    const restoreMany = db.transaction((airings: AiringSubscriptionRow[]) => {
+        let count = 0;
+        for (const a of airings) {
+            const result = stmt.run(userId, a.mal_id, a.title, a.created_at);
+            if (result.changes > 0) {
+                count++;
+            }
+        }
+        return count;
+    });
+    try {
+        return restoreMany(rows);
+    } catch (error) {
+        throw new DatabaseError("Failed to restore airing subscriptions", "restoreAiringSubscriptions", error);
+    }
+}
+
 export function addAiringSubscription(userId: number, malId: number, title: string): boolean {
     try {
         db.prepare(`INSERT INTO airing_subscriptions (user_id, mal_id, title) VALUES (?, ?, ?)`).run(

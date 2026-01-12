@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { BackupData } from "@/types/backup";
-import { restoreBookmarks, restoreTierLists, restoreWatchList } from "@/lib/db";
+import { cleanupEndedSubscriptions } from "@/services/subscriptionCleanupService";
+import { restoreAiringSubscriptions, restoreBookmarks, restoreTierLists, restoreWatchList } from "@/lib/db";
 
 export async function POST(request: NextRequest): Promise<Response> {
     const user = await getCurrentUser();
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest): Promise<Response> {
                 headers: { "Content-Type": "application/json" },
             });
         }
-        const rows: BackupData = JSON.parse(body.content);
+        const rows = JSON.parse(body.content) as BackupData;
         if (rows.Anime && rows.Anime.length > 0) {
             restoreWatchList(user.id, rows.Anime);
         }
@@ -28,6 +29,11 @@ export async function POST(request: NextRequest): Promise<Response> {
         }
         if (rows.TierLists && rows.TierLists.length > 0) {
             restoreTierLists(user.id, rows.TierLists);
+        }
+        if (rows.AiringSubscriptions && rows.AiringSubscriptions.length > 0) {
+            console.log(rows.AiringSubscriptions);
+            restoreAiringSubscriptions(user.id, rows.AiringSubscriptions);
+            await cleanupEndedSubscriptions();
         }
         return NextResponse.json({ completed: true });
     } catch (error) {

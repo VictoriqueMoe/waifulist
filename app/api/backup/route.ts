@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/lib/auth";
-import { getAllBookmarks, getAllWatched, getTierListsByUserId } from "@/lib/db";
+import { getAiringSubscriptions, getAllBookmarks, getAllWatched, getTierListsByUserId } from "@/lib/db";
 import { BackupData } from "@/types/backup";
 import { NextResponse } from "next/server";
 
@@ -16,6 +16,7 @@ export async function POST(): Promise<Response> {
             Anime: getAllWatched(user.id),
             Bookmarks: getAllBookmarks(user.id),
             TierLists: getTierListsByUserId(user.id),
+            AiringSubscriptions: getAiringSubscriptions(user.id),
         };
         return NextResponse.json(backupData);
     } catch (error) {
