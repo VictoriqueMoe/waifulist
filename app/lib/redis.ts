@@ -82,6 +82,7 @@ export const REDIS_KEYS = {
     ANILIST_MANGA_CHARACTERS: (malId: number, page: number) => `anilist:manga:${malId}:characters:${page}`,
     VSBATTLES: (characterName: string) => `vsbattles:${characterName.toLowerCase()}`,
     SCHEDULE: "anime:schedule",
+    AIRING_SCHEDULE: "anime:airing",
 } as const;
 
 export const REDIS_TTL = {
@@ -98,6 +99,7 @@ export const REDIS_TTL = {
     ANILIST_MANGA_CHARACTERS: 60 * 60 * 24, // 24 hours
     VSBATTLES: 60 * 60 * 24, // 24 hours
     SCHEDULE: 60 * 60 * 12, // 12 hours
+    AIRING_SCHEDULE: 60 * 60, // 1 hour
 } as const;
 
 export async function invalidateOgImageCache(uuid: string): Promise<number> {

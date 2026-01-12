@@ -1,10 +1,13 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getCurrentSeason, parseSeasonParam, parseYearParam, SeasonYear } from "@/lib/utils/seasonUtils";
 import { useSeasonalAnime } from "@/hooks/useSeasonalAnime";
 import { useSchedule } from "@/hooks/useSchedule";
+import { formatTimeUntilAiring, useAiringSchedule } from "@/hooks/useAiringSchedule";
 import { useGenreFilter } from "@/hooks";
 import { useWatchList } from "@/contexts/WatchListContext";
 import { SeasonSelector } from "@/components/SeasonSelector/SeasonSelector";
@@ -13,10 +16,11 @@ import { AnimeCard } from "@/components/AnimeCard/AnimeCard";
 import { Pagination } from "@/components/Pagination/Pagination";
 import { Spinner } from "@/components/Spinner/Spinner";
 import { DAY_LABELS, DayOfWeek, DAYS_OF_WEEK, getCurrentDayOfWeek, mapScheduleAnimeToAnime } from "@/types/schedule";
+import { AIRING_BUCKET_LABELS } from "@/types/airing";
 import { PAGE_SIZE } from "@/constants/pagination";
 import styles from "./page.module.scss";
 
-type CalendarView = "seasonal" | "schedule";
+type CalendarView = "seasonal" | "schedule" | "timeline";
 
 export function CalendarPageClient() {
     const router = useRouter();
@@ -24,7 +28,9 @@ export function CalendarPageClient() {
     const { ensureLoaded } = useWatchList();
 
     const viewParam = searchParams.get("view");
-    const [view, setView] = useState<CalendarView>(viewParam === "schedule" ? "schedule" : "seasonal");
+    const [view, setView] = useState<CalendarView>(
+        viewParam === "schedule" ? "schedule" : viewParam === "timeline" ? "timeline" : "seasonal",
+    );
 
     const seasonParam = parseSeasonParam(searchParams.get("season"));
     const yearParam = parseYearParam(searchParams.get("year"));
@@ -54,6 +60,12 @@ export function CalendarPageClient() {
     });
 
     const { loading: scheduleLoading, error: scheduleError, getAnimeForDay, lastUpdated } = useSchedule();
+    const {
+        grouped: airingGrouped,
+        loading: airingLoading,
+        error: airingError,
+        fetchedAt: airingFetchedAt,
+    } = useAiringSchedule();
 
     const totalPages = Math.ceil(filteredCount / PAGE_SIZE);
     const animeForDay = getAnimeForDay(activeDay);
@@ -131,7 +143,11 @@ export function CalendarPageClient() {
             <div className={styles.header}>
                 <h1>Calendar</h1>
                 <p className={styles.subtitle}>
-                    {view === "seasonal" ? "Browse anime by season and year" : "Currently airing anime by day"}
+                    {view === "seasonal"
+                        ? "Browse anime by season and year"
+                        : view === "schedule"
+                          ? "Currently airing anime by day"
+                          : "Upcoming episode countdowns"}
                 </p>
             </div>
 
@@ -149,6 +165,13 @@ export function CalendarPageClient() {
                 >
                     <i className="bi bi-clock" />
                     <span>Schedule</span>
+                </button>
+                <button
+                    className={`${styles.viewTab} ${view === "timeline" ? styles.active : ""}`}
+                    onClick={() => handleViewChange("timeline")}
+                >
+                    <i className="bi bi-hourglass-split" />
+                    <span>Timeline</span>
                 </button>
             </div>
 
@@ -210,7 +233,7 @@ export function CalendarPageClient() {
                         </div>
                     )}
                 </>
-            ) : (
+            ) : view === "schedule" ? (
                 <>
                     {scheduleLoading ? (
                         <div className={styles.loading}>
@@ -269,6 +292,94 @@ export function CalendarPageClient() {
                                 </div>
                             )}
                         </>
+                    )}
+                </>
+            ) : (
+                <>
+                    {airingLoading ? (
+                        <div className={styles.loading}>
+                            <Spinner text="Loading timeline..." />
+                        </div>
+                    ) : airingError ? (
+                        <div className={styles.error}>
+                            <i className="bi bi-exclamation-triangle" />
+                            <h3>Failed to load timeline</h3>
+                            <p>{airingError}</p>
+                        </div>
+                    ) : airingGrouped.length > 0 ? (
+                        <>
+                            {airingFetchedAt && (
+                                <p className={styles.lastUpdated}>
+                                    Last updated: {new Date(airingFetchedAt).toLocaleString()}
+                                </p>
+                            )}
+
+                            <div className={styles.timeline}>
+                                {airingGrouped.map(group => (
+                                    <div key={group.bucket} className={styles.timelineSection}>
+                                        <div className={styles.timelineSectionHeader}>
+                                            <span
+                                                className={`${styles.timelineSectionLabel} ${group.bucket === "airing_now" ? styles.airingNow : ""}`}
+                                            >
+                                                {AIRING_BUCKET_LABELS[group.bucket]}
+                                            </span>
+                                        </div>
+                                        <div className={styles.timelineItems}>
+                                            {group.items.map(item => {
+                                                const isAiringNow = item.timeUntilAiring <= 0;
+                                                const airingDate = new Date(item.airingAt * 1000);
+                                                return (
+                                                    <Link
+                                                        key={`${item.malId}-${item.episode}`}
+                                                        href={`/anime/${item.malId}`}
+                                                        className={`${styles.timelineItem} ${isAiringNow ? styles.airingNow : ""}`}
+                                                    >
+                                                        <div className={styles.timelineItemImage}>
+                                                            <Image
+                                                                src={item.coverImage}
+                                                                alt={item.titleEnglish || item.title}
+                                                                width={56}
+                                                                height={80}
+                                                                unoptimized
+                                                            />
+                                                        </div>
+                                                        <div className={styles.timelineItemInfo}>
+                                                            <span className={styles.timelineItemTitle}>
+                                                                {item.titleEnglish || item.title}
+                                                            </span>
+                                                            <span className={styles.timelineItemMeta}>
+                                                                Episode {item.episode}
+                                                            </span>
+                                                        </div>
+                                                        <div className={styles.timelineItemCountdown}>
+                                                            <span
+                                                                className={`${styles.countdownBadge} ${isAiringNow ? styles.airingNow : ""}`}
+                                                            >
+                                                                {formatTimeUntilAiring(item.timeUntilAiring)}
+                                                            </span>
+                                                            {!isAiringNow && (
+                                                                <span className={styles.countdownTime}>
+                                                                    {airingDate.toLocaleTimeString([], {
+                                                                        hour: "2-digit",
+                                                                        minute: "2-digit",
+                                                                    })}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </Link>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    ) : (
+                        <div className={styles.empty}>
+                            <i className="bi bi-hourglass" />
+                            <h3>No upcoming episodes</h3>
+                            <p>There are no anime episodes scheduled to air soon</p>
+                        </div>
                     )}
                 </>
             )}

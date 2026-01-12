@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { AniListCharacter, AniListCharacterSearchResponse, AniListMediaCharactersResponse } from "@/types/anilist";
+import { AiringInfo } from "@/types/airing";
 
 const ANILIST_API_URL = "https://graphql.anilist.co";
 const ANILIST_TIMEOUT = 10000;
@@ -124,11 +125,69 @@ query ($id: Int!) {
 }
 `;
 
+const AIRING_SCHEDULE_QUERY = `
+query ($page: Int, $perPage: Int) {
+    Page(page: $page, perPage: $perPage) {
+        pageInfo {
+            hasNextPage
+            currentPage
+        }
+        media(status: RELEASING, type: ANIME, sort: POPULARITY_DESC) {
+            id
+            idMal
+            title {
+                romaji
+                english
+            }
+            coverImage {
+                large
+                medium
+            }
+            nextAiringEpisode {
+                airingAt
+                timeUntilAiring
+                episode
+            }
+        }
+    }
+}
+`;
+
 type CharacterByIdResponse = {
     data: {
         Character: AniListCharacter | null;
     };
 };
+
+interface AiringScheduleMedia {
+    id: number;
+    idMal: number | null;
+    title: {
+        romaji: string;
+        english: string | null;
+    };
+    coverImage: {
+        large: string | null;
+        medium: string | null;
+    };
+    nextAiringEpisode: {
+        airingAt: number;
+        timeUntilAiring: number;
+        episode: number;
+    } | null;
+}
+
+interface AniListAiringScheduleResponse {
+    data: {
+        Page: {
+            pageInfo: {
+                hasNextPage: boolean;
+                currentPage: number;
+            };
+            media: AiringScheduleMedia[];
+        };
+    };
+}
 
 const fetchFromAniList = async function <T>(query: string, variables: Record<string, unknown>): Promise<T | null> {
     try {
@@ -286,8 +345,48 @@ const searchMangaFromAniListInternal = async function (
         }));
 };
 
+const fetchAiringScheduleFromAniListInternal = async function (maxPages: number = 3): Promise<AiringInfo[]> {
+    const results: AiringInfo[] = [];
+    let page = 1;
+    let hasNextPage = true;
+
+    while (hasNextPage && page <= maxPages) {
+        const response = await fetchFromAniList<AniListAiringScheduleResponse>(AIRING_SCHEDULE_QUERY, {
+            page,
+            perPage: 50,
+        });
+
+        if (!response?.data?.Page?.media) {
+            break;
+        }
+
+        for (const media of response.data.Page.media) {
+            if (media.idMal && media.nextAiringEpisode) {
+                results.push({
+                    malId: media.idMal,
+                    anilistId: media.id,
+                    title: media.title.romaji,
+                    titleEnglish: media.title.english,
+                    coverImage: media.coverImage.large || media.coverImage.medium || "",
+                    episode: media.nextAiringEpisode.episode,
+                    airingAt: media.nextAiringEpisode.airingAt,
+                    timeUntilAiring: media.nextAiringEpisode.timeUntilAiring,
+                });
+            }
+        }
+
+        hasNextPage = response.data.Page.pageInfo.hasNextPage;
+        page++;
+    }
+
+    results.sort((a, b) => a.airingAt - b.airingAt);
+
+    return results;
+};
+
 export const fetchCharactersByMalId = cache(fetchCharactersByMalIdInternal);
 export const fetchMangaCharactersByMalId = cache(fetchMangaCharactersByMalIdInternal);
 export const fetchCharacterById = cache(fetchCharacterByIdInternal);
 export const searchCharactersFromAniList = cache(searchCharactersFromAniListInternal);
 export const searchMangaFromAniList = cache(searchMangaFromAniListInternal);
+export const fetchAiringScheduleFromAniList = cache(fetchAiringScheduleFromAniListInternal);

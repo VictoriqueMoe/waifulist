@@ -41,7 +41,6 @@ async function fetchFromJikan(): Promise<ScheduleByDay> {
 
 export async function getSchedule(): Promise<ScheduleResponse> {
     const redis = getRedis();
-    debugger;
     try {
         const cached = await redis.get(REDIS_KEYS.SCHEDULE);
         if (cached) {
@@ -51,7 +50,6 @@ export async function getSchedule(): Promise<ScheduleResponse> {
     } catch (error) {
         console.error("[ScheduleService] Failed to get cached schedule:", error);
     }
-    debugger;
     const scraped = await scrapeSchedule();
     let schedule: ScheduleByDay;
 
