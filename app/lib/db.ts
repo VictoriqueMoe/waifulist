@@ -126,6 +126,18 @@ if (!isBuildPhase) {
         );
 
         CREATE INDEX IF NOT EXISTS idx_reactions_comment ON comment_reactions(comment_id);
+
+        CREATE TABLE IF NOT EXISTS airing_subscriptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            mal_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            UNIQUE(user_id, mal_id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_airing_subs_user ON airing_subscriptions(user_id);
     `);
 
     function addColumnIfNotExists(table: string, column: string, definition: string): void {
@@ -1066,6 +1078,57 @@ export function toggleReaction(commentId: number, userId: number, emoji: string)
         );
         return true;
     }
+}
+
+export interface AiringSubscriptionRow {
+    id: number;
+    user_id: number;
+    mal_id: number;
+    title: string;
+    created_at: string;
+}
+
+export function addAiringSubscription(userId: number, malId: number, title: string): boolean {
+    try {
+        db.prepare(`INSERT INTO airing_subscriptions (user_id, mal_id, title) VALUES (?, ?, ?)`).run(
+            userId,
+            malId,
+            title,
+        );
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+export function removeAiringSubscription(userId: number, malId: number): boolean {
+    const result = db.prepare(`DELETE FROM airing_subscriptions WHERE user_id = ? AND mal_id = ?`).run(userId, malId);
+    return result.changes > 0;
+}
+
+export function getAiringSubscriptions(userId: number): AiringSubscriptionRow[] {
+    return db
+        .prepare(`SELECT * FROM airing_subscriptions WHERE user_id = ? ORDER BY created_at DESC`)
+        .all(userId) as AiringSubscriptionRow[];
+}
+
+export function hasAiringSubscription(userId: number, malId: number): boolean {
+    const row = db.prepare(`SELECT 1 FROM airing_subscriptions WHERE user_id = ? AND mal_id = ?`).get(userId, malId);
+    return !!row;
+}
+
+export function getUniqueSubscribedMalIds(): number[] {
+    const rows = db.prepare(`SELECT DISTINCT mal_id FROM airing_subscriptions`).all() as { mal_id: number }[];
+    return rows.map(r => r.mal_id);
+}
+
+export function deleteSubscriptionsByMalIds(malIds: number[]): number {
+    if (malIds.length === 0) {
+        return 0;
+    }
+    const placeholders = malIds.map(() => "?").join(",");
+    const result = db.prepare(`DELETE FROM airing_subscriptions WHERE mal_id IN (${placeholders})`).run(...malIds);
+    return result.changes;
 }
 
 export default db;

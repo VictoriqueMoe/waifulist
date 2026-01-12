@@ -153,6 +153,17 @@ query ($page: Int, $perPage: Int) {
 }
 `;
 
+const ANIME_STATUS_BY_MAL_IDS_QUERY = `
+query ($idMal_in: [Int]) {
+    Page(perPage: 50) {
+        media(idMal_in: $idMal_in, type: ANIME) {
+            idMal
+            status
+        }
+    }
+}
+`;
+
 type CharacterByIdResponse = {
     data: {
         Character: AniListCharacter | null;
@@ -185,6 +196,19 @@ interface AniListAiringScheduleResponse {
                 currentPage: number;
             };
             media: AiringScheduleMedia[];
+        };
+    };
+}
+
+export type AnimeStatus = "RELEASING" | "FINISHED" | "NOT_YET_RELEASED" | "CANCELLED" | "HIATUS";
+
+interface AnimeStatusResponse {
+    data: {
+        Page: {
+            media: Array<{
+                idMal: number;
+                status: AnimeStatus;
+            }>;
         };
     };
 }
@@ -345,6 +369,25 @@ const searchMangaFromAniListInternal = async function (
         }));
 };
 
+async function fetchAnimeStatusByMalIdsInternal(malIds: number[]): Promise<Map<number, AnimeStatus>> {
+    const statusMap = new Map<number, AnimeStatus>();
+
+    for (let i = 0; i < malIds.length; i += 50) {
+        const batch = malIds.slice(i, i + 50);
+        const response = await fetchFromAniList<AnimeStatusResponse>(ANIME_STATUS_BY_MAL_IDS_QUERY, {
+            idMal_in: batch,
+        });
+
+        if (response?.data?.Page?.media) {
+            for (const media of response.data.Page.media) {
+                statusMap.set(media.idMal, media.status);
+            }
+        }
+    }
+
+    return statusMap;
+}
+
 const fetchAiringScheduleFromAniListInternal = async function (maxPages: number = 3): Promise<AiringInfo[]> {
     const results: AiringInfo[] = [];
     let page = 1;
@@ -390,3 +433,4 @@ export const fetchCharacterById = cache(fetchCharacterByIdInternal);
 export const searchCharactersFromAniList = cache(searchCharactersFromAniListInternal);
 export const searchMangaFromAniList = cache(searchMangaFromAniListInternal);
 export const fetchAiringScheduleFromAniList = cache(fetchAiringScheduleFromAniListInternal);
+export const fetchAnimeStatusByMalIds = cache(fetchAnimeStatusByMalIdsInternal);

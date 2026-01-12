@@ -19,7 +19,9 @@ import { watchStatusLabels } from "@/types/anime";
 import { useStats } from "@/hooks/useStats";
 import { useTierLists } from "@/hooks/useTierList";
 import { BookmarkedUsersSection } from "@/components/BookmarkedUsersSection/BookmarkedUsersSection";
+import { SubscribedShowsSection } from "@/components/SubscribedShowsSection/SubscribedShowsSection";
 import { useBookmarks } from "@/hooks/useBookmarks";
+import { useAiringSubscriptions } from "@/hooks/useAiringSubscriptions";
 import { Spinner } from "@/components/Spinner/Spinner";
 import { TierListCard } from "@/components/TierListCard";
 import styles from "./page.module.scss";
@@ -59,6 +61,7 @@ export function ProfilePageClient() {
     const { stats, loading, error } = useStats();
     const { bookmarks, removeBookmark } = useBookmarks();
     const { tierLists, loading: tierListsLoading } = useTierLists();
+    const { subscriptions, unsubscribe } = useAiringSubscriptions();
 
     if (loading) {
         return (
@@ -280,6 +283,9 @@ export function ProfilePageClient() {
 
                 {/* Bookmarks Section */}
                 <BookmarkedUsersSection bookmarks={bookmarks} onRemove={removeBookmark} />
+
+                {/* Subscribed Shows Section */}
+                <SubscribedShowsSection subscriptions={subscriptions} onRemove={unsubscribe} />
 
                 {/* Stats Section */}
                 <section className={styles.section}>

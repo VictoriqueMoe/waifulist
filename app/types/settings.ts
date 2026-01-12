@@ -8,7 +8,12 @@ export interface MyListSettings {
     genres?: string[];
 }
 
+export interface CalendarSettings {
+    showSubscribedOnly?: boolean;
+}
+
 export interface UserSettings {
     browse?: BrowseSettings;
     myList?: MyListSettings;
+    calendar?: CalendarSettings;
 }

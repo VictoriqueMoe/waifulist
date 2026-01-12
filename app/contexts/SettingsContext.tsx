@@ -2,14 +2,20 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "./AuthContext";
-import type { BrowseSettings, MyListSettings, UserSettings } from "@/types/settings";
-import { fetchUserSettings, updateBrowseSettingsApi, updateMyListSettingsApi } from "@/services/settingsClientService";
+import type { BrowseSettings, CalendarSettings, MyListSettings, UserSettings } from "@/types/settings";
+import {
+    fetchUserSettings,
+    updateBrowseSettingsApi,
+    updateCalendarSettingsApi,
+    updateMyListSettingsApi,
+} from "@/services/settingsClientService";
 
-export type { BrowseSettings, MyListSettings, UserSettings };
+export type { BrowseSettings, CalendarSettings, MyListSettings, UserSettings };
 
 interface ResolvedUserSettings {
     browse: Required<BrowseSettings>;
     myList: Required<MyListSettings>;
+    calendar: Required<CalendarSettings>;
 }
 
 const DEFAULT_SETTINGS: ResolvedUserSettings = {
@@ -21,6 +27,9 @@ const DEFAULT_SETTINGS: ResolvedUserSettings = {
         sort: "added",
         genres: [],
     },
+    calendar: {
+        showSubscribedOnly: false,
+    },
 };
 
 interface SettingsContextType {
@@ -28,6 +37,7 @@ interface SettingsContextType {
     loading: boolean;
     updateBrowseSettings: (updates: Partial<BrowseSettings>) => Promise<void>;
     updateMyListSettings: (updates: Partial<MyListSettings>) => Promise<void>;
+    updateCalendarSettings: (updates: Partial<CalendarSettings>) => Promise<void>;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -78,6 +88,7 @@ export function SettingsProvider({ children }: React.PropsWithChildren) {
                     setSettings({
                         browse: { ...DEFAULT_SETTINGS.browse, ...userSettings.browse },
                         myList: { ...DEFAULT_SETTINGS.myList, ...userSettings.myList },
+                        calendar: { ...DEFAULT_SETTINGS.calendar, ...userSettings.calendar },
                     });
                 }
             } catch (error) {
@@ -126,9 +137,27 @@ export function SettingsProvider({ children }: React.PropsWithChildren) {
         [user, settings.myList],
     );
 
+    const updateCalendarSettings = useCallback(
+        async (updates: Partial<CalendarSettings>) => {
+            const newCalendar = { ...settings.calendar, ...updates };
+            setSettings(prev => ({ ...prev, calendar: newCalendar }));
+
+            if (!user) {
+                return;
+            }
+
+            try {
+                await updateCalendarSettingsApi(updates);
+            } catch (error) {
+                console.error("Failed to save calendar settings:", error);
+            }
+        },
+        [user, settings.calendar],
+    );
+
     const value = useMemo(
-        () => ({ settings, loading, updateBrowseSettings, updateMyListSettings }),
-        [settings, loading, updateBrowseSettings, updateMyListSettings],
+        () => ({ settings, loading, updateBrowseSettings, updateMyListSettings, updateCalendarSettings }),
+        [settings, loading, updateBrowseSettings, updateMyListSettings, updateCalendarSettings],
     );
 
     return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

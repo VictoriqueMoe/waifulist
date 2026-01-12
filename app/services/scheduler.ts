@@ -1,6 +1,7 @@
 import { AsyncTask, CronJob, ToadScheduler } from "toad-scheduler";
 import { refreshAnimeData } from "./animeData";
 import { refreshSchedule } from "./scheduleService";
+import { cleanupEndedSubscriptions } from "./subscriptionCleanupService";
 
 const scheduler = new ToadScheduler();
 let isSchedulerStarted = false;
@@ -41,6 +42,10 @@ export function startScheduler() {
         {
             cron: "0 */6 * * *",
             task: createTask("refresh-schedule", refreshSchedule),
+        },
+        {
+            cron: "0 1 * * *",
+            task: createTask("cleanup-ended-subscriptions", cleanupEndedSubscriptions),
         },
     ];
 

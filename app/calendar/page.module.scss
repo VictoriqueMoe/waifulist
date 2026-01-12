@@ -365,3 +365,66 @@
     font-size: 0.688rem;
     color: var(--text-muted);
 }
+
+.filterToggle {
+    display: flex;
+    justify-content: center;
+    margin-bottom: $spacing-lg;
+}
+
+.toggleLabel {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+
+    input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        accent-color: var(--accent-primary);
+    }
+
+    &:hover {
+        color: var(--text-primary);
+    }
+}
+
+.cardWrapper {
+    position: relative;
+
+    :global(.subscribeButton) {
+        position: absolute;
+        top: $spacing-sm;
+        right: $spacing-sm;
+        z-index: 10;
+        opacity: 0;
+        transition: opacity $transition-fast;
+    }
+
+    &:hover :global(.subscribeButton) {
+        opacity: 1;
+    }
+
+    :global(.subscribeButton.subscribed) {
+        opacity: 1;
+    }
+}
+
+.timelineItemWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+
+    .timelineItem {
+        flex: 1;
+        min-width: 0;
+    }
+
+    :global(.subscribeButton) {
+        flex-shrink: 0;
+    }
+}

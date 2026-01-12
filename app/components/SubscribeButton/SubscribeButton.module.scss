@@ -1,0 +1,48 @@
+@use "../../styles/variables" as *;
+
+.subscribeButton {
+    @include flex-center;
+    background: color-mix(in srgb, var(--accent-primary) 15%, var(--bg-secondary));
+    border: 1px solid color-mix(in srgb, var(--accent-primary) 40%, var(--border-primary));
+    border-radius: $radius-full;
+    cursor: pointer;
+    transition: all $transition-fast;
+    color: var(--accent-primary);
+
+    &:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--accent-primary) 25%, var(--bg-secondary));
+        border-color: var(--accent-primary);
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    &.subscribed {
+        background: var(--accent-primary);
+        border-color: var(--accent-primary);
+        color: white;
+
+        &:hover:not(:disabled) {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+    }
+
+    i {
+        line-height: 1;
+    }
+}
+
+.small {
+    width: 28px;
+    height: 28px;
+    font-size: 0.813rem;
+}
+
+.medium {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+}

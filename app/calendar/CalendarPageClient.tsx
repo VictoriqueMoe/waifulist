@@ -8,13 +8,17 @@ import { getCurrentSeason, parseSeasonParam, parseYearParam, SeasonYear } from "
 import { useSeasonalAnime } from "@/hooks/useSeasonalAnime";
 import { useSchedule } from "@/hooks/useSchedule";
 import { formatTimeUntilAiring, useAiringSchedule } from "@/hooks/useAiringSchedule";
+import { useAiringSubscriptions } from "@/hooks/useAiringSubscriptions";
 import { useGenreFilter } from "@/hooks";
 import { useWatchList } from "@/contexts/WatchListContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSettings } from "@/contexts/SettingsContext";
 import { SeasonSelector } from "@/components/SeasonSelector/SeasonSelector";
 import { GenreFilter } from "@/components/GenreFilter/GenreFilter";
 import { AnimeCard } from "@/components/AnimeCard/AnimeCard";
 import { Pagination } from "@/components/Pagination/Pagination";
 import { Spinner } from "@/components/Spinner/Spinner";
+import { SubscribeButton } from "@/components/SubscribeButton/SubscribeButton";
 import { DAY_LABELS, DayOfWeek, DAYS_OF_WEEK, getCurrentDayOfWeek, mapScheduleAnimeToAnime } from "@/types/schedule";
 import { AIRING_BUCKET_LABELS } from "@/types/airing";
 import { PAGE_SIZE } from "@/constants/pagination";
@@ -66,6 +70,11 @@ export function CalendarPageClient() {
         error: airingError,
         fetchedAt: airingFetchedAt,
     } = useAiringSchedule();
+
+    const { user } = useAuth();
+    const { isSubscribed, subscribe, unsubscribe, subscribedIds } = useAiringSubscriptions();
+    const { settings, updateCalendarSettings } = useSettings();
+    const showSubscribedOnly = settings.calendar.showSubscribedOnly;
 
     const totalPages = Math.ceil(filteredCount / PAGE_SIZE);
     const animeForDay = getAnimeForDay(activeDay);
@@ -253,6 +262,21 @@ export function CalendarPageClient() {
                                 </p>
                             )}
 
+                            {user && (
+                                <div className={styles.filterToggle}>
+                                    <label className={styles.toggleLabel}>
+                                        <input
+                                            type="checkbox"
+                                            checked={showSubscribedOnly}
+                                            onChange={e =>
+                                                updateCalendarSettings({ showSubscribedOnly: e.target.checked })
+                                            }
+                                        />
+                                        <span>Show subscribed only</span>
+                                    </label>
+                                </div>
+                            )}
+
                             <div className={styles.dayTabs}>
                                 {displayDays.map(day => {
                                     const count = getAnimeForDay(day).length;
@@ -271,26 +295,52 @@ export function CalendarPageClient() {
                                 })}
                             </div>
 
-                            <div className={styles.resultInfo}>
-                                <span>
-                                    {animeForDay.length} anime airing on {DAY_LABELS[activeDay]}
-                                    {activeDay === todayDay && " (Today)"}
-                                </span>
-                            </div>
+                            {(() => {
+                                const filteredAnime = showSubscribedOnly
+                                    ? animeForDay.filter(a => subscribedIds.has(a.mal_id))
+                                    : animeForDay;
 
-                            {animeForDay.length > 0 ? (
-                                <div className={styles.grid}>
-                                    {animeForDay.map(anime => (
-                                        <AnimeCard key={anime.mal_id} anime={mapScheduleAnimeToAnime(anime)} />
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className={styles.empty}>
-                                    <i className="bi bi-calendar-x" />
-                                    <h3>No anime scheduled</h3>
-                                    <p>There are no anime scheduled for {DAY_LABELS[activeDay]}</p>
-                                </div>
-                            )}
+                                return (
+                                    <>
+                                        <div className={styles.resultInfo}>
+                                            <span>
+                                                {filteredAnime.length} anime airing on {DAY_LABELS[activeDay]}
+                                                {activeDay === todayDay && " (Today)"}
+                                                {showSubscribedOnly && " (subscribed)"}
+                                            </span>
+                                        </div>
+
+                                        {filteredAnime.length > 0 ? (
+                                            <div className={styles.grid}>
+                                                {filteredAnime.map(anime => (
+                                                    <div key={anime.mal_id} className={styles.cardWrapper}>
+                                                        <AnimeCard anime={mapScheduleAnimeToAnime(anime)} />
+                                                        {user && (
+                                                            <SubscribeButton
+                                                                malId={anime.mal_id}
+                                                                title={anime.title_english || anime.title}
+                                                                isSubscribed={isSubscribed(anime.mal_id)}
+                                                                onSubscribe={subscribe}
+                                                                onUnsubscribe={unsubscribe}
+                                                            />
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className={styles.empty}>
+                                                <i className="bi bi-calendar-x" />
+                                                <h3>No anime scheduled</h3>
+                                                <p>
+                                                    {showSubscribedOnly
+                                                        ? "No subscribed anime scheduled for this day"
+                                                        : `There are no anime scheduled for ${DAY_LABELS[activeDay]}`}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </>
+                                );
+                            })()}
                         </>
                     )}
                 </>
@@ -314,65 +364,118 @@ export function CalendarPageClient() {
                                 </p>
                             )}
 
-                            <div className={styles.timeline}>
-                                {airingGrouped.map(group => (
-                                    <div key={group.bucket} className={styles.timelineSection}>
-                                        <div className={styles.timelineSectionHeader}>
-                                            <span
-                                                className={`${styles.timelineSectionLabel} ${group.bucket === "airing_now" ? styles.airingNow : ""}`}
-                                            >
-                                                {AIRING_BUCKET_LABELS[group.bucket]}
-                                            </span>
+                            {user && (
+                                <div className={styles.filterToggle}>
+                                    <label className={styles.toggleLabel}>
+                                        <input
+                                            type="checkbox"
+                                            checked={showSubscribedOnly}
+                                            onChange={e =>
+                                                updateCalendarSettings({ showSubscribedOnly: e.target.checked })
+                                            }
+                                        />
+                                        <span>Show subscribed only</span>
+                                    </label>
+                                </div>
+                            )}
+
+                            {(() => {
+                                const filteredGroups = showSubscribedOnly
+                                    ? airingGrouped
+                                          .map(group => ({
+                                              ...group,
+                                              items: group.items.filter(item => subscribedIds.has(item.malId)),
+                                          }))
+                                          .filter(group => group.items.length > 0)
+                                    : airingGrouped;
+
+                                if (filteredGroups.length === 0) {
+                                    return (
+                                        <div className={styles.empty}>
+                                            <i className="bi bi-hourglass" />
+                                            <h3>No subscribed shows</h3>
+                                            <p>Subscribe to shows to see them here</p>
                                         </div>
-                                        <div className={styles.timelineItems}>
-                                            {group.items.map(item => {
-                                                const isAiringNow = item.timeUntilAiring <= 0;
-                                                const airingDate = new Date(item.airingAt * 1000);
-                                                return (
-                                                    <Link
-                                                        key={`${item.malId}-${item.episode}`}
-                                                        href={`/anime/${item.malId}`}
-                                                        className={`${styles.timelineItem} ${isAiringNow ? styles.airingNow : ""}`}
+                                    );
+                                }
+
+                                return (
+                                    <div className={styles.timeline}>
+                                        {filteredGroups.map(group => (
+                                            <div key={group.bucket} className={styles.timelineSection}>
+                                                <div className={styles.timelineSectionHeader}>
+                                                    <span
+                                                        className={`${styles.timelineSectionLabel} ${group.bucket === "airing_now" ? styles.airingNow : ""}`}
                                                     >
-                                                        <div className={styles.timelineItemImage}>
-                                                            <Image
-                                                                src={item.coverImage}
-                                                                alt={item.titleEnglish || item.title}
-                                                                width={56}
-                                                                height={80}
-                                                                unoptimized
-                                                            />
-                                                        </div>
-                                                        <div className={styles.timelineItemInfo}>
-                                                            <span className={styles.timelineItemTitle}>
-                                                                {item.titleEnglish || item.title}
-                                                            </span>
-                                                            <span className={styles.timelineItemMeta}>
-                                                                Episode {item.episode}
-                                                            </span>
-                                                        </div>
-                                                        <div className={styles.timelineItemCountdown}>
-                                                            <span
-                                                                className={`${styles.countdownBadge} ${isAiringNow ? styles.airingNow : ""}`}
+                                                        {AIRING_BUCKET_LABELS[group.bucket]}
+                                                    </span>
+                                                </div>
+                                                <div className={styles.timelineItems}>
+                                                    {group.items.map(item => {
+                                                        const isAiringNow = item.timeUntilAiring <= 0;
+                                                        const airingDate = new Date(item.airingAt * 1000);
+                                                        return (
+                                                            <div
+                                                                key={`${item.malId}-${item.episode}`}
+                                                                className={styles.timelineItemWrapper}
                                                             >
-                                                                {formatTimeUntilAiring(item.timeUntilAiring)}
-                                                            </span>
-                                                            {!isAiringNow && (
-                                                                <span className={styles.countdownTime}>
-                                                                    {airingDate.toLocaleTimeString([], {
-                                                                        hour: "2-digit",
-                                                                        minute: "2-digit",
-                                                                    })}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </Link>
-                                                );
-                                            })}
-                                        </div>
+                                                                <Link
+                                                                    href={`/anime/${item.malId}`}
+                                                                    className={`${styles.timelineItem} ${isAiringNow ? styles.airingNow : ""}`}
+                                                                >
+                                                                    <div className={styles.timelineItemImage}>
+                                                                        <Image
+                                                                            src={item.coverImage}
+                                                                            alt={item.titleEnglish || item.title}
+                                                                            width={56}
+                                                                            height={80}
+                                                                            unoptimized
+                                                                        />
+                                                                    </div>
+                                                                    <div className={styles.timelineItemInfo}>
+                                                                        <span className={styles.timelineItemTitle}>
+                                                                            {item.titleEnglish || item.title}
+                                                                        </span>
+                                                                        <span className={styles.timelineItemMeta}>
+                                                                            Episode {item.episode}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className={styles.timelineItemCountdown}>
+                                                                        <span
+                                                                            className={`${styles.countdownBadge} ${isAiringNow ? styles.airingNow : ""}`}
+                                                                        >
+                                                                            {formatTimeUntilAiring(
+                                                                                item.timeUntilAiring,
+                                                                            )}
+                                                                        </span>
+                                                                        {!isAiringNow && (
+                                                                            <span className={styles.countdownTime}>
+                                                                                {airingDate.toLocaleTimeString([], {
+                                                                                    hour: "2-digit",
+                                                                                    minute: "2-digit",
+                                                                                })}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </Link>
+                                                                {user && (
+                                                                    <SubscribeButton
+                                                                        malId={item.malId}
+                                                                        title={item.titleEnglish || item.title}
+                                                                        isSubscribed={isSubscribed(item.malId)}
+                                                                        onSubscribe={subscribe}
+                                                                        onUnsubscribe={unsubscribe}
+                                                                    />
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
+                                );
+                            })()}
                         </>
                     ) : (
                         <div className={styles.empty}>
