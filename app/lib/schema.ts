@@ -1,26 +1,7 @@
 import { Database } from "better-sqlite3";
 
-const SCHEMA_VERSION = 1;
-
 export function updateSchema(db: Database) {
-    try {
-        const stmt = db.prepare("SELECT value FROM schema_version");
-        const version = stmt.get() as { value: number } | undefined;
-        if (version && version.value >= SCHEMA_VERSION) {
-            return;
-        }
-    } catch {
-        console.log("Empty schema - Building");
-    }
-
-    console.log("Updating schema");
     db.exec(`
-        DROP TABLE IF EXISTS schema_version;
-        CREATE TABLE schema_version (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            value INTEGER NOT NULL
-        );
-        
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL UNIQUE,
@@ -143,5 +124,4 @@ export function updateSchema(db: Database) {
     addColumnIfNotExists("tier_lists", "comments_enabled", "INTEGER NOT NULL DEFAULT 1");
 
     db.exec("CREATE INDEX IF NOT EXISTS idx_tier_lists_public ON tier_lists(is_public, updated_at)");
-    db.exec(`INSERT INTO schema_version(value) values (${SCHEMA_VERSION})`);
 }
