@@ -15,6 +15,7 @@ export default function LoginPage() {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [turnstileToken, setTurnstileToken] = useState("");
+    const [turnstileReset, setTurnstileReset] = useState(0);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -56,6 +57,7 @@ export default function LoginPage() {
         if (result.error) {
             setError(result.error);
             setLoading(false);
+            setTurnstileReset(x => x + 1);
         } else {
             router.push("/my-list");
         }
@@ -111,7 +113,11 @@ export default function LoginPage() {
                             </div>
                         )}
 
-                        <Turnstile onVerify={handleTurnstileVerify} onExpire={handleTurnstileExpire} />
+                        <Turnstile
+                            onVerify={handleTurnstileVerify}
+                            onExpire={handleTurnstileExpire}
+                            resetSignal={turnstileReset}
+                        />
 
                         <Button type="submit" disabled={loading || !turnstileToken} className={styles.submitButton}>
                             {loading ? "Please wait..." : isRegister ? "Create Account" : "Sign In"}

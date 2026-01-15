@@ -7,11 +7,12 @@ interface TurnstileProps {
     onVerify: (token: string) => void;
     onExpire?: () => void;
     onError?: () => void;
+    resetSignal?: number;
 }
 
 const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
-export function Turnstile({ onVerify, onExpire, onError }: TurnstileProps) {
+export function Turnstile({ onVerify, onExpire, onError, resetSignal }: TurnstileProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const widgetIdRef = useRef<string | null | undefined>(undefined);
 
@@ -54,7 +55,7 @@ export function Turnstile({ onVerify, onExpire, onError }: TurnstileProps) {
                 window.turnstile.remove(widgetIdRef.current);
             }
         };
-    }, [onVerify, onExpire, onError]);
+    }, [onVerify, onExpire, onError, resetSignal]);
 
     if (!SITE_KEY) {
         return null;
