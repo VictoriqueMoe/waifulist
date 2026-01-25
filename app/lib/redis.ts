@@ -72,6 +72,7 @@ export const REDIS_KEYS = {
     ANIME_PEOPLE_IDS: "anime:peopleIds",
     ANIME_CHARACTER_IDS: "anime:characterIds",
     ANIME_MANGA_IDS: "anime:mangaIds",
+    ANIME_PRODUCER_IDS: "anime:producerIds",
     LAST_FETCH_TIME: "anime:lastFetchTime",
     REFRESH_CHANNEL: "anime:refresh",
     OG_IMAGE: (uuid: string, hash: string) => `og:${uuid}:${hash}`,
@@ -93,6 +94,7 @@ export const REDIS_TTL = {
     ANIME_SITEMAP: 60 * 60 * 24, // 24 hours
     ANIME_PEOPLE_IDS: 60 * 60 * 24 * 7, // 7 days
     ANIME_CHARACTER_IDS: 60 * 60 * 24 * 7, // 7 days
+    ANIME_PRODUCER_IDS: 60 * 60 * 24 * 7, // 7 days
     ANIME_MANGA_IDS: 60 * 60 * 24 * 7, // 7 days
     ANILIST_CHARACTER: 60 * 60 * 24 * 30, // 30 days
     ANILIST_SEARCH: 60 * 60, // 1 hour

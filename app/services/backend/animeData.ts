@@ -21,6 +21,7 @@ const PEOPLE_URL = "https://raw.githubusercontent.com/purarue/mal-id-cache/maste
 const CHARACTER_URL =
     "https://raw.githubusercontent.com/purarue/mal-id-cache/refs/heads/master/cache/character_cache.json";
 const MANGA_URL = "https://raw.githubusercontent.com/purarue/mal-id-cache/refs/heads/master/cache/manga_cache.json";
+const PRODUCER_URL = "https://raw.githubusercontent.com/nakedmcse/mal-id-cache/refs/heads/main/producers.json";
 
 let dataLoadingPromise: Promise<void> | null = null;
 let subscriberInitialised = false;
@@ -189,6 +190,30 @@ async function fetchCharacterIds(): Promise<IdList | null> {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 30000);
         const response = await fetch(CHARACTER_URL, {
+            cache: "no-store",
+            signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch: ${response.status}`);
+        }
+        return (await response.json()) as IdList;
+    } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+            console.error("Fetch character ids timed out after 30s");
+        } else {
+            console.error("Failed to fetch character ids:", error);
+        }
+        return null;
+    }
+}
+
+async function fetchProducerIds(): Promise<IdList | null> {
+    try {
+        console.log("Fetching producer ids from remote JSON...");
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000);
+        const response = await fetch(PRODUCER_URL, {
             cache: "no-store",
             signal: controller.signal,
         });
@@ -847,6 +872,29 @@ export async function getCharacterIds(): Promise<IdList> {
         console.log(`[Redis] Saved ${ids?.ids.length} character ids`);
     } catch (error) {
         console.error("[Redis] Failed to save character ids:", error);
+    }
+    return ids ?? { ids: [] };
+}
+
+export async function getProducerIds(): Promise<IdList> {
+    try {
+        const redis = getRedis();
+        const cachedIds = await redis.get(REDIS_KEYS.ANIME_PRODUCER_IDS);
+        if (cachedIds) {
+            return JSON.parse(cachedIds) as IdList;
+        }
+    } catch (error) {
+        console.error(`Failed to retrieve producer ids from redis: ${error}`);
+    }
+
+    const ids = await fetchProducerIds();
+
+    try {
+        const redis = getRedis();
+        await redis.setex(REDIS_KEYS.ANIME_PRODUCER_IDS, REDIS_TTL.ANIME_PRODUCER_IDS, JSON.stringify(ids));
+        console.log(`[Redis] Saved ${ids?.ids.length} producer ids`);
+    } catch (error) {
+        console.error("[Redis] Failed to save producer ids:", error);
     }
     return ids ?? { ids: [] };
 }

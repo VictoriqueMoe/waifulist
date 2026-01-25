@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCharacterIds, getMangaIds, getPeopleIds } from "@/services/backend/animeData";
+import { getCharacterIds, getMangaIds, getPeopleIds, getProducerIds } from "@/services/backend/animeData";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +9,9 @@ export async function GET() {
     const peopleIds = await getPeopleIds();
     const characterIds = await getCharacterIds();
     const mangaIds = await getMangaIds();
+    const producerIds = await getProducerIds();
     const sitemapCount =
+        Math.ceil(producerIds.ids.length / 50000) +
         Math.ceil(mangaIds.ids.length / 50000) +
         Math.ceil(characterIds.ids.length / 50000) +
         Math.ceil(peopleIds.ids.length / 50000) +
