@@ -47,8 +47,11 @@ export default async function sitemap(props: { id: string | Promise<string> }): 
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost";
     const peopleIds = await getPeopleIds();
+    const peoplePageCount = Math.ceil(peopleIds.ids.length / 50000);
     const characterIds = await getCharacterIds();
+    const characterPageCount = Math.ceil(characterIds.ids.length / 50000);
     const mangaIds = await getMangaIds();
+    const mangaPageCount = Math.ceil(mangaIds.ids.length / 50000);
     const producerIds = await getProducerIds();
 
     if (id === 0) {
@@ -89,7 +92,7 @@ export default async function sitemap(props: { id: string | Promise<string> }): 
         const completeLinks: MetadataRoute.Sitemap = [...staticLinks, ...seasonalLinks, ...animeLinks];
         await saveSitemapToRedis(completeLinks, id);
         return completeLinks;
-    } else if (id < Math.ceil(peopleIds.ids.length / 50000) + 1) {
+    } else if (id < peoplePageCount + 1) {
         // People
         const start = (id - 1) * 50000;
         const end = Math.min(start + 50000, peopleIds.ids.length);
@@ -99,9 +102,9 @@ export default async function sitemap(props: { id: string | Promise<string> }): 
         }));
         await saveSitemapToRedis(peopleLinks, id);
         return peopleLinks;
-    } else if (id < Math.ceil(characterIds.ids.length / 50000) + Math.ceil(peopleIds.ids.length / 50000) + 1) {
+    } else if (id < characterPageCount + peoplePageCount + 1) {
         // Characters
-        const start = (id - Math.ceil(peopleIds.ids.length / 50000) - 1) * 50000;
+        const start = (id - peoplePageCount - 1) * 50000;
         const end = Math.min(start + 50000, characterIds.ids.length);
         const characterLinks: MetadataRoute.Sitemap = characterIds.ids.slice(start, end).map(c => ({
             url: `${baseUrl}/character/${c}`,
@@ -109,16 +112,9 @@ export default async function sitemap(props: { id: string | Promise<string> }): 
         }));
         await saveSitemapToRedis(characterLinks, id);
         return characterLinks;
-    } else if (
-        id <
-        Math.ceil(mangaIds.ids.length / 50000) +
-            Math.ceil(characterIds.ids.length / 50000) +
-            Math.ceil(peopleIds.ids.length / 50000) +
-            1
-    ) {
+    } else if (id < mangaPageCount + characterPageCount + peoplePageCount + 1) {
         // Manga
-        const start =
-            (id - Math.ceil(characterIds.ids.length / 50000) - Math.ceil(peopleIds.ids.length / 50000) - 1) * 50000;
+        const start = (id - characterPageCount - peoplePageCount - 1) * 50000;
         const end = Math.min(start + 50000, mangaIds.ids.length);
         const mangaLinks: MetadataRoute.Sitemap = mangaIds.ids.slice(start, end).map(m => ({
             url: `${baseUrl}/manga/${m}`,
@@ -128,13 +124,7 @@ export default async function sitemap(props: { id: string | Promise<string> }): 
         return mangaLinks;
     } else {
         // Producers
-        const start =
-            (id -
-                Math.ceil(mangaIds.ids.length / 50000) -
-                Math.ceil(characterIds.ids.length / 50000) -
-                Math.ceil(peopleIds.ids.length / 50000) -
-                1) *
-            50000;
+        const start = (id - mangaPageCount - characterPageCount - peoplePageCount - 1) * 50000;
         const end = Math.min(start + 50000, producerIds.ids.length);
         const producerLinks: MetadataRoute.Sitemap = producerIds.ids.slice(start, end).map(p => ({
             url: `${baseUrl}/producer/${p}`,
