@@ -7,6 +7,7 @@ import {
     getProducerIds,
 } from "@/services/backend/animeData";
 import { getRedis, REDIS_KEYS, REDIS_TTL } from "@/lib/redis";
+import { IdList } from "@/types/anime";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,16 @@ async function saveSitemapToRedis(sitemap: MetadataRoute.Sitemap, id: number): P
     } catch (error) {
         console.error("[Redis] Failed to save sitemap:", error);
     }
+}
+
+async function createSitemap(id: number, start: number, Ids: IdList, url: string) {
+    const end = Math.min(start + 50000, Ids.ids.length);
+    const createdLinks: MetadataRoute.Sitemap = Ids.ids.slice(start, end).map(e => ({
+        url: `${url}/${e}`,
+        lastModified: new Date(),
+    }));
+    await saveSitemapToRedis(createdLinks, id);
+    return createdLinks;
 }
 
 export async function generateSitemaps() {
@@ -94,43 +105,25 @@ export default async function sitemap(props: { id: string | Promise<string> }): 
         return completeLinks;
     } else if (id < peoplePageCount + 1) {
         // People
-        const start = (id - 1) * 50000;
-        const end = Math.min(start + 50000, peopleIds.ids.length);
-        const peopleLinks: MetadataRoute.Sitemap = peopleIds.ids.slice(start, end).map(p => ({
-            url: `${baseUrl}/person/${p}`,
-            lastModified: new Date(),
-        }));
-        await saveSitemapToRedis(peopleLinks, id);
-        return peopleLinks;
+        return await createSitemap(id, (id - 1) * 50000, peopleIds, `${baseUrl}/person`);
     } else if (id < characterPageCount + peoplePageCount + 1) {
         // Characters
-        const start = (id - peoplePageCount - 1) * 50000;
-        const end = Math.min(start + 50000, characterIds.ids.length);
-        const characterLinks: MetadataRoute.Sitemap = characterIds.ids.slice(start, end).map(c => ({
-            url: `${baseUrl}/character/${c}`,
-            lastModified: new Date(),
-        }));
-        await saveSitemapToRedis(characterLinks, id);
-        return characterLinks;
+        return await createSitemap(id, (id - peoplePageCount - 1) * 50000, characterIds, `${baseUrl}/character`);
     } else if (id < mangaPageCount + characterPageCount + peoplePageCount + 1) {
         // Manga
-        const start = (id - characterPageCount - peoplePageCount - 1) * 50000;
-        const end = Math.min(start + 50000, mangaIds.ids.length);
-        const mangaLinks: MetadataRoute.Sitemap = mangaIds.ids.slice(start, end).map(m => ({
-            url: `${baseUrl}/manga/${m}`,
-            lastModified: new Date(),
-        }));
-        await saveSitemapToRedis(mangaLinks, id);
-        return mangaLinks;
+        return await createSitemap(
+            id,
+            (id - characterPageCount - peoplePageCount - 1) * 50000,
+            mangaIds,
+            `${baseUrl}/manga`,
+        );
     } else {
         // Producers
-        const start = (id - mangaPageCount - characterPageCount - peoplePageCount - 1) * 50000;
-        const end = Math.min(start + 50000, producerIds.ids.length);
-        const producerLinks: MetadataRoute.Sitemap = producerIds.ids.slice(start, end).map(p => ({
-            url: `${baseUrl}/producer/${p}`,
-            lastModified: new Date(),
-        }));
-        await saveSitemapToRedis(producerLinks, id);
-        return producerLinks;
+        return await createSitemap(
+            id,
+            (id - mangaPageCount - characterPageCount - peoplePageCount - 1) * 50000,
+            producerIds,
+            `${baseUrl}/producer`,
+        );
     }
 }
