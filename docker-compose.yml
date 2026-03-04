@@ -26,12 +26,15 @@ services:
     image: redis:latest
     container_name: redis_waifulist
     restart: always
+    command: redis-server --appendonly yes
     networks:
       default:
         aliases:
           - redis_waifulist
     ports:
       - "127.0.0.1:6339:6379"
+    volumes:
+      - redis_data:/data
 
   jikan:
     image: jikanme/jikan-rest:latest
@@ -72,3 +75,4 @@ services:
 volumes:
   waifulist-data:
   mongodb_jikan_data:
+  redis_data:

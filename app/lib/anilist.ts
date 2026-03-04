@@ -4,6 +4,10 @@ import { AiringInfo } from "@/types/airing";
 
 const ANILIST_API_URL = "https://graphql.anilist.co";
 const ANILIST_TIMEOUT = 10000;
+const ANILIST_MAX_RETRIES = 3;
+
+let rateLimitRemaining = 90;
+let rateLimitResetTime = 0;
 
 const CHARACTER_SEARCH_QUERY = `
 query ($search: String!, $page: Int, $perPage: Int) {
@@ -217,44 +221,96 @@ interface AniListAiringSchedulesResponse {
     };
 }
 
+async function waitForRateLimit(): Promise<void> {
+    if (rateLimitRemaining <= 2) {
+        const now = Date.now();
+        const waitMs = Math.max(rateLimitResetTime - now, 1000);
+        console.warn(`[AniList] Rate limit nearly exhausted (${rateLimitRemaining} remaining), waiting ${waitMs}ms`);
+        await new Promise(resolve => setTimeout(resolve, waitMs));
+    }
+}
+
+function updateRateLimitState(response: Response): void {
+    const limit = response.headers.get("X-RateLimit-Limit");
+    const remaining = response.headers.get("X-RateLimit-Remaining");
+    const retryAfter = response.headers.get("Retry-After");
+    const resetTimestamp = response.headers.get("X-RateLimit-Reset");
+
+    if (remaining !== null) {
+        rateLimitRemaining = parseInt(remaining, 10);
+    }
+    if (limit !== null && rateLimitRemaining > parseInt(limit, 10)) {
+        rateLimitRemaining = parseInt(limit, 10);
+    }
+    if (retryAfter !== null) {
+        rateLimitResetTime = Date.now() + parseInt(retryAfter, 10) * 1000;
+    } else if (resetTimestamp !== null) {
+        rateLimitResetTime = parseInt(resetTimestamp, 10) * 1000;
+    } else if (rateLimitRemaining <= 2) {
+        rateLimitResetTime = Date.now() + 60_000;
+    }
+}
+
 const fetchFromAniList = async function <T>(query: string, variables: Record<string, unknown>): Promise<T | null> {
-    try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), ANILIST_TIMEOUT);
+    for (let attempt = 0; attempt <= ANILIST_MAX_RETRIES; attempt++) {
+        try {
+            await waitForRateLimit();
 
-        const response = await fetch(ANILIST_API_URL, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-            },
-            body: JSON.stringify({ query, variables }),
-            signal: controller.signal,
-        });
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), ANILIST_TIMEOUT);
 
-        clearTimeout(timeout);
+            const response = await fetch(ANILIST_API_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                },
+                body: JSON.stringify({ query, variables }),
+                signal: controller.signal,
+            });
 
-        if (!response.ok) {
-            console.error(`[AniList] Failed to fetch: ${response.status}`);
+            clearTimeout(timeout);
+            updateRateLimitState(response);
+
+            if (response.status === 429) {
+                const retryAfter = response.headers.get("Retry-After");
+                const resetTimestamp = response.headers.get("X-RateLimit-Reset");
+                let waitMs = 60_000;
+                if (retryAfter) {
+                    waitMs = parseInt(retryAfter, 10) * 1000;
+                } else if (resetTimestamp) {
+                    waitMs = Math.max(parseInt(resetTimestamp, 10) * 1000 - Date.now(), 1000);
+                }
+                console.warn(
+                    `[AniList] 429 rate limited, retry ${attempt + 1}/${ANILIST_MAX_RETRIES}, waiting ${waitMs}ms`,
+                );
+                if (attempt < ANILIST_MAX_RETRIES) {
+                    await new Promise(resolve => setTimeout(resolve, waitMs));
+                    continue;
+                }
+                return null;
+            }
+
+            if (!response.ok) {
+                console.error(`[AniList] Failed to fetch: ${response.status}`);
+                return null;
+            }
+
+            return await response.json();
+        } catch (error) {
+            if (error instanceof Error && error.name === "AbortError") {
+                console.error("[AniList] Request timed out");
+            } else {
+                console.error(`[AniList] Error: ${error}`);
+            }
+            if (attempt < ANILIST_MAX_RETRIES) {
+                continue;
+            }
             return null;
         }
-
-        return await response.json();
-    } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") {
-            console.error("[AniList] Request timed out");
-        } else {
-            console.error(`[AniList] Error: ${error}`);
-        }
-        return null;
     }
+    return null;
 };
-
-export interface SearchResult {
-    characters: AniListCharacter[];
-    hasNextPage: boolean;
-    total: number;
-}
 
 const searchCharactersFromAniListInternal = async function (
     query: string,
@@ -478,3 +534,8 @@ export const searchMangaFromAniList = cache(searchMangaFromAniListInternal);
 export const fetchAnimeStatusByMalIds = cache(fetchAnimeStatusByMalIdsInternal);
 export const fetchUpcomingAiringSchedule = cache(fetchUpcomingAiringScheduleInternal);
 export const fetchAiringSchedules = cache(fetchAiringSchedulesFromAniListInternal);
+export interface SearchResult {
+    characters: AniListCharacter[];
+    hasNextPage: boolean;
+    total: number;
+}
