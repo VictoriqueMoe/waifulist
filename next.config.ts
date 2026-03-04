@@ -49,6 +49,10 @@ const nextConfig: NextConfig = {
                 protocol: "https",
                 hostname: "www.disneyplus.com",
             },
+            {
+                protocol: "https",
+                hostname: "myanimelist.net",
+            },
         ],
     },
 };
