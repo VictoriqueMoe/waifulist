@@ -76,11 +76,9 @@ export async function getCharactersForTierList(anilistIds: number[]): Promise<Ti
     }
 
     if (missingIds.length > 0) {
-        const fetched = await Promise.all(missingIds.map(id => fetchCharacterById(id)));
-
         const pipeline = redis.pipeline();
         for (let i = 0; i < missingIds.length; i++) {
-            const char = fetched[i];
+            const char = await fetchCharacterById(missingIds[i]);
             if (char) {
                 characterMap.set(missingIds[i], toTierListCharacter(char));
                 pipeline.setex(
