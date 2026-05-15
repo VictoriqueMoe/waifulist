@@ -230,7 +230,7 @@ export default function MyListPage() {
         await navigator.clipboard.writeText(shareUrl);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
-    }, [user?.publicId, settings.myList.sort]);
+    }, [user, settings.myList.sort]);
 
     const handleSetBackupChoices = useCallback(
         async (key: keyof BackupChoices, checked: boolean) => {
