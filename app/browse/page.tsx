@@ -36,6 +36,17 @@ function BrowseContent() {
     const { contextMenu, showContextMenu, hideContextMenu } = useContextMenu();
     const { user } = useAuth();
 
+    const [anime, setAnime] = useState<Anime[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [query, setQuery] = useState(initialQuery);
+    const [page, setPage] = useState(initialPage);
+    const [totalCount, setTotalCount] = useState(0);
+    const [selectedGenres, setSelectedGenres] = useState<string[]>(initialGenres);
+    const [allGenres, setAllGenres] = useState<string[]>([]);
+    const [genresLoading, setGenresLoading] = useState(true);
+    const searchIdRef = useRef(0);
+    const lastFetchedSettingsRef = useRef<string | null>(null);
+
     useEffect(() => {
         getAllWatched();
         ensureLoaded();
@@ -47,17 +58,6 @@ function BrowseContent() {
             setGenresLoading(false);
         });
     }, [getGenres]);
-
-    const [anime, setAnime] = useState<Anime[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [query, setQuery] = useState(initialQuery);
-    const [page, setPage] = useState(initialPage);
-    const [totalCount, setTotalCount] = useState(0);
-    const [selectedGenres, setSelectedGenres] = useState<string[]>(initialGenres);
-    const [allGenres, setAllGenres] = useState<string[]>([]);
-    const [genresLoading, setGenresLoading] = useState(true);
-    const searchIdRef = useRef(0);
-    const lastFetchedSettingsRef = useRef<string | null>(null);
 
     const { sort, hideSpecials } = settings.browse;
 

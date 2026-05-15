@@ -30,7 +30,9 @@ export function useFilteredList(options: UseFilteredListOptions) {
     const [loading, setLoading] = useState(true);
 
     const onAvailableGenresChangeRef = useRef(onAvailableGenresChange);
-    onAvailableGenresChangeRef.current = onAvailableGenresChange;
+    useEffect(() => {
+        onAvailableGenresChangeRef.current = onAvailableGenresChange;
+    }, [onAvailableGenresChange]);
 
     const genresKey = genres.join(",");
 
