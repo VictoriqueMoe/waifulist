@@ -48,11 +48,11 @@
     },
     "lint-staged": {
         "app/**/*.{ts,tsx,js,jsx}": [
-            "oxlint --disable-nested-config --fix",
-            "oxfmt"
+            "oxlint --max-warnings=0 --disable-nested-config",
+            "oxfmt --check"
         ],
         "app/**/*.{css,scss,json,md}": [
-            "oxfmt"
+            "oxfmt --check"
         ]
     },
     "overrides": {

@@ -6,6 +6,11 @@ async function fetchAndCacheSchedule(): Promise<ScheduleResponse> {
     const airing = await fetchUpcomingAiringSchedule();
     const response: ScheduleResponse = { airing, lastUpdated: new Date().toISOString() };
 
+    if (airing.length === 0) {
+        console.warn("[ScheduleService] AniList returned no upcoming episodes, refusing to cache an empty schedule");
+        return response;
+    }
+
     try {
         await getRedis().setex(REDIS_KEYS.SCHEDULE, REDIS_TTL.SCHEDULE, JSON.stringify(response));
     } catch (error) {
