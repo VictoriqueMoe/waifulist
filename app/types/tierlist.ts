@@ -1,3 +1,5 @@
+import { AniListFailureReason } from "@/types/anilist";
+
 export type TierRank = "S" | "A" | "B" | "C" | "D" | "F";
 
 export const TIER_RANKS: TierRank[] = ["S", "A", "B", "C", "D", "F"];
@@ -52,8 +54,14 @@ export interface TierListWithCharacters {
     username: string;
     tiers: Record<TierRank, TierListCharacter[]>;
     tierNames?: Partial<Record<TierRank, string>>;
+    charactersUnavailable: TierListCharactersUnavailable | null;
     createdAt: string;
     updatedAt: string;
+}
+
+export interface TierListCharactersUnavailable {
+    reason: AniListFailureReason;
+    missingCount: number;
 }
 
 export interface CommentReaction {

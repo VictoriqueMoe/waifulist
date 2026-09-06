@@ -28,6 +28,23 @@
     color: var(--text-muted);
 }
 
+.unavailableNotice {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $radius-md;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.5;
+
+    i {
+        color: var(--status-dropped);
+    }
+}
+
 .tierList {
     display: flex;
     flex-direction: column;
