@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AniListCharacter } from "@/types/anilist";
+import { AniListCharacter, AniListFailureReason } from "@/types/anilist";
+import { errorFromResponse, failureReasonOf, upstreamDetailOf } from "@/services/frontend/upstreamError";
 
 export interface MediaFilter {
     malId: number;
@@ -18,6 +19,8 @@ interface UseCharacterSearchReturn {
     results: AniListCharacter[];
     isLoading: boolean;
     error: string | null;
+    errorReason: AniListFailureReason | null;
+    errorDetail: string | null;
     hasMore: boolean;
     loadMore: () => void;
     search: (query: string) => void;
@@ -33,6 +36,8 @@ export function useCharacterSearch(debounceMs: number = 300): UseCharacterSearch
     const [allResults, setAllResults] = useState<AniListCharacter[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [errorReason, setErrorReason] = useState<AniListFailureReason | null>(null);
+    const [errorDetail, setErrorDetail] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState(false);
     const [page, setPage] = useState(1);
     const [animeFilter, setAnimeFilterState] = useState<AnimeFilter | null>(null);
@@ -67,6 +72,8 @@ export function useCharacterSearch(debounceMs: number = 300): UseCharacterSearch
 
             setIsLoading(true);
             setError(null);
+            setErrorReason(null);
+            setErrorDetail(null);
 
             try {
                 let url: string;
@@ -79,8 +86,7 @@ export function useCharacterSearch(debounceMs: number = 300): UseCharacterSearch
                 const response = await fetch(url);
 
                 if (!response.ok) {
-                    const data = await response.json();
-                    throw new Error(data.error || "Failed to fetch characters");
+                    throw await errorFromResponse(response, "Failed to fetch characters");
                 }
 
                 const data = await response.json();
@@ -93,6 +99,9 @@ export function useCharacterSearch(debounceMs: number = 300): UseCharacterSearch
                 setHasMore(data.hasNextPage);
             } catch (err) {
                 setError(err instanceof Error ? err.message : "Failed to fetch characters");
+                setErrorReason(failureReasonOf(err));
+                setErrorDetail(upstreamDetailOf(err));
+
                 if (!append) {
                     setAllResults([]);
                 }
@@ -186,6 +195,8 @@ export function useCharacterSearch(debounceMs: number = 300): UseCharacterSearch
         results: activeFilter ? filteredResults : allResults,
         isLoading,
         error,
+        errorReason,
+        errorDetail,
         hasMore,
         loadMore,
         search,

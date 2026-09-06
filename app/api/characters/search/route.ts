@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchCharacters } from "@/services/backend/anilistData";
+import { anilistErrorResponse } from "@/lib/api/anilistErrorResponse";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
     const searchParams = request.nextUrl.searchParams;
@@ -20,6 +21,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         return NextResponse.json(result);
     } catch (error) {
         console.error("[Character Search] Error:", error);
+
+        const upstream = anilistErrorResponse(error);
+        if (upstream) {
+            return upstream;
+        }
+
         const message = error instanceof Error ? error.message : "Failed to search characters";
         return NextResponse.json({ error: message }, { status: 500 });
     }

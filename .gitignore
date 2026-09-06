@@ -42,7 +42,6 @@ jikan.env
 next-env.d.ts
 .idea
 *.iml
-.eslintcache
 *.db
 /data
 test-scraper.ts

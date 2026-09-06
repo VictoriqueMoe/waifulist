@@ -4,6 +4,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { TIER_COLORS, TIER_RANKS, TierListCharacter, TierListWithCharacters, TierRank } from "@/types/tierlist";
+import { ANILIST_FAILURE_COPY } from "@/types/anilist";
 import { useCharacterUrl } from "@/hooks/useCharacterUrl";
 import styles from "./TierListView.module.scss";
 
@@ -13,6 +14,7 @@ interface TierListViewProps {
 
 export function TierListView({ tierList }: TierListViewProps) {
     const totalCharacters = TIER_RANKS.reduce((sum, rank) => sum + tierList.tiers[rank].length, 0);
+    const unavailable = tierList.charactersUnavailable;
 
     return (
         <div className={styles.container}>
@@ -23,6 +25,16 @@ export function TierListView({ tierList }: TierListViewProps) {
                     <span>{totalCharacters} characters</span>
                 </div>
             </div>
+
+            {unavailable && unavailable.missingCount > 0 && (
+                <div className={styles.unavailableNotice}>
+                    <i className="bi bi-exclamation-triangle" />
+                    <span>
+                        {unavailable.missingCount} {unavailable.missingCount === 1 ? "character is" : "characters are"}{" "}
+                        hidden: {ANILIST_FAILURE_COPY[unavailable.reason].description}
+                    </span>
+                </div>
+            )}
 
             <div className={styles.tierList}>
                 {TIER_RANKS.map(rank => (

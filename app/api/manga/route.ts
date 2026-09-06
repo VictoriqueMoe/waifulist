@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchMangaFromAniList } from "@/lib/anilist";
+import { anilistErrorResponse } from "@/lib/api/anilistErrorResponse";
 
 export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
@@ -20,6 +21,12 @@ export async function GET(request: NextRequest) {
         });
     } catch (error) {
         console.error("[Manga Search] Error:", error);
-        return NextResponse.json({ results: [] });
+
+        const upstream = anilistErrorResponse(error);
+        if (upstream) {
+            return upstream;
+        }
+
+        return NextResponse.json({ error: "Failed to search manga" }, { status: 500 });
     }
 }

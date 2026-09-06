@@ -127,6 +127,8 @@
 }
 
 .userAvatar {
+    width: 24px;
+    height: 24px;
     border-radius: $radius-full;
     object-fit: cover;
 }

@@ -10,8 +10,16 @@ import {
     updateTierList,
 } from "@/lib/db/dao/tierList";
 import { getAnonymousTierListByPublicId } from "@/lib/db/dao/anonymousTierList";
-import { getCharactersForTierList } from "@/services/backend/anilistData";
-import { TIER_RANKS, TierListCharacter, TierListData, TierListWithCharacters, TierRank } from "@/types/tierlist";
+import { getCachedCharactersForTierList, getCharactersForTierList } from "@/services/backend/anilistData";
+import { AniListUnavailableError } from "@/lib/anilist";
+import {
+    TIER_RANKS,
+    TierListCharacter,
+    TierListCharactersUnavailable,
+    TierListData,
+    TierListWithCharacters,
+    TierRank,
+} from "@/types/tierlist";
 
 export interface TierListSummary {
     id: number;
@@ -141,7 +149,21 @@ export async function getTierListWithCharacters(publicId: string): Promise<TierL
         }
     }
 
-    const characters = await getCharactersForTierList(allIds);
+    let characters: TierListCharacter[];
+    let charactersUnavailable: TierListCharactersUnavailable | null = null;
+
+    try {
+        characters = await getCharactersForTierList(allIds);
+    } catch (error) {
+        if (!(error instanceof AniListUnavailableError)) {
+            throw error;
+        }
+
+        console.error("[TierListService] AniList is unavailable, falling back to cached characters:", error);
+        characters = await getCachedCharactersForTierList(allIds);
+        charactersUnavailable = { reason: error.reason, missingCount: allIds.length - characters.length };
+    }
+
     const characterMap = new Map<number, TierListCharacter>();
     for (const char of characters) {
         characterMap.set(char.anilistId, char);
@@ -174,6 +196,7 @@ export async function getTierListWithCharacters(publicId: string): Promise<TierL
             username: row.username,
             tiers,
             tierNames: data.tierNames,
+            charactersUnavailable,
             createdAt: row.created_at,
             updatedAt: row.updated_at,
         };
@@ -187,6 +210,7 @@ export async function getTierListWithCharacters(publicId: string): Promise<TierL
         username: "Anonymous",
         tiers,
         tierNames: data.tierNames,
+        charactersUnavailable,
         createdAt: anonymousRow!.created_at,
         updatedAt: anonymousRow!.created_at,
     };

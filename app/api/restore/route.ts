@@ -35,7 +35,12 @@ export async function POST(request: NextRequest): Promise<Response> {
         }
         if (rows.AiringSubscriptions && rows.AiringSubscriptions.length > 0) {
             restoreAiringSubscriptions(user.id, rows.AiringSubscriptions);
-            await cleanupEndedSubscriptions();
+
+            try {
+                await cleanupEndedSubscriptions();
+            } catch (cleanupError) {
+                console.error("Restore completed, but pruning ended subscriptions failed:", cleanupError);
+            }
         }
         return NextResponse.json({ completed: true });
     } catch (error) {

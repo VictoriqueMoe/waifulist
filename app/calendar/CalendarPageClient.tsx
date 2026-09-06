@@ -18,6 +18,7 @@ import { GenreFilter } from "@/components/GenreFilter/GenreFilter";
 import { AnimeCard } from "@/components/AnimeCard/AnimeCard";
 import { Pagination } from "@/components/Pagination/Pagination";
 import { Spinner } from "@/components/Spinner/Spinner";
+import { UpstreamError } from "@/components/UpstreamError/UpstreamError";
 import { SubscribeButton } from "@/components/SubscribeButton/SubscribeButton";
 import { DAY_LABELS, DayOfWeek, DAYS_OF_WEEK, getCurrentDayOfWeek, scheduleAnimeToAnime } from "@/types/schedule";
 import { AIRING_BUCKET_LABELS } from "@/types/airing";
@@ -64,12 +65,23 @@ export function CalendarPageClient() {
         genres: selectedGenres,
     });
 
-    const { loading: scheduleLoading, error: scheduleError, getAnimeForDay, lastUpdated } = useSchedule();
+    const {
+        loading: scheduleLoading,
+        error: scheduleError,
+        errorReason: scheduleErrorReason,
+        errorDetail: scheduleErrorDetail,
+        getAnimeForDay,
+        lastUpdated,
+        reload: reloadSchedule,
+    } = useSchedule();
     const {
         grouped: airingGrouped,
         loading: airingLoading,
         error: airingError,
+        errorReason: airingErrorReason,
+        errorDetail: airingErrorDetail,
         fetchedAt: airingFetchedAt,
+        reload: reloadAiring,
     } = useAiringSchedule();
 
     const { user } = useAuth();
@@ -251,11 +263,13 @@ export function CalendarPageClient() {
                             <Spinner text="Loading schedule..." />
                         </div>
                     ) : scheduleError ? (
-                        <div className={styles.error}>
-                            <i className="bi bi-exclamation-triangle" />
-                            <h3>Failed to load schedule</h3>
-                            <p>{scheduleError}</p>
-                        </div>
+                        <UpstreamError
+                            title="Failed to load schedule"
+                            message={scheduleError}
+                            reason={scheduleErrorReason}
+                            detail={scheduleErrorDetail}
+                            onRetry={reloadSchedule}
+                        />
                     ) : (
                         <>
                             {lastUpdated && (
@@ -353,11 +367,13 @@ export function CalendarPageClient() {
                             <Spinner text="Loading timeline..." />
                         </div>
                     ) : airingError ? (
-                        <div className={styles.error}>
-                            <i className="bi bi-exclamation-triangle" />
-                            <h3>Failed to load timeline</h3>
-                            <p>{airingError}</p>
-                        </div>
+                        <UpstreamError
+                            title="Failed to load timeline"
+                            message={airingError}
+                            reason={airingErrorReason}
+                            detail={airingErrorDetail}
+                            onRetry={reloadAiring}
+                        />
                     ) : airingGrouped.length > 0 ? (
                         <>
                             {airingFetchedAt && (

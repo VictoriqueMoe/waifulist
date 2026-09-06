@@ -33,7 +33,7 @@ export function useRestore() {
         }
         let response: boolean | null = null;
         switch (checkBackupVersion(content)) {
-            case 1:
+            case 1: {
                 const anime = JSON.parse(content) as WatchedAnimeRow[];
                 const restoreData: BackupData = {
                     Anime: choices.Anime ? [...anime] : [],
@@ -43,7 +43,8 @@ export function useRestore() {
                 };
                 response = await dispatchRestore(JSON.stringify(restoreData));
                 break;
-            case 2:
+            }
+            case 2: {
                 const allData = JSON.parse(content) as Partial<BackupData>;
                 const toRestore: BackupData = {
                     Anime: choices.Anime && allData.Anime ? [...allData.Anime] : [],
@@ -56,6 +57,7 @@ export function useRestore() {
                 };
                 response = await dispatchRestore(JSON.stringify(toRestore));
                 break;
+            }
         }
         if (response === null) {
             throw new Error("Restore Failed");

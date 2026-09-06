@@ -36,13 +36,10 @@ export function useComments(publicId: string) {
 
     const addComment = useCallback(
         async (content: string, turnstileToken: string): Promise<TierListComment | null> => {
-            try {
-                const comment = await postComment(publicId, content.trim(), turnstileToken);
-                setComments(prev => [comment, ...prev]);
-                return comment;
-            } catch (err) {
-                throw err;
-            }
+            const comment = await postComment(publicId, content.trim(), turnstileToken);
+            setComments(prev => [comment, ...prev]);
+
+            return comment;
         },
         [publicId],
     );

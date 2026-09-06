@@ -14,7 +14,7 @@
       "isolatedModules": true,
       "noImplicitOverride": true,
       "jsx": "react-jsx",
-      "incremental": false,
+      "incremental": true,
       "plugins": [
           {
               "name": "next"

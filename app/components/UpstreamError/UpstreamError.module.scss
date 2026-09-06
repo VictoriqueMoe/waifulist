@@ -1,0 +1,56 @@
+@use "../../styles/variables" as *;
+
+.container {
+    @include flex-center;
+    flex-direction: column;
+    gap: $spacing-md;
+    padding: $spacing-2xl $spacing-lg;
+    text-align: center;
+    color: var(--text-secondary);
+
+    i {
+        font-size: 3rem;
+        color: var(--status-dropped);
+    }
+
+    h3 {
+        color: var(--text-primary);
+    }
+}
+
+.message {
+    max-width: 46ch;
+    line-height: 1.6;
+}
+
+.detail {
+    max-width: 46ch;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $radius-md;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.retry {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $radius-md;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-primary);
+    transition: all $transition-fast;
+
+    i {
+        font-size: 1rem;
+        color: inherit;
+    }
+
+    &:hover {
+        background: var(--bg-secondary);
+        border-color: var(--accent-primary);
+    }
+}

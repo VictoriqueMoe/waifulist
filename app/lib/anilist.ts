@@ -1,6 +1,32 @@
 import { cache } from "react";
-import { AniListCharacter, AniListCharacterSearchResponse, AniListMediaCharactersResponse } from "@/types/anilist";
+import {
+    ANILIST_FAILURE_COPY,
+    AniListCharacter,
+    AniListCharacterSearchResponse,
+    AniListFailureReason,
+    AniListMediaCharactersResponse,
+} from "@/types/anilist";
 import { AiringInfo } from "@/types/airing";
+
+export class AniListUnavailableError extends Error {
+    public readonly reason: AniListFailureReason;
+    public readonly status: number | null;
+    public readonly upstreamMessage: string | null;
+    public readonly underlyingError: unknown;
+
+    public constructor(
+        reason: AniListFailureReason,
+        options: { status?: number | null; upstreamMessage?: string | null; underlyingError?: unknown } = {},
+    ) {
+        super(ANILIST_FAILURE_COPY[reason].description);
+
+        this.name = "AniListUnavailableError";
+        this.reason = reason;
+        this.status = options.status ?? null;
+        this.upstreamMessage = options.upstreamMessage ?? null;
+        this.underlyingError = options.underlyingError ?? null;
+    }
+}
 
 const ANILIST_API_URL = "https://graphql.anilist.co";
 const ANILIST_TIMEOUT = 10000;
@@ -251,6 +277,35 @@ function updateRateLimitState(response: Response): void {
     }
 }
 
+async function readJsonBody(response: Response): Promise<unknown> {
+    const text = await response.text();
+
+    if (text.length === 0) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(text);
+    } catch {
+        return null;
+    }
+}
+
+function extractUpstreamMessage(payload: unknown): string | null {
+    if (typeof payload !== "object" || payload === null) {
+        return null;
+    }
+
+    const errors = (payload as { errors?: unknown }).errors;
+    if (!Array.isArray(errors) || errors.length === 0) {
+        return null;
+    }
+
+    const message = (errors[0] as { message?: unknown })?.message;
+
+    return typeof message === "string" && message.length > 0 ? message : null;
+}
+
 const fetchFromAniList = async function <T>(query: string, variables: Record<string, unknown>): Promise<T | null> {
     for (let attempt = 0; attempt <= ANILIST_MAX_RETRIES; attempt++) {
         try {
@@ -259,18 +314,25 @@ const fetchFromAniList = async function <T>(query: string, variables: Record<str
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), ANILIST_TIMEOUT);
 
-            const response = await fetch(ANILIST_API_URL, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Accept: "application/json",
-                },
-                body: JSON.stringify({ query, variables }),
-                signal: controller.signal,
-            });
+            let response: Response;
+            try {
+                response = await fetch(ANILIST_API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Accept: "application/json",
+                    },
+                    body: JSON.stringify({ query, variables }),
+                    signal: controller.signal,
+                });
+            } finally {
+                clearTimeout(timeout);
+            }
 
-            clearTimeout(timeout);
             updateRateLimitState(response);
+
+            const payload = await readJsonBody(response);
+            const upstreamMessage = extractUpstreamMessage(payload);
 
             if (response.status === 429) {
                 const retryAfter = response.headers.get("Retry-After");
@@ -284,32 +346,59 @@ const fetchFromAniList = async function <T>(query: string, variables: Record<str
                 console.warn(
                     `[AniList] 429 rate limited, retry ${attempt + 1}/${ANILIST_MAX_RETRIES}, waiting ${waitMs}ms`,
                 );
+
                 if (attempt < ANILIST_MAX_RETRIES) {
                     await new Promise(resolve => setTimeout(resolve, waitMs));
                     continue;
                 }
+
+                throw new AniListUnavailableError("rate_limited", { status: 429, upstreamMessage });
+            }
+
+            if (response.status === 404) {
                 return null;
             }
 
             if (!response.ok) {
-                console.error(`[AniList] Failed to fetch: ${response.status}`);
-                return null;
+                const reason: AniListFailureReason =
+                    response.status === 403 && upstreamMessage !== null ? "disabled" : "http";
+                console.error(`[AniList] Request rejected with ${response.status}: ${upstreamMessage ?? "no detail"}`);
+
+                throw new AniListUnavailableError(reason, { status: response.status, upstreamMessage });
             }
 
-            return await response.json();
+            const data = (payload as { data?: unknown } | null)?.data;
+            if (data === null || data === undefined) {
+                console.error(`[AniList] Response carried no data: ${upstreamMessage ?? "no detail"}`);
+
+                throw new AniListUnavailableError("invalid_response", {
+                    status: response.status,
+                    upstreamMessage,
+                });
+            }
+
+            return payload as T;
         } catch (error) {
-            if (error instanceof Error && error.name === "AbortError") {
+            if (error instanceof AniListUnavailableError) {
+                throw error;
+            }
+
+            const timedOut = error instanceof Error && error.name === "AbortError";
+            if (timedOut) {
                 console.error("[AniList] Request timed out");
             } else {
-                console.error(`[AniList] Error: ${error}`);
+                console.error(`[AniList] Request failed: ${error}`);
             }
+
             if (attempt < ANILIST_MAX_RETRIES) {
                 continue;
             }
-            return null;
+
+            throw new AniListUnavailableError(timedOut ? "timeout" : "network", { underlyingError: error });
         }
     }
-    return null;
+
+    throw new AniListUnavailableError("network");
 };
 
 const searchCharactersFromAniListInternal = async function (

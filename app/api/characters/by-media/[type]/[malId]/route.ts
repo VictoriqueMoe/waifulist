@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCharactersByMedia } from "@/services/backend/anilistData";
+import { anilistErrorResponse } from "@/lib/api/anilistErrorResponse";
 
 interface RouteParams {
     params: Promise<{ type: string; malId: string }>;
@@ -26,6 +27,12 @@ export async function GET(request: NextRequest, { params }: RouteParams): Promis
         return NextResponse.json(result);
     } catch (error) {
         console.error(`[Characters by ${type}] Error:`, error);
+
+        const upstream = anilistErrorResponse(error);
+        if (upstream) {
+            return upstream;
+        }
+
         const message = error instanceof Error ? error.message : "Failed to fetch characters";
         return NextResponse.json({ error: message }, { status: 500 });
     }

@@ -53,11 +53,9 @@ export async function searchCharacters(query: string, page: number = 1, perPage:
     return result;
 }
 
-export async function getCharactersForTierList(anilistIds: number[]): Promise<TierListCharacter[]> {
-    if (anilistIds.length === 0) {
-        return [];
-    }
-
+async function readCachedCharacters(
+    anilistIds: number[],
+): Promise<{ characterMap: Map<number, TierListCharacter>; missingIds: number[] }> {
     const redis = getRedis();
     const keys = anilistIds.map(id => REDIS_KEYS.ANILIST_CHARACTER(id));
     const results = await redis.mget(...keys);
@@ -75,6 +73,40 @@ export async function getCharactersForTierList(anilistIds: number[]): Promise<Ti
         }
     }
 
+    return { characterMap, missingIds };
+}
+
+function orderCharacters(anilistIds: number[], characterMap: Map<number, TierListCharacter>): TierListCharacter[] {
+    const characters: TierListCharacter[] = [];
+
+    for (const id of anilistIds) {
+        const char = characterMap.get(id);
+        if (char) {
+            characters.push(char);
+        }
+    }
+
+    return characters;
+}
+
+export async function getCachedCharactersForTierList(anilistIds: number[]): Promise<TierListCharacter[]> {
+    if (anilistIds.length === 0) {
+        return [];
+    }
+
+    const { characterMap } = await readCachedCharacters(anilistIds);
+
+    return orderCharacters(anilistIds, characterMap);
+}
+
+export async function getCharactersForTierList(anilistIds: number[]): Promise<TierListCharacter[]> {
+    if (anilistIds.length === 0) {
+        return [];
+    }
+
+    const redis = getRedis();
+    const { characterMap, missingIds } = await readCachedCharacters(anilistIds);
+
     if (missingIds.length > 0) {
         const pipeline = redis.pipeline();
         for (let i = 0; i < missingIds.length; i++) {
@@ -91,15 +123,7 @@ export async function getCharactersForTierList(anilistIds: number[]): Promise<Ti
         await pipeline.exec();
     }
 
-    const characters: TierListCharacter[] = [];
-    for (const id of anilistIds) {
-        const char = characterMap.get(id);
-        if (char) {
-            characters.push(char);
-        }
-    }
-
-    return characters;
+    return orderCharacters(anilistIds, characterMap);
 }
 
 export async function getCharactersByMedia(

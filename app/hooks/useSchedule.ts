@@ -1,48 +1,55 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DayOfWeek, groupAiringByDay, ScheduleAnime } from "@/types/schedule";
 import { AiringInfo } from "@/types/airing";
+import { AniListFailureReason } from "@/types/anilist";
 import { fetchSchedule } from "@/services/frontend/scheduleClientService";
+import { failureReasonOf, upstreamDetailOf } from "@/services/frontend/upstreamError";
 
 export function useSchedule() {
     const [airing, setAiring] = useState<AiringInfo[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [errorReason, setErrorReason] = useState<AniListFailureReason | null>(null);
+    const [errorDetail, setErrorDetail] = useState<string | null>(null);
     const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+    const requestId = useRef(0);
+
+    const load = useCallback(async () => {
+        const id = ++requestId.current;
+
+        setLoading(true);
+        setError(null);
+        setErrorReason(null);
+        setErrorDetail(null);
+
+        try {
+            const data = await fetchSchedule();
+            if (requestId.current !== id) {
+                return;
+            }
+
+            setAiring(data.airing);
+            setLastUpdated(data.lastUpdated);
+        } catch (err) {
+            if (requestId.current !== id) {
+                return;
+            }
+
+            setError(err instanceof Error ? err.message : "Failed to load schedule");
+            setErrorReason(failureReasonOf(err));
+            setErrorDetail(upstreamDetailOf(err));
+        } finally {
+            if (requestId.current === id) {
+                setLoading(false);
+            }
+        }
+    }, []);
 
     useEffect(() => {
-        let cancelled = false;
-
-        const load = async () => {
-            setLoading(true);
-            setError(null);
-
-            try {
-                const data = await fetchSchedule();
-                if (cancelled) {
-                    return;
-                }
-                setAiring(data.airing);
-                setLastUpdated(data.lastUpdated);
-            } catch (err) {
-                if (cancelled) {
-                    return;
-                }
-                setError(err instanceof Error ? err.message : "Failed to load schedule");
-            } finally {
-                if (!cancelled) {
-                    setLoading(false);
-                }
-            }
-        };
-
         load();
-
-        return () => {
-            cancelled = true;
-        };
-    }, []);
+    }, [load]);
 
     const schedule = useMemo(() => {
         if (airing.length === 0) {
@@ -70,7 +77,10 @@ export function useSchedule() {
         schedule,
         loading,
         error,
+        errorReason,
+        errorDetail,
         lastUpdated,
+        reload: load,
         getAnimeForDay,
         getTotalCount,
     };

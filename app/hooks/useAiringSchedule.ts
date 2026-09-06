@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AiringBucket, AiringInfo, GroupedAiring } from "@/types/airing";
+import { AniListFailureReason } from "@/types/anilist";
 import { fetchAiringSchedule } from "@/services/frontend/airingClientService";
+import { failureReasonOf, upstreamDetailOf } from "@/services/frontend/upstreamError";
 
 function getBucket(airingAt: number, timeUntilAiring: number, duration: number | null): AiringBucket {
     if (timeUntilAiring <= 0) {
@@ -148,7 +150,10 @@ export function useAiringSchedule() {
     const [grouped, setGrouped] = useState<GroupedAiring[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [errorReason, setErrorReason] = useState<AniListFailureReason | null>(null);
+    const [errorDetail, setErrorDetail] = useState<string | null>(null);
     const [fetchedAt, setFetchedAt] = useState<string | null>(null);
+    const requestId = useRef(0);
 
     const recalculateGroups = useCallback(() => {
         if (airing.length > 0 || airedToday.length > 0) {
@@ -156,40 +161,42 @@ export function useAiringSchedule() {
         }
     }, [airing, airedToday]);
 
-    useEffect(() => {
-        let cancelled = false;
+    const load = useCallback(async () => {
+        const id = ++requestId.current;
 
-        const load = async () => {
-            setLoading(true);
-            setError(null);
+        setLoading(true);
+        setError(null);
+        setErrorReason(null);
+        setErrorDetail(null);
 
-            try {
-                const data = await fetchAiringSchedule();
-                if (cancelled) {
-                    return;
-                }
-                setAiring(data.airing);
-                setAiredToday(data.airedToday);
-                setFetchedAt(data.fetchedAt);
-                setGrouped(groupAiringByBucket(data.airing, data.airedToday));
-            } catch (err) {
-                if (cancelled) {
-                    return;
-                }
-                setError(err instanceof Error ? err.message : "Failed to load airing schedule");
-            } finally {
-                if (!cancelled) {
-                    setLoading(false);
-                }
+        try {
+            const data = await fetchAiringSchedule();
+            if (requestId.current !== id) {
+                return;
             }
-        };
 
-        load();
+            setAiring(data.airing);
+            setAiredToday(data.airedToday);
+            setFetchedAt(data.fetchedAt);
+            setGrouped(groupAiringByBucket(data.airing, data.airedToday));
+        } catch (err) {
+            if (requestId.current !== id) {
+                return;
+            }
 
-        return () => {
-            cancelled = true;
-        };
+            setError(err instanceof Error ? err.message : "Failed to load airing schedule");
+            setErrorReason(failureReasonOf(err));
+            setErrorDetail(upstreamDetailOf(err));
+        } finally {
+            if (requestId.current === id) {
+                setLoading(false);
+            }
+        }
     }, []);
+
+    useEffect(() => {
+        load();
+    }, [load]);
 
     useEffect(() => {
         if (airing.length === 0 && airedToday.length === 0) {
@@ -210,7 +217,10 @@ export function useAiringSchedule() {
         grouped,
         loading,
         error,
+        errorReason,
+        errorDetail,
         fetchedAt,
+        reload: load,
         recalculateGroups,
     };
 }

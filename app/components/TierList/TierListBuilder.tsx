@@ -8,6 +8,8 @@ import { AniListCharacter } from "@/types/anilist";
 import { Anime } from "@/types/anime";
 import { TIER_COLORS, TIER_RANKS, TierListCharacter, TierListData, TierRank } from "@/types/tierlist";
 import { Button } from "@/components/Button/Button";
+import { UpstreamError } from "@/components/UpstreamError/UpstreamError";
+import { errorFromResponse } from "@/services/frontend/upstreamError";
 import styles from "./TierListBuilder.module.scss";
 
 interface TierListBuilderProps {
@@ -51,6 +53,8 @@ export function TierListBuilder({
         results,
         isLoading,
         error,
+        errorReason,
+        errorDetail,
         hasMore,
         loadMore,
         clear,
@@ -66,6 +70,7 @@ export function TierListBuilder({
     const [animeResults, setAnimeResults] = useState<Anime[]>([]);
     const [mangaResults, setMangaResults] = useState<{ mal_id: number; title: string }[]>([]);
     const [isMediaSearching, setIsMediaSearching] = useState(false);
+    const [mediaSearchError, setMediaSearchError] = useState<string | null>(null);
     const [showMediaDropdown, setShowMediaDropdown] = useState(false);
     const mediaSearchTimer = useRef<NodeJS.Timeout | null>(null);
     const mediaDropdownRef = useRef<HTMLDivElement>(null);
@@ -80,22 +85,30 @@ export function TierListBuilder({
         if (mediaSearchQuery.length < 2) {
             setAnimeResults([]);
             setMangaResults([]);
+            setMediaSearchError(null);
             return;
         }
 
         mediaSearchTimer.current = setTimeout(async () => {
             setIsMediaSearching(true);
+            setMediaSearchError(null);
+
             try {
                 if (filterType === "anime") {
                     const results = await searchAnimeSilent(mediaSearchQuery, 10);
                     setAnimeResults(results);
                 } else {
                     const response = await fetch(`/api/manga?q=${encodeURIComponent(mediaSearchQuery)}&limit=10`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        setMangaResults(data.results || []);
+                    if (!response.ok) {
+                        throw await errorFromResponse(response, "Failed to search manga");
                     }
+
+                    const data = await response.json();
+                    setMangaResults(data.results || []);
                 }
+            } catch (err) {
+                setMangaResults([]);
+                setMediaSearchError(err instanceof Error ? err.message : "Failed to search manga");
             } finally {
                 setIsMediaSearching(false);
             }
@@ -524,6 +537,7 @@ export function TierListBuilder({
                                     />
                                     {isMediaSearching && <i className="bi bi-arrow-repeat spinning" />}
                                 </div>
+                                {mediaSearchError && <div className={styles.error}>{mediaSearchError}</div>}
                                 {showMediaDropdown &&
                                     (filterType === "anime" ? animeResults.length > 0 : mangaResults.length > 0) && (
                                         <div className={styles.mediaDropdown}>
@@ -570,7 +584,16 @@ export function TierListBuilder({
                         )}
                     </div>
 
-                    {error && <div className={styles.error}>{error}</div>}
+                    {error && errorReason ? (
+                        <UpstreamError
+                            title="Character search is unavailable"
+                            message={error}
+                            reason={errorReason}
+                            detail={errorDetail}
+                        />
+                    ) : (
+                        error && <div className={styles.error}>{error}</div>
+                    )}
 
                     <div className={styles.searchResults}>
                         {results.map(character => {

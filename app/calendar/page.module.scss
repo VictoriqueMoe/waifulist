@@ -179,24 +179,6 @@
     color: var(--text-secondary);
 }
 
-.error {
-    @include flex-center;
-    flex-direction: column;
-    gap: $spacing-md;
-    padding: $spacing-2xl;
-    text-align: center;
-    color: var(--text-secondary);
-
-    i {
-        font-size: 3rem;
-        color: var(--status-dropped);
-    }
-
-    h3 {
-        color: var(--text-primary);
-    }
-}
-
 .empty {
     @include flex-center;
     flex-direction: column;
