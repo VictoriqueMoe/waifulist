@@ -63,7 +63,7 @@ export async function proxy(request: NextRequest) {
     const isApi = pathname.startsWith("/api/");
     const shouldRateLimit = isApi || isBrowserNavigation;
 
-    if (!shouldRateLimit || isAuthEndpoint) {
+    if (!shouldRateLimit || isAuthEndpoint || process.env.DISABLE_RATE_LIMIT === "true") {
         return NextResponse.next({ request: { headers: requestHeaders } });
     }
     const type: RateLimitType = pathname.startsWith("/api/") ? "api" : "page";

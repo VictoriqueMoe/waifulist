@@ -75,6 +75,7 @@ export function AnimeCard({
     const watchData = watchDataProp !== undefined ? watchDataProp : contextWatchData;
     const [showNotePopover, setShowNotePopover] = useState(false);
     const popoverRef = useRef<HTMLDivElement>(null);
+    const [now] = useState(() => Date.now());
 
     const { mainTitle, subtitle } = resolveTitles({
         title: anime.title,
@@ -177,7 +178,7 @@ export function AnimeCard({
                         <div className={styles.dateAdded} title={anime.aired.from}>
                             <i className="bi bi-calendar-event" />
                             <span className={styles.dateLabel}>
-                                {new Date(anime.aired.from) > new Date() ? "Airs:" : "Aired:"}
+                                {Date.parse(anime.aired.from) > now ? "Airs:" : "Aired:"}
                             </span>
                             {formatStartDate(anime.aired.from)}
                         </div>

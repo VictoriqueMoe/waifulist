@@ -85,6 +85,7 @@ export const REDIS_KEYS = {
     SCHEDULE: "anime:schedule",
     AIRING_SCHEDULE: "anime:airing",
     PRODUCER_ANIME: (producerId: number) => `producer:${producerId}:anime`,
+    TOP_REVIEWS: (limit: number) => `anime:topReviews:${limit}`,
 } as const;
 
 export const REDIS_TTL = {
@@ -104,6 +105,7 @@ export const REDIS_TTL = {
     SCHEDULE: 60 * 60 * 12, // 12 hours
     AIRING_SCHEDULE: 60 * 60, // 1 hour
     PRODUCER_ANIME: 60 * 60 * 24 * 7, // 7 days
+    TOP_REVIEWS: 60 * 60 * 6, // 6 hours
 } as const;
 
 export async function invalidateOgImageCache(uuid: string): Promise<number> {
