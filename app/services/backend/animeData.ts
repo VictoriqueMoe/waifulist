@@ -816,18 +816,39 @@ export async function getAnimeBySeason(
 }
 
 export async function getTopReviews(limit: number = 6): Promise<TopReviewWithAnime[]> {
+    const redis = getRedis();
+    const cacheKey = REDIS_KEYS.TOP_REVIEWS(limit);
+
+    try {
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+            return JSON.parse(cached) as TopReviewWithAnime[];
+        }
+    } catch (error) {
+        console.error("[Redis] Failed to read cached top reviews:", error);
+    }
+
     const reviews = await fetchTopReviews(limit);
     if (reviews.length === 0) {
+        console.warn("[AnimeData] Jikan returned no top reviews, refusing to cache an empty list");
         return [];
     }
 
     const animeIds = reviews.map(r => r.entry.mal_id);
     const animeMap = await getAnimeFromRedisByIds(animeIds);
 
-    return reviews.map(review => ({
+    const result = reviews.map(review => ({
         ...review,
         anime: animeMap.get(review.entry.mal_id) || null,
     }));
+
+    try {
+        await redis.setex(cacheKey, REDIS_TTL.TOP_REVIEWS, JSON.stringify(result));
+    } catch (error) {
+        console.error("[Redis] Failed to cache top reviews:", error);
+    }
+
+    return result;
 }
 
 export async function getPeopleIds(): Promise<IdList> {
